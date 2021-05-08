@@ -1,47 +1,44 @@
-use crate::mat::{ Mat3, det };
-use crate::math::{ dot };
-use crate::geometry::{ Tri, empty_tri };
+use crate::geometry::{empty_tri, Tri};
+use crate::mat::{det, Mat3};
+use crate::math::dot;
 use crate::vector::Vec3;
 
 #[derive(Debug)]
 pub struct Mesh {
     pub ids: Vec<i32>,
-    pub vertices: Vec<f32>
+    pub vertices: Vec<f32>,
 }
 
 pub fn from_meshes(other_meshes: Vec<&Mesh>) -> Mesh {
-	let mut id_offset: i32 = 0;
+    let mut id_offset: i32 = 0;
 
-	let mut ids: Vec<i32> = Vec::new();
-	let mut vertices: Vec<f32> = Vec::new();
+    let mut ids: Vec<i32> = Vec::new();
+    let mut vertices: Vec<f32> = Vec::new();
 
-	let mut nids: usize = 0;
-	let mut nvertices: usize = 0;
+    let mut nids: usize = 0;
+    let mut nvertices: usize = 0;
 
-	for m in &other_meshes {
-		nids += m.ids.len();
-		nvertices += m.vertices.len();
-	}
+    for m in &other_meshes {
+        nids += m.ids.len();
+        nvertices += m.vertices.len();
+    }
 
     ids.reserve(nids);
     vertices.reserve(nvertices);
 
-	for m in &other_meshes {
-		for id in &m.ids {
-			ids.push(id + id_offset);
-		}
+    for m in &other_meshes {
+        for id in &m.ids {
+            ids.push(id + id_offset);
+        }
 
-		for vertex in &m.vertices {
-			vertices.push(*vertex);
-		}
+        for vertex in &m.vertices {
+            vertices.push(*vertex);
+        }
 
-		id_offset += (m.vertices.len() / 3) as i32;
-	}
-
-    Mesh {
-        ids,
-        vertices
+        id_offset += (m.vertices.len() / 3) as i32;
     }
+
+    Mesh { ids, vertices }
 }
 
 impl Mesh {
@@ -52,11 +49,14 @@ impl Mesh {
         let n = self.vertices.len() / 3;
 
         for i in 0..n {
-            let v = dot(&a, &Vec3 {
-                x: self.vertices[i * 3 + 0] as f64,
-                y: self.vertices[i * 3 + 1] as f64,
-                z: self.vertices[i * 3 + 2] as f64
-            });
+            let v = dot(
+                &a,
+                &Vec3 {
+                    x: self.vertices[i * 3 + 0] as f64,
+                    y: self.vertices[i * 3 + 1] as f64,
+                    z: self.vertices[i * 3 + 2] as f64,
+                },
+            );
 
             vertices[i * 3 + 0] = v.x as f32;
             vertices[i * 3 + 1] = v.y as f32;
@@ -74,10 +74,7 @@ impl Mesh {
             }
         }
 
-        Mesh {
-            ids,
-            vertices
-        }
+        Mesh { ids, vertices }
     }
 
     pub fn translate(&self, p: &Vec3) -> Self {
@@ -91,10 +88,7 @@ impl Mesh {
             vertices[i * 3 + 2] += p.z as f32;
         }
 
-        Self {
-            ids,
-            vertices
-        }
+        Self { ids, vertices }
     }
 
     pub fn to_triangles(&self) -> Vec<Tri> {
@@ -109,7 +103,7 @@ impl Mesh {
                 triangles[i].p[j] = Vec3 {
                     x: self.vertices[id * 3 + 0] as f64,
                     y: self.vertices[id * 3 + 1] as f64,
-                    z: self.vertices[id * 3 + 2] as f64
+                    z: self.vertices[id * 3 + 2] as f64,
                 };
             }
         }

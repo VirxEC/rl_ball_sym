@@ -1,17 +1,17 @@
-use std::ops::{Add, Sub, Mul, Div, Neg};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vec3 {
     pub x: f64,
     pub y: f64,
-    pub z: f64
+    pub z: f64,
 }
 
 pub fn empty_vec3() -> Vec3 {
     Vec3 {
         x: 0.,
         y: 0.,
-        z: 0.
+        z: 0.,
     }
 }
 
@@ -30,7 +30,7 @@ impl Vec3 {
             return Self {
                 x: 0.,
                 y: 0.,
-                z: 0.
+                z: 0.,
             };
         }
 
@@ -49,7 +49,7 @@ impl Add for Vec3 {
         Self {
             x: self.x + other.x,
             y: self.y + other.y,
-            z: self.z + other.z
+            z: self.z + other.z,
         }
     }
 }
@@ -61,7 +61,7 @@ impl Sub for Vec3 {
         Self {
             x: self.x - other.x,
             y: self.y - other.y,
-            z: self.z - other.z
+            z: self.z - other.z,
         }
     }
 }
@@ -73,7 +73,7 @@ impl Mul<Vec3> for Vec3 {
         Self {
             x: self.x * other.x,
             y: self.y * other.y,
-            z: self.z * other.z
+            z: self.z * other.z,
         }
     }
 }
@@ -85,7 +85,7 @@ impl Mul<f64> for Vec3 {
         Self {
             x: self.x * other,
             y: self.y * other,
-            z: self.z * other
+            z: self.z * other,
         }
     }
 }
@@ -97,7 +97,7 @@ impl Div<Vec3> for Vec3 {
         Self {
             x: self.x / other.x,
             y: self.y / other.y,
-            z: self.z / other.z
+            z: self.z / other.z,
         }
     }
 }
@@ -109,7 +109,7 @@ impl Div<f64> for Vec3 {
         Self {
             x: self.x / other,
             y: self.y / other,
-            z: self.z / other
+            z: self.z / other,
         }
     }
 }
@@ -121,7 +121,7 @@ impl Neg for Vec3 {
         Self {
             x: -self.x,
             y: -self.y,
-            z: -self.z 
+            z: -self.z,
         }
     }
 }
