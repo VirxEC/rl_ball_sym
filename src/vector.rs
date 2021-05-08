@@ -7,6 +7,14 @@ pub struct Vec3 {
     pub z: f64
 }
 
+pub fn empty_vec3() -> Vec3 {
+    Vec3 {
+        x: 0.,
+        y: 0.,
+        z: 0.
+    }
+}
+
 impl Vec3 {
     fn dot(&self, vec: &Self) -> f64 {
         self.x * vec.x + self.y * vec.y + self.z * vec.z

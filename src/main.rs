@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use std::fs::File;
-use std::io::Read;
+use std::io::{Cursor, ErrorKind};
+use byteorder::{LittleEndian, ReadBytesExt};
 
 mod mesh;
 mod mat;
@@ -10,50 +10,59 @@ mod vector;
 mod geometry;
 mod field;
 
-// pub static soccar_corner: mesh::Mesh = mesh::Mesh {
-//     ids: include!("../assets/soccar/soccar_corner_ids.bin"),
-//     vertices: include!("../assets/soccar/soccar_corner_vertices.bin")
-// };
-// pub static soccar_goal: mesh::Mesh;
-// pub static soccar_ramps_0: mesh::Mesh;
-// pub static soccar_ramps_1: mesh::Mesh;
+fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> mesh::Mesh {
+    let mut ids_dat = Cursor::new(ids_dat);
+    let mut vertices_dat = Cursor::new(vertices_dat);
+    let mut ids: Vec<i32> = Vec::new();
+    let mut vertices: Vec<f32> = Vec::new();
+
+    loop {
+        ids.push(match ids_dat.read_i32::<LittleEndian>() {
+            Ok(num) => num,
+            Err(error) => match error.kind() {
+                ErrorKind::UnexpectedEof => break,
+                other_error => {
+                    panic!("Problem parsing file: {:?}", other_error)
+                }
+            },
+        });
+    }
+
+    loop {
+        vertices.push(match vertices_dat.read_f32::<LittleEndian>() {
+            Ok(num) => num,
+            Err(error) => match error.kind() {
+                ErrorKind::UnexpectedEof => break,
+                other_error => {
+                    panic!("Problem parsing file: {:?}", other_error)
+                }
+            },
+        });
+    }
+
+    return mesh::Mesh {
+        ids,
+        vertices
+    }
+}
 
 fn main() {
-    let mut ids: Vec<i32> = Vec::new();
+    let soccar_corner: mesh::Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_corner_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_corner_vertices.bin").to_vec());
+    dbg!(soccar_corner.ids.len());
+    dbg!(soccar_corner.vertices.len());
+    let soccar_goal: mesh::Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_goal_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_goal_vertices.bin").to_vec());
+    dbg!(soccar_goal.ids.len());
+    dbg!(soccar_goal.vertices.len());
+    let soccar_ramps_0: mesh::Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_ramps_0_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_ramps_0_vertices.bin").to_vec());
+    dbg!(soccar_ramps_0.ids.len());
+    dbg!(soccar_ramps_0.vertices.len());
+    let soccar_ramps_1: mesh::Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_ramps_1_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_ramps_1_vertices.bin").to_vec());
+    dbg!(soccar_ramps_1.ids.len());
+    dbg!(soccar_ramps_1.vertices.len());
 
-    let mut file = match File::open("assets/soccar/soccar_corner_ids.bin") {
-        Ok(file) => file,
-        Err(error) => panic!("Problem opening the file: {:?}", error)
-    };
+    let soccer_field = field::initilize_soccar(&soccar_corner, &soccar_goal, &soccar_ramps_0, &soccar_ramps_1);
+    dbg!(soccer_field.ids.len());
+    dbg!(soccer_field.vertices.len());
 
-    let mut chunks = Vec::new();
-
-    let n = match file.read_to_end(&mut chunks) {
-        Ok(number) => number,
-        Err(error) => panic!("Problem reading the file: {:?}", error)
-    };
-
-    println!("{}", chunks.len());
-
-    let mut num = String::from("");
-
-    for i in 0..chunks.len() {
-        num.push_str(&String::from(format!("{:b}", &chunks[i])));
-
-        if num.len() == 32 {
-            println!("{} | {} bits", num, num.len());
-            ids.push(match i32::from_str_radix(&num, 2) {
-                Ok(num) => num,
-                Err(error) => panic!("Problem converting binary to i32: {:?}", error)
-            });
-            num = String::from("");
-        }
-    }
-
-    // let mut ids = soccar_corner.ids.clone();
-    ids.sort();
-
-    for id in ids.iter() {
-        println!("{}", id);
-    }
+    println!("Loaded soccar mesh");
 }
