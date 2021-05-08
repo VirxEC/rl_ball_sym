@@ -4,7 +4,7 @@ use crate::morton;
 
 pub struct BvhNode {
     pub box_: Aabb,
-    pub code: u32
+    pub code: u64
 }
 
 pub struct Bvh {
@@ -73,23 +73,22 @@ fn morton_sort(boxes: &Vec<Aabb>, global: &Aabb) -> Vec<u64> {
     code_ids
 }
 
-/*
 impl Bvh {
     pub fn from(_primitives: &Vec<Tri>) -> Self {
         let num_leaves = _primitives.len();
 
-        let primitives: Vec<Tri> = vec![Tri::default(); num_leaves as usize];
+        let mut primitives: Vec<Tri> = Vec::with_capacity(num_leaves);
 
         let capacity = 2 * num_leaves - 1;
         let mut nodes: Vec<BvhNode> = Vec::with_capacity(capacity);
-        let mut ranges: Vec<i8> = Vec::with_capacity(capacity);
-        let mut ready: Vec<i32> = Vec::with_capacity(capacity);
-        let mut parents: Vec<i32> = Vec::with_capacity(capacity);
-        let mut siblings: Vec<i32> = Vec::with_capacity(capacity);
+        let ranges: Vec<i8> = Vec::with_capacity(capacity);
+        let ready: Vec<i32> = Vec::with_capacity(capacity);
+        let parents: Vec<i32> = Vec::with_capacity(capacity);
+        let siblings: Vec<i32> = Vec::with_capacity(capacity);
 
         let mask: u64 = ((1 as u64) << bits_needed(num_leaves as u32)) - (1 as u64);
 
-        let boxes: Vec<Aabb> = Vec::with_capacity(num_leaves);
+        let mut boxes: Vec<Aabb> = Vec::with_capacity(num_leaves);
         for i in 0..num_leaves {
             boxes.push(Aabb::from(_primitives[i]));
         }
@@ -98,11 +97,14 @@ impl Bvh {
 
         let code_ids = morton_sort(&boxes, &global);
 
-        // for (int i = 0; i < num_leaves; i++) {
-        //     uint32_t id = uint32_t(code_ids[i] & mask);
-        //     primitives[i] = _primitives[id];
-        //     nodes[i] = bvh_node{ boxes[id], code_ids[i] };
-        // }
+        for i in 0..num_leaves {
+            let id = (code_ids[i] & mask) as usize;
+            primitives[i] = _primitives[id];
+            nodes[i] = BvhNode{
+                box_: boxes[id],
+                code: code_ids[i]
+            };
+        }
 
         // build_radix_tree();
         // fit_bounding_boxes();
@@ -118,8 +120,8 @@ impl Bvh {
             mask,
             num_leaves,
             global,
-            code_ids
+            code_ids,
+            nodes
         }
     }
 }
-*/
