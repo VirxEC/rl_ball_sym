@@ -10,7 +10,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn from(other_meshes: Vec<&Mesh>) -> Mesh {
+    pub fn from(other_meshes: Vec<&Self>) -> Self {
         let mut id_offset: i32 = 0;
     
         let mut nids: usize = 0;
@@ -36,7 +36,7 @@ impl Mesh {
             id_offset += (m.vertices.len() / 3) as i32;
         }
     
-        Mesh { ids, vertices }
+        Self { ids, vertices }
     }
     
     pub fn transform(&self, a: &Mat3) -> Self {
