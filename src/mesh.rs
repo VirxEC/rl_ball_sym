@@ -13,9 +13,6 @@ impl Mesh {
     pub fn from(other_meshes: Vec<&Mesh>) -> Mesh {
         let mut id_offset: i32 = 0;
     
-        let mut ids: Vec<i32> = Vec::new();
-        let mut vertices: Vec<f32> = Vec::new();
-    
         let mut nids: usize = 0;
         let mut nvertices: usize = 0;
     
@@ -24,8 +21,8 @@ impl Mesh {
             nvertices += m.vertices.len();
         }
     
-        ids.reserve(nids);
-        vertices.reserve(nvertices);
+        let mut ids: Vec<i32> = Vec::with_capacity(nids);
+        let mut vertices: Vec<f32> = Vec::with_capacity(nvertices);
     
         for m in &other_meshes {
             for id in &m.ids {
@@ -92,9 +89,8 @@ impl Mesh {
     }
 
     pub fn to_triangles(&self) -> Vec<Tri> {
-        let mut triangles: Vec<Tri> = Vec::new();
         let n = self.ids.len() / 3;
-        triangles.reserve(n);
+        let mut triangles: Vec<Tri> = Vec::with_capacity(n);
 
         for i in 0..n {
             triangles.push(Tri::default());

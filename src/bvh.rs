@@ -28,20 +28,16 @@ impl Bvh {
 
         let primitives: Vec<Tri> = vec![Tri::default(); num_leaves];
 
-        // nodes.resize(2 * num_leaves - 1);
-        let mut ranges: Vec<i8> = Vec::new();
-        ranges.reserve(2 * num_leaves - 1);
-        let mut ready: Vec<i32> = Vec::new();
-        ready.reserve(2 * num_leaves - 1);
-        let mut parents: Vec<i32> = Vec::new();
-        parents.reserve(2 * num_leaves - 1);
-        let mut siblings: Vec<i32> = Vec::new();
-        siblings.reserve(2 * num_leaves - 1);
+        let capacity = 2 * num_leaves - 1;
+        let mut nodes: Vec<BvhNode> = Vec::with_capacity(capacity);
+        let mut ranges: Vec<i8> = Vec::with_capacity(capacity);
+        let mut ready: Vec<i32> = Vec::with_capacity(capacity);
+        let mut parents: Vec<i32> = Vec::with_capacity(capacity);
+        let mut siblings: Vec<i32> = Vec::with_capacity(capacity);
 
         let mask: u64 = ((1 as u64) << bits_needed(num_leaves as u32)) - (1 as u64);
 
-        // std::vector < aabb > boxes(num_leaves);
-        let boxes: Aabb;
+        let boxes: Vec<Aabb> = Vec::with_capacity(num_leaves);
         // for (int i = 0; i < num_leaves; i++) {
         //     boxes[i] = aabb(_primitives[i]);
         // }
@@ -66,7 +62,7 @@ impl Bvh {
             parents,
             siblings,
             mask,
-            num_leaves
+            num_leaves as u64
         }
     }
 }
