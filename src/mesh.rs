@@ -1,4 +1,4 @@
-use crate::geometry::{empty_tri, Tri};
+use crate::geometry::Tri;
 use crate::mat::{det, Mat3};
 use crate::math::dot;
 use crate::vector::Vec3;
@@ -9,39 +9,39 @@ pub struct Mesh {
     pub vertices: Vec<f32>,
 }
 
-pub fn from_meshes(other_meshes: Vec<&Mesh>) -> Mesh {
-    let mut id_offset: i32 = 0;
-
-    let mut ids: Vec<i32> = Vec::new();
-    let mut vertices: Vec<f32> = Vec::new();
-
-    let mut nids: usize = 0;
-    let mut nvertices: usize = 0;
-
-    for m in &other_meshes {
-        nids += m.ids.len();
-        nvertices += m.vertices.len();
-    }
-
-    ids.reserve(nids);
-    vertices.reserve(nvertices);
-
-    for m in &other_meshes {
-        for id in &m.ids {
-            ids.push(id + id_offset);
-        }
-
-        for vertex in &m.vertices {
-            vertices.push(*vertex);
-        }
-
-        id_offset += (m.vertices.len() / 3) as i32;
-    }
-
-    Mesh { ids, vertices }
-}
-
 impl Mesh {
+    pub fn from(other_meshes: Vec<&Mesh>) -> Mesh {
+        let mut id_offset: i32 = 0;
+    
+        let mut ids: Vec<i32> = Vec::new();
+        let mut vertices: Vec<f32> = Vec::new();
+    
+        let mut nids: usize = 0;
+        let mut nvertices: usize = 0;
+    
+        for m in &other_meshes {
+            nids += m.ids.len();
+            nvertices += m.vertices.len();
+        }
+    
+        ids.reserve(nids);
+        vertices.reserve(nvertices);
+    
+        for m in &other_meshes {
+            for id in &m.ids {
+                ids.push(id + id_offset);
+            }
+    
+            for vertex in &m.vertices {
+                vertices.push(*vertex);
+            }
+    
+            id_offset += (m.vertices.len() / 3) as i32;
+        }
+    
+        Mesh { ids, vertices }
+    }
+    
     pub fn transform(&self, a: &Mat3) -> Self {
         let mut ids: Vec<i32> = self.ids.clone();
         let mut vertices: Vec<f32> = self.vertices.clone();
@@ -97,7 +97,7 @@ impl Mesh {
         triangles.reserve(n);
 
         for i in 0..n {
-            triangles.push(empty_tri());
+            triangles.push(Tri::default());
             for j in 0..3 {
                 let id = self.ids[i * 3 + j] as usize;
                 triangles[i].p[j] = Vec3 {

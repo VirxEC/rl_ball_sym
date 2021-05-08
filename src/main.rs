@@ -4,6 +4,8 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Cursor, ErrorKind};
 use std::time::Instant;
 
+mod bit_packing;
+mod bvh;
 mod field;
 mod geometry;
 mod mat;
@@ -25,7 +27,7 @@ fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> mesh::Mesh {
                 other_error => {
                     panic!("Problem parsing file: {:?}", other_error)
                 }
-            },
+            }
         });
     }
 
@@ -37,7 +39,7 @@ fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> mesh::Mesh {
                 other_error => {
                     panic!("Problem parsing file: {:?}", other_error)
                 }
-            },
+            }
         });
     }
 
@@ -72,17 +74,14 @@ fn main() {
     dbg!(soccar_ramps_1.ids.len());
     dbg!(soccar_ramps_1.vertices.len());
 
-    let soccar_field = field::initialize_soccar(
+    let soccar_triangles = field::initialize_soccar(
         &soccar_corner,
         &soccar_goal,
         &soccar_ramps_0,
         &soccar_ramps_1,
     );
-    dbg!(soccar_field.ids.len());
-    dbg!(soccar_field.vertices.len());
 
-    let soccar_triangles = soccar_field.to_triangles();
-    dbg!(soccar_triangles.len());
+    // dbg!(soccar_triangles.primitives.len());
 
     println!("Loaded soccar mesh in {}ms", start.elapsed().as_millis());
 }

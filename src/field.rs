@@ -1,6 +1,8 @@
 use crate::mat::{dot, Mat3};
-use crate::mesh::{from_meshes, Mesh};
-use crate::vector::{empty_vec3, Vec3};
+use crate::mesh::Mesh;
+use crate::vector::Vec3;
+// use crate::bvh::Bvh;
+use crate::geometry::Tri;
 
 static FLIP_X: Mat3 = [[-1., 0., 0.], [0., 1., 0.], [0., 0., 1.]];
 
@@ -30,9 +32,9 @@ fn quad(p: Vec3, e1: Vec3, e2: Vec3) -> Mesh {
 
 pub fn initialize_soccar(
     soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_0: &Mesh, soccar_ramps_1: &Mesh,
-) -> Mesh {
+) -> Vec<Tri> /*Bvh*/ {
     let floor = quad(
-        empty_vec3(),
+        Vec3::default(),
         Vec3 {
             x: 4096.,
             y: 0.,
@@ -100,7 +102,7 @@ pub fn initialize_soccar(
         ),
     ];
 
-    let soccar = from_meshes(vec![
+    let soccar = Mesh::from(vec![
         soccar_corner,
         &soccar_corner.transform(&FLIP_X),
         &soccar_corner.transform(&FLIP_Y),
@@ -127,7 +129,12 @@ pub fn initialize_soccar(
         &side_walls[1],
     ]);
 
-    soccar
-    // triangles = soccar.to_triangles();
-    // collision_mesh = bvh<tri>(triangles);
+    dbg!(soccar.ids.len());
+    dbg!(soccar.vertices.len());
+
+    let triangles = soccar.to_triangles();
+    triangles
+    // let collision_mesh = Bvh::from(&triangles);
+
+    // collision_mesh
 }
