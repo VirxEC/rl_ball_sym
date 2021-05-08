@@ -1,5 +1,6 @@
 use crate::geometry::{Aabb, Tri};
 use crate::bit_packing::bits_needed;
+use crate::morton;
 
 pub struct BvhNode {
     pub box_: Aabb,
@@ -30,6 +31,48 @@ fn global_aabb(boxes: &Vec<Aabb>) -> Aabb {
     global_box
 }
 
+fn morton_sort(boxes: &Vec<Aabb>, global: &Aabb) -> Vec<u64> {
+    const DIM: u32 = 3;
+  
+    let num_boxes = boxes.len();
+    let x_offset = global.min_x;
+    let y_offset = global.min_y;
+    let z_offset = global.min_z;
+  
+    let b = bits_needed(num_boxes as u32);
+    let bits_per_dimension = ((64 - b) / DIM) as i32;
+    let divisions_per_dimension = 1 << bits_per_dimension;
+  
+    let scale = (divisions_per_dimension - 1) as f32;
+  
+    let x_scale = scale / (global.max_x - global.min_x);
+    let y_scale = scale / (global.max_y - global.min_y);
+    let z_scale = scale / (global.max_z - global.min_z);
+  
+    let mut code_ids: Vec<u64> = Vec::with_capacity(num_boxes);
+  
+    for i in 0..num_boxes {
+      let box_ = boxes[i];
+  
+      // get the centroid of the ith bounding box
+      let cx = 0.5 * (box_.min_x + box_.max_x);
+      let cy = 0.5 * (box_.min_y + box_.max_y);
+      let cz = 0.5 * (box_.min_z + box_.max_z);
+  
+      let ux = ((cx - x_offset) * x_scale) as u64;
+      let uy = ((cy - y_offset) * y_scale) as u64;
+      let uz = ((cz - z_offset) * z_scale) as u64;
+  
+      let code: u64 = morton::encode(ux, uy, uz);
+  
+      code_ids.push((code << b) + (i as u64));
+    }
+  
+    code_ids.sort();
+  
+    code_ids
+}
+
 /*
 impl Bvh {
     pub fn from(_primitives: &Vec<Tri>) -> Self {
@@ -53,7 +96,7 @@ impl Bvh {
 
         let global = global_aabb(&boxes);
 
-        // code_ids = morton_sort(boxes, global);
+        let code_ids = morton_sort(&boxes, &global);
 
         // for (int i = 0; i < num_leaves; i++) {
         //     uint32_t id = uint32_t(code_ids[i] & mask);
@@ -74,7 +117,8 @@ impl Bvh {
             siblings,
             mask,
             num_leaves,
-            global
+            global,
+            code_ids
         }
     }
 }

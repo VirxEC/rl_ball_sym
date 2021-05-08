@@ -5,6 +5,7 @@ use std::io::{Cursor, ErrorKind};
 use std::time::Instant;
 
 mod bit_packing;
+mod morton;
 mod bvh;
 mod field;
 mod geometry;

@@ -11,10 +11,10 @@ pub struct Mesh {
 
 impl Mesh {
     pub fn from(other_meshes: Vec<&Self>) -> Self {
-        let mut id_offset: i32 = 0;
+        let mut id_offset = 0;
     
-        let mut nids: usize = 0;
-        let mut nvertices: usize = 0;
+        let mut nids = 0;
+        let mut nvertices = 0;
     
         for m in &other_meshes {
             nids += m.ids.len();
@@ -24,7 +24,7 @@ impl Mesh {
         let mut ids: Vec<i32> = Vec::with_capacity(nids);
         let mut vertices: Vec<f32> = Vec::with_capacity(nvertices);
     
-        for m in &other_meshes {
+        for m in other_meshes {
             for id in &m.ids {
                 ids.push(id + id_offset);
             }
