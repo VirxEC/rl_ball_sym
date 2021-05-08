@@ -29,7 +29,7 @@ fn quad(p: Vec3, e1: Vec3, e2: Vec3) -> Mesh {
     };
 }
 
-pub fn initilize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_0: &Mesh, soccar_ramps_1: &Mesh) -> Mesh {
+pub fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_0: &Mesh, soccar_ramps_1: &Mesh) -> Mesh {
     let floor = quad(
         empty_vec3(),
         Vec3 { x: 4096., y: 0., z: 0. },
