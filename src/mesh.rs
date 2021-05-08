@@ -1,6 +1,6 @@
 use crate::mat::{ Mat3, det };
 use crate::math::{ dot };
-use crate::geometry::Tri;
+use crate::geometry::{ Tri, empty_tri };
 use crate::vector::Vec3;
 
 #[derive(Debug)]
@@ -99,9 +99,11 @@ impl Mesh {
 
     pub fn to_triangles(&self) -> Vec<Tri> {
         let mut triangles: Vec<Tri> = Vec::new();
-        triangles.reserve(self.ids.len() / 3);
+        let n = self.ids.len() / 3;
+        triangles.reserve(n);
 
-        for i in 0..triangles.len() {
+        for i in 0..n {
+            triangles.push(empty_tri());
             for j in 0..3 {
                 let id = self.ids[i * 3 + j] as usize;
                 triangles[i].p[j] = Vec3 {

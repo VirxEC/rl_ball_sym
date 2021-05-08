@@ -8,3 +8,6 @@ edition = "2018"
 
 [dependencies]
 byteorder = "1.*"
+
+# [profile.dev]
+# opt-level=3

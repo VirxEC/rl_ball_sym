@@ -63,9 +63,12 @@ fn main() {
     dbg!(soccar_ramps_1.ids.len());
     dbg!(soccar_ramps_1.vertices.len());
 
-    let soccer_field = field::initialize_soccar(&soccar_corner, &soccar_goal, &soccar_ramps_0, &soccar_ramps_1);
-    dbg!(soccer_field.ids.len());
-    dbg!(soccer_field.vertices.len());
+    let soccar_field = field::initialize_soccar(&soccar_corner, &soccar_goal, &soccar_ramps_0, &soccar_ramps_1);
+    dbg!(soccar_field.ids.len());
+    dbg!(soccar_field.vertices.len());
+
+    let soccar_triangles = soccar_field.to_triangles();
+    dbg!(soccar_triangles.len());
 
     println!("Loaded soccar mesh in {}ms", start.elapsed().as_millis());
 }
