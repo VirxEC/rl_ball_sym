@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use std::time::Instant;
 use std::io::{Cursor, ErrorKind};
 use byteorder::{LittleEndian, ReadBytesExt};
 
@@ -47,6 +48,8 @@ fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> mesh::Mesh {
 }
 
 fn main() {
+    let start = Instant::now();
+
     let soccar_corner: mesh::Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_corner_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_corner_vertices.bin").to_vec());
     dbg!(soccar_corner.ids.len());
     dbg!(soccar_corner.vertices.len());
@@ -64,5 +67,5 @@ fn main() {
     dbg!(soccer_field.ids.len());
     dbg!(soccer_field.vertices.len());
 
-    println!("Loaded soccar mesh");
+    println!("Loaded soccar mesh in {}ms", start.elapsed().as_millis());
 }
