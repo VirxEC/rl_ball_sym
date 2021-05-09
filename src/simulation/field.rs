@@ -1,10 +1,12 @@
 use crate::linear_algebra::mat::{dot, Mat3};
 use crate::linear_algebra::vector::Vec3;
 use crate::simulation::bvh::Bvh;
+use crate::simulation::geometry::{Ray, Sphere, Tri};
 use crate::simulation::mesh::Mesh;
 
 pub struct Field {
     pub field_mesh: Mesh,
+    pub triangles: Vec<Tri>,
     pub collision_mesh: Bvh,
 }
 
@@ -124,7 +126,37 @@ impl Field {
 
         Field {
             field_mesh,
+            triangles,
             collision_mesh,
         }
+    }
+
+    pub fn collide(&self, s: &Sphere) -> Ray {
+        let mut contact_point = Ray::default();
+
+        let mut count = 0.;
+
+        println!("INTERSECT");
+        let tris_hit = self.collision_mesh.intersect(&s);
+        println!("GOT");
+
+        for id in tris_hit {
+            let p = self.triangles[id as usize].center();
+            let n = self.triangles[id as usize].unit_normal();
+
+            let separation = (s.center - p).dot(&n);
+            if separation <= s.radius {
+                count += 1.;
+                contact_point.start += s.center - n * separation;
+                contact_point.direction += n * (s.radius - separation);
+            }
+        }
+
+        if count > 0. {
+            contact_point.start /= count;
+            contact_point.direction = contact_point.direction.normalize();
+        }
+
+        contact_point
     }
 }

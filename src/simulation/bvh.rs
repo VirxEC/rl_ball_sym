@@ -1,4 +1,5 @@
 use crate::simulation::bit_packing::bits_needed;
+use crate::simulation::geometry::Sphere;
 use crate::simulation::geometry::{Aabb, Int2, Tri};
 use crate::simulation::morton;
 
@@ -14,6 +15,16 @@ impl Default for BvhNode {
             box_: Aabb::default(),
             code: 0,
         }
+    }
+}
+
+impl BvhNode {
+    fn left(&self) -> i32 {
+        (self.code >> 32) as i32
+    }
+
+    fn right(&self) -> i32 {
+        (self.code & 0xFFFFFFFF) as i32
     }
 }
 
@@ -53,7 +64,7 @@ fn morton_sort(boxes: &Vec<Aabb>, global: &Aabb) -> Vec<u64> {
     let bits_per_dimension = ((64 - b) / DIM) as i32;
     let divisions_per_dimension = 1 << bits_per_dimension;
 
-    let scale = (divisions_per_dimension - 1) as f32;
+    let scale = (divisions_per_dimension - 1) as f64;
 
     let x_scale = scale / (global.max_x - global.min_x);
     let y_scale = scale / (global.max_y - global.min_y);
@@ -122,7 +133,7 @@ impl Bvh {
 
         let mut boxes: Vec<Aabb> = Vec::with_capacity(num_leaves);
         for i in 0..num_leaves {
-            boxes.push(Aabb::from(_primitives[i]));
+            boxes.push(Aabb::from_tri(_primitives[i]));
         }
 
         let global = global_aabb(&boxes);
@@ -134,7 +145,7 @@ impl Bvh {
             primitives.push(_primitives[id]);
             nodes.push(BvhNode {
                 box_: boxes[id],
-                code: code_ids[i],
+                code: code_ids[i].clone(),
             });
         }
 
@@ -279,5 +290,87 @@ impl Bvh {
                 self.nodes[current].box_ = box_;
             }
         }
+    }
+
+    pub fn intersect(&self, query_object: &Sphere) -> Vec<i32> {
+        let query_box: Aabb = Aabb::from_sphere(&query_object);
+        let num_leaves = self.num_leaves as i32;
+
+        let mut hits = Vec::new();
+
+        // Allocate traversal stack from thread-local memory,
+        // and push NULL to indicate that there are no postponed nodes.
+        let mut stack = vec![0; 32];
+        stack[0] = -1;
+        let mut stack_ptr: usize = 1;
+
+        // Traverse nodes starting from the root.
+        let mut n = self.num_leaves as usize;
+        loop {
+            // Check each child node for overlap.
+            let left = self.nodes[n].left();
+            let right = self.nodes[n].right();
+
+            let overlap_left = self.nodes[left as usize].box_.intersect_self(&query_box);
+            if overlap_left && (left < num_leaves) {
+                let left_id = (self.nodes[left as usize].code & self.mask) as i32;
+                if self.primitives[left as usize].intersect_sphere(&query_object) {
+                    hits.push(left_id);
+                }
+            }
+
+            let overlap_right = self.nodes[right as usize].box_.intersect_self(&query_box);
+            if overlap_right && (right < num_leaves) {
+                let right_id = (self.nodes[right as usize].code & self.mask) as i32;
+                if self.primitives[right as usize].intersect_sphere(&query_object) {
+                    hits.push(right_id);
+                }
+            }
+
+            // traverse when a query overlaps with an internal node
+            let traverse_left = overlap_left && left >= num_leaves;
+            let traverse_right = overlap_right && right >= num_leaves;
+
+            // these variables are needed because them being -1 is how we signal we're done
+            // usize, the type required to index an array/vector, can't contain negatives
+            let mut _n = n as isize;
+            let mut _stack_ptr = stack_ptr as isize;
+
+            if !traverse_left && !traverse_right {
+                println!("GOING BACK");
+                _stack_ptr -= 1;
+                _n = _stack_ptr; // pop
+            } else {
+                _n = if traverse_left {
+                    left
+                } else {
+                    right
+                } as isize;
+                if traverse_left && traverse_right {
+                    stack[stack_ptr] = right; // push
+                    _stack_ptr += 1;
+                }
+            }
+            
+            if stack_ptr as isize != _stack_ptr {
+                println!("stack_ptr is {}", _stack_ptr);
+            }
+            
+            if n as isize != _n {
+                println!("n is {}", _n);
+            }
+
+            // break if negative
+            if _n < 0 {
+                break;
+            }
+
+            // we know we don't have negative numbers on our hands
+            // so convert the numbers to usize
+            n = _n as usize;
+            stack_ptr = _stack_ptr as usize;
+        }
+
+        hits
     }
 }

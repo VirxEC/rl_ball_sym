@@ -7,10 +7,11 @@ use std::time::Instant;
 pub mod linear_algebra;
 pub mod simulation;
 
+use linear_algebra::vector::Vec3;
+use simulation::ball::Ball;
 use simulation::field::Field;
 use simulation::game::Game;
 use simulation::mesh::Mesh;
-use simulation::ball::Ball;
 
 fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> Mesh {
     let mut ids_dat = Cursor::new(ids_dat);
@@ -60,37 +61,19 @@ pub fn load_soccar(index: u8, team: u8) -> Game {
 
     let ball = Ball::initialize_soccar();
 
-    println!("Loaded soccar in {}ms", start.elapsed().as_millis());
+    let gravity = Vec3 {
+        x: 0.,
+        y: 0.,
+        z: -650.,
+    };
+
+    println!("Loaded soccar game mode in {}ms", start.elapsed().as_millis());
 
     Game {
         index,
         team,
+        gravity,
         field,
-        ball
+        ball,
     }
-}
-
-fn main() {
-    let game = load_soccar(0, 0);
-
-    dbg!(&game.index);
-    dbg!(&game.team);
-
-    dbg!(&game.field.field_mesh.ids.len());
-    dbg!(&game.field.field_mesh.vertices.len());
-
-    dbg!(&game.field.collision_mesh.global);
-    dbg!(&game.field.collision_mesh.mask);
-    dbg!(&game.field.collision_mesh.num_leaves);
-    dbg!(&game.field.collision_mesh.primitives.len());
-    dbg!(&game.field.collision_mesh.code_ids.len());
-    dbg!(&game.field.collision_mesh.siblings.len());
-    dbg!(&game.field.collision_mesh.parents.len());
-    dbg!(&game.field.collision_mesh.ready.len());
-    dbg!(&game.field.collision_mesh.ranges.len());
-
-    dbg!(&game.ball.location);
-    dbg!(&game.ball.velocity);
-    dbg!(&game.ball.radius);
-    dbg!(&game.ball.collision_radius);
 }

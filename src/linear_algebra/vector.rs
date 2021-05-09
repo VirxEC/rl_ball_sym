@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vec3 {
@@ -8,15 +8,15 @@ pub struct Vec3 {
 }
 
 impl Vec3 {
-    fn dot(&self, vec: &Self) -> f64 {
+    pub fn dot(&self, vec: &Self) -> f64 {
         self.x * vec.x + self.y * vec.y + self.z * vec.z
     }
 
-    fn magnitude(&self) -> f64 {
+    pub fn magnitude(&self) -> f64 {
         self.dot(self).sqrt()
     }
 
-    fn normalize(&self) -> Self {
+    pub fn normalize(&self) -> Self {
         let size = self.magnitude();
         if size == 0. {
             return Self {
@@ -29,8 +29,16 @@ impl Vec3 {
         *self / size
     }
 
-    fn scale(&self, value: f64) -> Self {
+    pub fn scale(&self, value: f64) -> Self {
         self.normalize() * value
+    }
+
+    pub fn cross(&self, vec: &Self) -> Self {
+        Self {
+            x: self.y * vec.z - self.z * vec.y,
+            y: self.z * vec.x - self.x * vec.z,
+            z: self.x * vec.y - self.y * vec.x,
+        }
     }
 }
 
@@ -43,6 +51,14 @@ impl Add for Vec3 {
             y: self.y + other.y,
             z: self.z + other.z,
         }
+    }
+}
+
+impl AddAssign for Vec3 {
+    fn add_assign(&mut self, other: Self) {
+        self.x += other.x;
+        self.y += other.y;
+        self.z += other.z;
     }
 }
 
@@ -82,6 +98,22 @@ impl Mul<f64> for Vec3 {
     }
 }
 
+impl MulAssign<Vec3> for Vec3 {
+    fn mul_assign(&mut self, other: Self) {
+        self.x *= other.x;
+        self.y *= other.y;
+        self.z *= other.z;
+    }
+}
+
+impl MulAssign<f64> for Vec3 {
+    fn mul_assign(&mut self, other: f64) {
+        self.x *= other;
+        self.y *= other;
+        self.z *= other;
+    }
+}
+
 impl Div<Vec3> for Vec3 {
     type Output = Self;
 
@@ -103,6 +135,14 @@ impl Div<f64> for Vec3 {
             y: self.y / other,
             z: self.z / other,
         }
+    }
+}
+
+impl DivAssign<f64> for Vec3 {
+    fn div_assign(&mut self, other: f64) {
+        self.x /= other;
+        self.y /= other;
+        self.z /= other;
     }
 }
 
