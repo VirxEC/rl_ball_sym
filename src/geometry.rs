@@ -6,8 +6,8 @@ pub struct Tri {
 }
 
 impl Default for Tri {
-    fn default() -> Tri {
-        Tri {
+    fn default() -> Self {
+        Self {
             p: [Vec3::default(), Vec3::default(), Vec3::default()],
         }
     }
@@ -20,7 +20,7 @@ pub struct Aabb {
     pub min_z: f32,
     pub max_x: f32,
     pub max_y: f32,
-    pub max_z: f32
+    pub max_z: f32,
 }
 
 impl Aabb {
@@ -38,7 +38,7 @@ impl Aabb {
             min_z,
             max_x,
             max_y,
-            max_z
+            max_z,
         }
     }
 
@@ -57,7 +57,22 @@ impl Aabb {
             min_z,
             max_x,
             max_y,
-            max_z
+            max_z,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Int2 {
+    pub x: i32,
+    pub y: i32,
+}
+
+impl Default for Int2 {
+    fn default() -> Self {
+        Self {
+            x: 0,
+            y: 0,
         }
     }
 }

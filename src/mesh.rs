@@ -12,33 +12,36 @@ pub struct Mesh {
 impl Mesh {
     pub fn from(other_meshes: Vec<&Self>) -> Self {
         let mut id_offset = 0;
-    
+
         let mut nids = 0;
         let mut nvertices = 0;
-    
+
         for m in &other_meshes {
             nids += m.ids.len();
             nvertices += m.vertices.len();
         }
-    
+
         let mut ids: Vec<i32> = Vec::with_capacity(nids);
         let mut vertices: Vec<f32> = Vec::with_capacity(nvertices);
-    
+
         for m in other_meshes {
             for id in &m.ids {
                 ids.push(id + id_offset);
             }
-    
+
             for vertex in &m.vertices {
                 vertices.push(*vertex);
             }
-    
+
             id_offset += (m.vertices.len() / 3) as i32;
         }
-    
-        Self { ids, vertices }
+
+        Self {
+            ids,
+            vertices,
+        }
     }
-    
+
     pub fn transform(&self, a: &Mat3) -> Self {
         let mut ids: Vec<i32> = self.ids.clone();
         let mut vertices: Vec<f32> = self.vertices.clone();
@@ -71,7 +74,10 @@ impl Mesh {
             }
         }
 
-        Mesh { ids, vertices }
+        Mesh {
+            ids,
+            vertices,
+        }
     }
 
     pub fn translate(&self, p: &Vec3) -> Self {
@@ -85,7 +91,10 @@ impl Mesh {
             vertices[i * 3 + 2] += p.z as f32;
         }
 
-        Self { ids, vertices }
+        Self {
+            ids,
+            vertices,
+        }
     }
 
     pub fn to_triangles(&self) -> Vec<Tri> {

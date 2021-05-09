@@ -119,8 +119,8 @@ impl Neg for Vec3 {
 }
 
 impl Default for Vec3 {
-    fn default() -> Vec3 {
-        Vec3 {
+    fn default() -> Self {
+        Self {
             x: 0.,
             y: 0.,
             z: 0.,

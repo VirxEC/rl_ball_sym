@@ -5,13 +5,13 @@ use std::io::{Cursor, ErrorKind};
 use std::time::Instant;
 
 mod bit_packing;
-mod morton;
 mod bvh;
 mod field;
 mod geometry;
 mod mat;
 mod math;
 mod mesh;
+mod morton;
 mod vector;
 
 fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> mesh::Mesh {
@@ -28,7 +28,7 @@ fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> mesh::Mesh {
                 other_error => {
                     panic!("Problem parsing file: {:?}", other_error)
                 }
-            }
+            },
         });
     }
 
@@ -40,49 +40,38 @@ fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> mesh::Mesh {
                 other_error => {
                     panic!("Problem parsing file: {:?}", other_error)
                 }
-            }
+            },
         });
     }
 
-    return mesh::Mesh { ids, vertices };
+    return mesh::Mesh {
+        ids,
+        vertices,
+    };
 }
 
 fn main() {
     let start = Instant::now();
 
-    let soccar_corner: mesh::Mesh = read_mesh(
-        include_bytes!("../assets/soccar/soccar_corner_ids.bin").to_vec(),
-        include_bytes!("../assets/soccar/soccar_corner_vertices.bin").to_vec(),
-    );
-    dbg!(soccar_corner.ids.len());
-    dbg!(soccar_corner.vertices.len());
-    let soccar_goal: mesh::Mesh = read_mesh(
-        include_bytes!("../assets/soccar/soccar_goal_ids.bin").to_vec(),
-        include_bytes!("../assets/soccar/soccar_goal_vertices.bin").to_vec(),
-    );
-    dbg!(soccar_goal.ids.len());
-    dbg!(soccar_goal.vertices.len());
-    let soccar_ramps_0: mesh::Mesh = read_mesh(
-        include_bytes!("../assets/soccar/soccar_ramps_0_ids.bin").to_vec(),
-        include_bytes!("../assets/soccar/soccar_ramps_0_vertices.bin").to_vec(),
-    );
-    dbg!(soccar_ramps_0.ids.len());
-    dbg!(soccar_ramps_0.vertices.len());
-    let soccar_ramps_1: mesh::Mesh = read_mesh(
-        include_bytes!("../assets/soccar/soccar_ramps_1_ids.bin").to_vec(),
-        include_bytes!("../assets/soccar/soccar_ramps_1_vertices.bin").to_vec(),
-    );
-    dbg!(soccar_ramps_1.ids.len());
-    dbg!(soccar_ramps_1.vertices.len());
+    let soccar_corner: mesh::Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_corner_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_corner_vertices.bin").to_vec());
+    let soccar_goal: mesh::Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_goal_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_goal_vertices.bin").to_vec());
+    let soccar_ramps_0: mesh::Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_ramps_0_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_ramps_0_vertices.bin").to_vec());
+    let soccar_ramps_1: mesh::Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_ramps_1_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_ramps_1_vertices.bin").to_vec());
 
-    let soccar_triangles = field::initialize_soccar(
-        &soccar_corner,
-        &soccar_goal,
-        &soccar_ramps_0,
-        &soccar_ramps_1,
-    );
+    let soccar_field = field::initialize_soccar(&soccar_corner, &soccar_goal, &soccar_ramps_0, &soccar_ramps_1);
 
-    // dbg!(soccar_triangles.primitives.len());
+    dbg!(soccar_field.0.ids.len());
+    dbg!(soccar_field.0.vertices.len());
 
     println!("Loaded soccar mesh in {}ms", start.elapsed().as_millis());
+
+    dbg!(soccar_field.1.global);
+    dbg!(soccar_field.1.mask);
+    dbg!(soccar_field.1.num_leaves);
+    dbg!(soccar_field.1.primitives.len());
+    dbg!(soccar_field.1.code_ids.len());
+    dbg!(soccar_field.1.siblings.len());
+    dbg!(soccar_field.1.parents.len());
+    dbg!(soccar_field.1.ready.len());
+    dbg!(soccar_field.1.ranges.len());
 }
