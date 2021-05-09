@@ -73,6 +73,22 @@ fn morton_sort(boxes: &Vec<Aabb>, global: &Aabb) -> Vec<u64> {
     code_ids
 }
 
+// convenience class for bounds checking morton codes,
+// and computing the number of prefix bits common to two
+// 64-bit words
+
+struct PrefixComparator {
+    base: u64,
+    codes: Vec<u64>,
+    n: i32
+}
+
+impl PrefixComparator {
+    fn call (&self, i: i32) -> i32 {
+        if i >= 0 && i < self.n { (self.base ^ self.codes[i as usize]).leading_zeros() as i32 } else { -1 }
+    }
+}
+
 impl Bvh {
     pub fn from(_primitives: &Vec<Tri>) -> Self {
         let num_leaves = _primitives.len();
@@ -124,4 +140,113 @@ impl Bvh {
             nodes
         }
     }
+
+    // fn build_radix_tree(&mut self) {
+    //     let num_leaves = self.num_leaves as i32;
+    //     self.parents[self.num_leaves as usize] = num_leaves;
+        
+    //     for i in 0..num_leaves - 1 {
+    //         let shared_prefix = PrefixComparator {
+    //             base: self.code_ids[i as usize],
+    //             codes: self.code_ids.clone(),
+    //             n: num_leaves
+    //         };
+        
+    //         // Choose search direction.
+    //         let prefix_prev = shared_prefix.call(i - 1);
+    //         let prefix_next = shared_prefix.call(i + 1);
+    //         let prefix_min = prefix_prev.min(prefix_next);
+        
+    //         let d = if prefix_next > prefix_prev { 1 } else { -1 };
+        
+    //         // Find upper bound for length.
+    //         let mut lmax = 32;
+    //         let mut probe: i32;
+    //         loop {
+    //             lmax <<= 2;
+    //             probe = i + lmax * d;
+    //             if (probe as u64) < self.num_leaves && shared_prefix.call(probe) > prefix_min { break; }
+    //         }
+        
+    //         // Determine length.
+    //         let mut l = 0;
+    //         let mut t = lmax >> 1;
+    //         while t > 0 {
+    //             probe = i + (l + t) * d;
+
+    //             if (probe as u64) < self.num_leaves && shared_prefix.call(probe) > prefix_min {
+    //                 l += t;
+    //             }
+
+    //             t >>= 1;
+    //         }
+    //         let j = i + l * d;
+    //         let prefix_node = shared_prefix.call(j);
+        
+    //         // Find split point.
+    //         let mut s = 0;
+    //         let mut t = l;
+    //         loop {
+    //             t = (t + 1) >> 1;
+    //             probe = i + (s + t) * d;
+    //             if (probe as u64) < self.num_leaves && shared_prefix.call(probe) > prefix_min {
+    //                 s += t;
+    //             }
+
+    //             if t > 1 { break; }
+    //         }
+    //         let k = (i + s * d + d.min(0)) as usize;
+        
+    //         // Output node.
+    //         let lo = i.min(j) as usize;
+    //         let hi = i.min(j) as usize;
+        
+    //         let left = if lo == k { k + 0 } else { k + 0 + (self.num_leaves as usize) };
+    //         let right = if hi == k + 1 { k + 1 } else { k + 1 + (self.num_leaves as usize) };
+        
+    //         self.parents[left] = i + num_leaves;
+    //         self.parents[right] = i + num_leaves;
+    //         self.siblings[left] = right as i32;
+    //         self.siblings[right] = left as i32;
+    //         self.nodes[(i as u64 + self.num_leaves) as usize].code = ((left as u64) << 32) + (right as u64);
+    //         // self.ranges[(i as u64 + self.num_leaves) as usize] = vec![lo as i8, hi as i8];
+    //     }
+    // }
+    
+    // void bvh< T >::fit_bounding_boxes() {
+    //     for (int i = 0; i < ready.size(); i++) {
+    //         ready[i] = 0;
+    //     }
+        
+    //     for (int i = 0; i < num_leaves; i++) {
+        
+    //         // start with the bounds of the leaf nodes
+    //         // and have each thread work its way up the tree
+    //         int current = i;
+    //         aabb box = nodes[i].box;
+    //         int32_t parent = parents[i];
+    //         int state = 0;
+        
+    //         while (true) {
+        
+    //             state = ready[parent]++;
+            
+    //             // only process a parent node if the other
+    //             // sibling has visited the parent as well
+    //             if (state != 1) break;
+            
+    //             // compute the union of the two sibling boxes
+    //             box = aabb(box, nodes[siblings[current]].box);
+            
+    //             // move up to the parent node
+    //             current = parent;
+    //             parent = parents[current];
+            
+    //             // and assign the new box to it
+    //             nodes[current].box = box;
+        
+    //         }
+        
+    //     }
+    // }
 }
