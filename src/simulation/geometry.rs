@@ -1,4 +1,4 @@
-use crate::vector::Vec3;
+use crate::linear_algebra::vector::Vec3;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Tri {

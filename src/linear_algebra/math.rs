@@ -1,5 +1,5 @@
-use crate::mat::Mat3;
-use crate::vector::Vec3;
+use crate::linear_algebra::mat::Mat3;
+use crate::linear_algebra::vector::Vec3;
 
 pub fn dot(a: &Mat3, v: &Vec3) -> Vec3 {
     Vec3 {

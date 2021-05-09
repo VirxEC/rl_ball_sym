@@ -1,6 +1,6 @@
-use crate::bit_packing::bits_needed;
-use crate::geometry::{Aabb, Int2, Tri};
-use crate::morton;
+use crate::simulation::bit_packing::bits_needed;
+use crate::simulation::geometry::{Aabb, Int2, Tri};
+use crate::simulation::morton;
 
 #[derive(Clone, Copy, Debug)]
 pub struct BvhNode {
