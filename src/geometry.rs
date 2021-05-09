@@ -23,6 +23,19 @@ pub struct Aabb {
     pub max_z: f32,
 }
 
+impl Default for Aabb {
+    fn default() -> Self {
+        Self {
+            min_x: 0.,
+            min_y: 0.,
+            min_z: 0.,
+            max_x: 0.,
+            max_y: 0.,
+            max_z: 0.
+        }
+    }
+}
+
 impl Aabb {
     pub fn add(&self, b: Aabb) -> Self {
         let min_x = self.min_x.min(b.min_x);

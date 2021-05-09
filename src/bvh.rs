@@ -8,6 +8,15 @@ pub struct BvhNode {
     pub code: u64,
 }
 
+impl Default for BvhNode {
+    fn default() -> Self {
+        Self {
+            box_: Aabb::default(),
+            code: 0
+        }
+    }
+}
+
 pub struct Bvh {
     pub global: Aabb,
     pub mask: u64,
@@ -103,9 +112,9 @@ impl Bvh {
         let mut primitives: Vec<Tri> = Vec::with_capacity(num_leaves);
 
         let capacity = 2 * num_leaves;
-        let mut nodes: Vec<BvhNode> = Vec::with_capacity(capacity);
+        let mut nodes: Vec<BvhNode> = vec![BvhNode::default(); capacity];
         let ranges: Vec<Int2> = vec![Int2::default(); capacity];
-        let ready: Vec<i32> = Vec::with_capacity(capacity);
+        let ready: Vec<i32> = vec![0; capacity];
         let parents: Vec<i32> = vec![0; capacity];
         let siblings: Vec<i32> = vec![0; capacity];
 
@@ -237,43 +246,43 @@ impl Bvh {
                 x: lo as i32,
                 y: hi as i32,
             };
-            // self.nodes[(i as u64 + self.num_leaves) as usize].code = ((left as u64) << 32) + (right as u64);
+            self.nodes[(i as u64 + self.num_leaves) as usize].code = ((left as u64) << 32) + (right as u64);
         }
     }
 
-    // void bvh< T >::fit_bounding_boxes() {
-    //     for (int i = 0; i < ready.size(); i++) {
-    //         ready[i] = 0;
-    //     }
+    // fn fit_bounding_boxes(&mut self) {
+        // for (int i = 0; i < ready.size(); i++) {
+        //     ready[i] = 0;
+        // }
 
-    //     for (int i = 0; i < num_leaves; i++) {
+        // for (int i = 0; i < num_leaves; i++) {
 
-    //         // start with the bounds of the leaf nodes
-    //         // and have each thread work its way up the tree
-    //         int current = i;
-    //         aabb box = nodes[i].box;
-    //         int32_t parent = parents[i];
-    //         int state = 0;
+        //     // start with the bounds of the leaf nodes
+        //     // and have each thread work its way up the tree
+        //     int current = i;
+        //     aabb box = nodes[i].box;
+        //     int32_t parent = parents[i];
+        //     int state = 0;
 
-    //         while (true) {
+        //     while (true) {
 
-    //             state = ready[parent]++;
+        //         state = ready[parent]++;
 
-    //             // only process a parent node if the other
-    //             // sibling has visited the parent as well
-    //             if (state != 1) break;
+        //         // only process a parent node if the other
+        //         // sibling has visited the parent as well
+        //         if (state != 1) break;
 
-    //             // compute the union of the two sibling boxes
-    //             box = aabb(box, nodes[siblings[current]].box);
+        //         // compute the union of the two sibling boxes
+        //         box = aabb(box, nodes[siblings[current]].box);
 
-    //             // move up to the parent node
-    //             current = parent;
-    //             parent = parents[current];
+        //         // move up to the parent node
+        //         current = parent;
+        //         parent = parents[current];
 
-    //             // and assign the new box to it
-    //             nodes[current].box = box;
+        //         // and assign the new box to it
+        //         nodes[current].box = box;
 
-    //         }
-    //     }
+        //     }
+        // }
     // }
 }
