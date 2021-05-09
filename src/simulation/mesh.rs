@@ -3,7 +3,6 @@ use crate::linear_algebra::math::dot;
 use crate::linear_algebra::vector::Vec3;
 use crate::simulation::geometry::Tri;
 
-#[derive(Debug)]
 pub struct Mesh {
     pub ids: Vec<i32>,
     pub vertices: Vec<f32>,

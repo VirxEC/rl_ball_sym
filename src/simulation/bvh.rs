@@ -2,7 +2,7 @@ use crate::simulation::bit_packing::bits_needed;
 use crate::simulation::geometry::{Aabb, Int2, Tri};
 use crate::simulation::morton;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct BvhNode {
     pub box_: Aabb,
     pub code: u64,
