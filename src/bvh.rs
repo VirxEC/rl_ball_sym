@@ -12,7 +12,7 @@ impl Default for BvhNode {
     fn default() -> Self {
         Self {
             box_: Aabb::default(),
-            code: 0
+            code: 0,
         }
     }
 }
@@ -153,7 +153,7 @@ impl Bvh {
         };
 
         out.build_radix_tree();
-        // fit_bounding_boxes();
+        out.fit_bounding_boxes();
 
         out
     }
@@ -250,39 +250,34 @@ impl Bvh {
         }
     }
 
-    // fn fit_bounding_boxes(&mut self) {
-        // for (int i = 0; i < ready.size(); i++) {
-        //     ready[i] = 0;
-        // }
+    fn fit_bounding_boxes(&mut self) {
+        for i in 0..self.num_leaves as usize {
+            // start with the bounds of the leaf nodes
+            // and have each thread work its way up the tree
+            let mut current = i;
+            let mut box_ = self.nodes[i].box_;
+            let mut parent = self.parents[i] as usize;
 
-        // for (int i = 0; i < num_leaves; i++) {
+            loop {
+                let state = self.ready[parent];
+                self.ready[parent] += 1;
 
-        //     // start with the bounds of the leaf nodes
-        //     // and have each thread work its way up the tree
-        //     int current = i;
-        //     aabb box = nodes[i].box;
-        //     int32_t parent = parents[i];
-        //     int state = 0;
+                // only process a parent node if the other
+                // sibling has visited the parent as well
+                if state != 1 {
+                    break;
+                };
 
-        //     while (true) {
+                // compute the union of the two sibling boxes
+                box_ = box_.add(self.nodes[self.siblings[current] as usize].box_);
 
-        //         state = ready[parent]++;
+                // move up to the parent node
+                current = parent;
+                parent = self.parents[current] as usize;
 
-        //         // only process a parent node if the other
-        //         // sibling has visited the parent as well
-        //         if (state != 1) break;
-
-        //         // compute the union of the two sibling boxes
-        //         box = aabb(box, nodes[siblings[current]].box);
-
-        //         // move up to the parent node
-        //         current = parent;
-        //         parent = parents[current];
-
-        //         // and assign the new box to it
-        //         nodes[current].box = box;
-
-        //     }
-        // }
-    // }
+                // and assign the new box to it
+                self.nodes[current].box_ = box_;
+            }
+        }
+    }
 }

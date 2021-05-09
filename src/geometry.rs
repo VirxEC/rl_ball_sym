@@ -31,7 +31,7 @@ impl Default for Aabb {
             min_z: 0.,
             max_x: 0.,
             max_y: 0.,
-            max_z: 0.
+            max_z: 0.,
         }
     }
 }
