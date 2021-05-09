@@ -1,7 +1,7 @@
-use crate::simulation::geometry::Tri;
 use crate::linear_algebra::mat::{det, Mat3};
 use crate::linear_algebra::math::dot;
 use crate::linear_algebra::vector::Vec3;
+use crate::simulation::geometry::Tri;
 
 #[derive(Debug)]
 pub struct Mesh {

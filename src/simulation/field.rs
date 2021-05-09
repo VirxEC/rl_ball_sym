@@ -1,7 +1,7 @@
-use crate::simulation::bvh::Bvh;
 use crate::linear_algebra::mat::{dot, Mat3};
-use crate::simulation::mesh::Mesh;
 use crate::linear_algebra::vector::Vec3;
+use crate::simulation::bvh::Bvh;
+use crate::simulation::mesh::Mesh;
 
 static FLIP_X: Mat3 = [[-1., 0., 0.], [0., 1., 0.], [0., 0., 1.]];
 

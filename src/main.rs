@@ -4,11 +4,11 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Cursor, ErrorKind};
 use std::time::Instant;
 
-mod linear_algebra;
-mod simulation;
+pub mod linear_algebra;
+pub mod simulation;
 
-use simulation::mesh::Mesh;
 use simulation::field::initialize_soccar;
+use simulation::mesh::Mesh;
 
 fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> Mesh {
     let mut ids_dat = Cursor::new(ids_dat);
