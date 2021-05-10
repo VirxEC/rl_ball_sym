@@ -1,366 +1,250 @@
 use crate::simulation::bit_packing::bits_needed;
 use crate::simulation::geometry::Sphere;
-use crate::simulation::geometry::{Aabb, Int2, Tri};
-use crate::simulation::morton;
+use crate::simulation::geometry::{Aabb, Tri};
+use crate::simulation::morton::Morton;
+use std::boxed::Box;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct BvhNode {
-    pub box_: Aabb,
-    pub code: u64,
+    pub is_terminal: bool,
+    pub right: Option<Box<BvhNode>>,
+    pub left: Option<Box<BvhNode>>,
+    pub code: Option<u64>,
+    pub primitive: Option<Tri>,
+    pub box_: Option<Aabb>,
+    pub morton: Option<u64>,
 }
 
 impl Default for BvhNode {
     fn default() -> Self {
         Self {
-            box_: Aabb::default(),
-            code: 0,
+            is_terminal: false,
+            right: None,
+            left: None,
+            code: None,
+            primitive: None,
+            box_: None,
+            morton: None,
         }
     }
 }
 
 impl BvhNode {
-    fn left(&self) -> i32 {
-        (self.code >> 32) as i32
+    pub fn branch(right: BvhNode, left: BvhNode) -> Self {
+        Self {
+            is_terminal: false,
+            right: Some(Box::new(right)),
+            left: Some(Box::new(left)),
+            code: None,
+            primitive: None,
+            box_: None,
+            morton: None,
+        }
     }
 
-    fn right(&self) -> i32 {
-        (self.code & 0xFFFFFFFF) as i32
+    pub fn leaf(code: u64, primitive: Tri, box_: Aabb, morton_code: u64) -> Self {
+        Self {
+            is_terminal: true,
+            right: None,
+            left: None,
+            code: Some(code),
+            primitive: Some(primitive),
+            box_: Some(box_),
+            morton: Some(morton_code),
+        }
+    }
+
+    pub fn generate_aabbs(&mut self) {
+        // TODO: generate aabbs of each branch in the tree, in a bottom-up fashion
     }
 }
 
 pub struct Bvh {
-    pub global: Aabb,
+    pub global_box: Aabb,
     pub mask: u64,
     pub num_leaves: u64,
-
-    pub nodes: Vec<BvhNode>,
-
-    pub ranges: Vec<Int2>,
-    pub ready: Vec<i32>,
-    pub parents: Vec<i32>,
-    pub siblings: Vec<i32>,
-    pub code_ids: Vec<u64>,
-    pub primitives: Vec<Tri>,
+    pub root: Box<BvhNode>,
 }
 
 fn global_aabb(boxes: &Vec<Aabb>) -> Aabb {
     let mut global_box = boxes[0];
     for i in 0..boxes.len() {
-        global_box = global_box.add(boxes[i]);
+        global_box = global_box.add(&boxes[i]);
     }
 
     global_box
 }
 
-fn morton_sort(boxes: &Vec<Aabb>, global: &Aabb) -> Vec<u64> {
-    const DIM: usize = 3;
-
-    let num_boxes = boxes.len() as u32;
-    let x_offset = global.min_x;
-    let y_offset = global.min_y;
-    let z_offset = global.min_z;
-
-    let b = bits_needed(num_boxes) as i32;
-    let bits_per_dimension = (64 - b) / (DIM as i32);
-    let divisions_per_dimension = 1 << bits_per_dimension;
-
-    let scale = (divisions_per_dimension - 1) as f64;
-
-    let x_scale = scale / (global.max_x - global.min_x);
-    let y_scale = scale / (global.max_y - global.min_y);
-    let z_scale = scale / (global.max_z - global.min_z);
-
-    let num_boxes = num_boxes as usize;
-
-    let mut code_ids: Vec<u64> = Vec::with_capacity(num_boxes);
-
-    for i in 0..num_boxes {
-        let box_ = boxes[i];
-
-        // get the centroid of the ith bounding box
-        let cx = 0.5 * (box_.min_x + box_.max_x);
-        let cy = 0.5 * (box_.min_y + box_.max_y);
-        let cz = 0.5 * (box_.min_z + box_.max_z);
-
-        let ux = ((cx - x_offset) * x_scale) as u64;
-        let uy = ((cy - y_offset) * y_scale) as u64;
-        let uz = ((cz - z_offset) * z_scale) as u64;
-
-        let code: u64 = morton::encode(ux, uy, uz);
-
-        code_ids.push((code << b) + (i as u64));
-    }
-
-    code_ids.sort();
-
-    code_ids
-}
-
-// convenience class for bounds checking morton codes,
-// and computing the number of prefix bits common to two
-// 64-bit words
-
-struct PrefixComparator {
-    base: u64,
-    codes: Vec<u64>,
-    n: i32,
-}
-
-impl PrefixComparator {
-    fn call(&self, i: i32) -> i32 {
-        if i >= 0 && i < self.n {
-            (self.base ^ self.codes[i as usize]).leading_zeros() as i32
-        } else {
-            -1
-        }
-    }
-}
-
 impl Bvh {
-    pub fn from(_primitives: &Vec<Tri>) -> Self {
-        let num_leaves = _primitives.len();
-
-        let mut primitives: Vec<Tri> = Vec::with_capacity(num_leaves);
-
-        let capacity = 2 * num_leaves;
-        let mut nodes: Vec<BvhNode> = vec![BvhNode::default(); capacity];
-        let ranges: Vec<Int2> = vec![Int2::default(); capacity];
-        let ready: Vec<i32> = vec![0; capacity];
-        let parents: Vec<i32> = vec![0; capacity];
-        let siblings: Vec<i32> = vec![0; capacity];
-
-        let mask: u64 = ((1 as u64) << bits_needed(num_leaves as u32)) - (1 as u64);
+    pub fn from(primitives: &Vec<Tri>) -> Self {
+        let num_leaves = primitives.len();
+        let mask = ((1 as u64) << bits_needed(num_leaves as u32)) - (1 as u64);
 
         let mut boxes: Vec<Aabb> = Vec::with_capacity(num_leaves);
-        for i in 0..num_leaves {
-            boxes.push(Aabb::from_tri(_primitives[i]));
+        for primitive in primitives {
+            boxes.push(Aabb::from_tri(primitive));
         }
 
-        let global = global_aabb(&boxes);
+        let global_box = global_aabb(&boxes);
 
-        let code_ids = morton_sort(&boxes, &global);
+        let morton = Morton::from(&global_box, num_leaves as u32);
+        let mut leaves: Vec<BvhNode> = Vec::with_capacity(num_leaves);
+
+        let mut morton_codes: Vec<u64> = Vec::with_capacity(num_leaves);
+        for (i, box_) in boxes.iter().enumerate() {
+            morton_codes.push(morton.get_code(box_, i as u64));
+        }
+        morton_codes.sort();
 
         for i in 0..num_leaves {
-            let id = (code_ids[i] & mask) as usize;
-            primitives.push(_primitives[id]);
-            nodes.push(BvhNode {
-                box_: boxes[id],
-                code: code_ids[i],
-            });
+            let code = morton_codes[i] & mask;
+            let code_us = code as usize;
+            leaves.push(BvhNode::leaf(code, primitives[code_us], boxes[code_us], morton_codes[i]));
         }
 
-        let num_leaves = num_leaves as u64;
-        let mut out = Bvh {
-            primitives,
-            ranges,
-            ready,
-            parents,
-            siblings,
+        println!("HELLO");
+        let mut root = Bvh::generate_hierarchy(&morton_codes, &leaves, 0, num_leaves - 1);
+        println!("HELLO");
+        root.generate_aabbs();
+        println!("HELLO");
+
+        Self {
+            global_box,
             mask,
-            num_leaves,
-            global,
-            code_ids,
-            nodes,
-        };
-
-        out.build_radix_tree();
-        out.fit_bounding_boxes();
-
-        out
-    }
-
-    fn build_radix_tree(&mut self) {
-        let num_leaves = self.num_leaves as i32;
-        self.parents[self.num_leaves as usize] = num_leaves;
-
-        for i in 0..num_leaves - 1 {
-            let shared_prefix = PrefixComparator {
-                base: self.code_ids[i as usize],
-                codes: self.code_ids.clone(),
-                n: num_leaves,
-            };
-
-            // Choose search direction.
-            let prefix_prev = shared_prefix.call(i - 1);
-            let prefix_next = shared_prefix.call(i + 1);
-            let prefix_min = prefix_prev.min(prefix_next);
-
-            let d = if prefix_next > prefix_prev {
-                1
-            } else {
-                -1
-            };
-
-            // Find upper bound for length.
-            let mut l_max = 32;
-            let mut probe: i32;
-            loop {
-                l_max <<= 2;
-                probe = i + l_max * d;
-                if !(probe < num_leaves && shared_prefix.call(probe) > prefix_min) {
-                    break;
-                }
-            }
-
-            // Determine length.
-            let mut l = 0;
-            let mut t = l_max >> 1;
-            while t > 0 {
-                probe = i + (l + t) * d;
-
-                if (probe as u64) < self.num_leaves && shared_prefix.call(probe) > prefix_min {
-                    l += t;
-                }
-
-                t >>= 1;
-            }
-            let j = i + l * d;
-            let prefix_node = shared_prefix.call(j);
-
-            // Find split point.
-            let mut s = 0;
-            let mut t = l;
-            loop {
-                t = (t + 1) >> 1;
-                probe = i + (s + t) * d;
-                if (probe as u64) < self.num_leaves && shared_prefix.call(probe) > prefix_node {
-                    s += t;
-                }
-
-                if !(t > 1) {
-                    break;
-                }
-            }
-            let k = (i + s * d + d.min(0)) as usize;
-
-            // Output node.
-            let lo = i.min(j) as usize;
-            let hi = i.min(j) as usize;
-
-            let left = if lo == k {
-                k + 0
-            } else {
-                k + 0 + (self.num_leaves as usize)
-            };
-            let right = if hi == k + 1 {
-                k + 1
-            } else {
-                k + 1 + (self.num_leaves as usize)
-            };
-
-            self.parents[left] = i + num_leaves;
-            self.parents[right] = i + num_leaves;
-
-            self.siblings[left] = right as i32;
-            self.siblings[right] = left as i32;
-            self.ranges[(i as u64 + self.num_leaves) as usize] = Int2 {
-                x: lo as i32,
-                y: hi as i32,
-            };
-            self.nodes[(i as u64 + self.num_leaves) as usize].code = ((left as u64) << 32) + (right as u64);
+            num_leaves: num_leaves as u64,
+            root: Box::new(root),
         }
     }
 
-    fn fit_bounding_boxes(&mut self) {
-        for i in 0..self.num_leaves as usize {
-            // start with the bounds of the leaf nodes
-            // and have each thread work its way up the tree
-            let mut current = i;
-            let mut box_ = self.nodes[i].box_;
-            let mut parent = self.parents[i] as usize;
+    fn generate_hierarchy(sorted_morton_codes: &Vec<u64>, sorted_leaves: &Vec<BvhNode>, first: usize, last: usize) -> BvhNode {
+        // If we're dealing with a single object, return the leaf node
+        if first == last {
+            return sorted_leaves[first].clone();
+        }
 
-            loop {
-                let state = self.ready[parent];
-                self.ready[parent] += 1;
+        // Determine where to split the range
 
-                // only process a parent node if the other
-                // sibling has visited the parent as well
-                if state != 1 {
-                    break;
-                };
+        let split = Bvh::find_split(sorted_morton_codes, first, last);
 
-                // compute the union of the two sibling boxes
-                box_ = box_.add(self.nodes[self.siblings[current] as usize].box_);
+        // Process the resulting sub-ranges recursively
 
-                // move up to the parent node
-                current = parent;
-                parent = self.parents[current] as usize;
+        let right = Bvh::generate_hierarchy(sorted_morton_codes, sorted_leaves, first, split);
+        let left = Bvh::generate_hierarchy(sorted_morton_codes, sorted_leaves, split + 1, last);
 
-                // and assign the new box to it
-                self.nodes[current].box_ = box_;
+        BvhNode::branch(right, left)
+    }
+
+    fn find_split(sorted_morton_codes: &Vec<u64>, first: usize, last: usize) -> usize {
+        // If the first and last codes are the same, split the range in the middle
+
+        let first_code = sorted_morton_codes[first];
+        let last_code = sorted_morton_codes[last];
+
+        if first_code == last_code {
+            return (first + last) >> 1;
+        }
+
+        // Calculate the number of highest bits that are the same for all objects by counting the leading zeros
+        let common_prefix = (first_code ^ last_code).leading_zeros();
+
+        // We don't need last_code now, just first_code
+        drop(last_code);
+
+        let mut split = first;
+        let mut step = last - first;
+
+        loop {
+            step = (step + 1) >> 1; // exponential decrease
+            let new_split = split + step; // proposed new position
+
+            if new_split < last {
+                let split_code = sorted_morton_codes[new_split];
+                let split_prefix = (first_code ^ split_code).leading_zeros();
+                if split_prefix > common_prefix {
+                    split = new_split; // accept proposal
+                }
+            }
+
+            if !(step > 1) {
+                break;
             }
         }
+
+        step
     }
 
     pub fn intersect(&self, query_object: &Sphere) -> Vec<i32> {
         let query_box: Aabb = Aabb::from_sphere(&query_object);
-        let num_leaves = self.num_leaves as usize;
 
         let mut hits = Vec::new();
 
         // Allocate traversal stack from thread-local memory,
         // and push NULL to indicate that there are no postponed nodes.
-        let mut stack: [isize; 32] = [0; 32];
-        let mut stack_ptr = 0;
-        stack[stack_ptr] = -1;
-        stack_ptr += 1;
+        let bvh_default = BvhNode::default();
+        let mut stack: Vec<&BvhNode> = vec![&bvh_default; 32];
+        let mut stack_ptr = 1;
 
         // Traverse nodes starting from the root.
-        let mut n = self.num_leaves as usize;
+        let mut node = &*self.root;
         loop {
             // Check each child node for overlap.
-            let left = self.nodes[n].left() as usize;
-            let right = self.nodes[n].right() as usize;
+            let left = node.left.as_deref();
+            let right = node.right.as_deref();
+            let mut traverse_left = false;
+            let mut traverse_right = false;
 
-            let overlap_left = self.nodes[left].box_.intersect_self(&query_box);
-            if overlap_left && (left < num_leaves) {
-                let left_id = (self.nodes[left].code & self.mask) as i32;
-                if self.primitives[left].intersect_sphere(&query_object) {
-                    hits.push(left_id);
+            if left.is_some() {
+                let left = left.unwrap();
+                if left.box_.unwrap().intersect_self(&query_box) {
+                    if left.is_terminal {
+                        let left_id = (left.code.unwrap() & self.mask) as i32;
+                        if left.primitive.unwrap().intersect_sphere(&query_object) {
+                            hits.push(left_id);
+                        }
+                    } else {
+                        // traverse when a query overlaps with an internal node
+                        traverse_left = true;
+                    }
                 }
             }
 
-            let overlap_right = self.nodes[right].box_.intersect_self(&query_box);
-            if overlap_right && (right < num_leaves) {
-                let right_id = (self.nodes[right].code & self.mask) as i32;
-                if self.primitives[right].intersect_sphere(&query_object) {
-                    hits.push(right_id);
+            if right.is_some() {
+                let right = right.as_deref().unwrap();
+                if right.box_.unwrap().intersect_self(&query_box) {
+                    if right.is_terminal {
+                        let right_id = (right.code.unwrap() & self.mask) as i32;
+                        if right.primitive.unwrap().intersect_sphere(&query_object) {
+                            hits.push(right_id);
+                        }
+                    } else {
+                        // traverse when a query overlaps with an internal node
+                        traverse_right = true;
+                    }
                 }
             }
-
-            // traverse when a query overlaps with an internal node
-            let traverse_left = overlap_left && left >= num_leaves;
-            let traverse_right = overlap_right && right >= num_leaves;
-
-            // these variables are needed because them being -1 is how we signal we're done
-            // usize, the type required to index an array/vector, can't contain negatives
-            let mut _n = n as isize;
 
             if !(traverse_left || traverse_right) {
-                 // pop
+                // pop
                 stack_ptr -= 1;
-                _n = stack[stack_ptr] as isize;
-            } else {
-                _n = if traverse_left {
-                    left
-                } else {
-                    right
-                } as isize;
-                if traverse_left && traverse_right {
-                    // push
-                    stack[stack_ptr] = right as isize;
-                    stack_ptr += 1;
+
+                if stack_ptr == 0 {
+                    break;
                 }
-            }
 
-            // break if it's -1
-            if _n == -1 {
-                break;
-            }
+                node = &stack[stack_ptr];
+            } else if traverse_left {
+                node = left.unwrap();
+            } else if traverse_right {
+                // push
+                stack[stack_ptr] = right.unwrap();
+                stack_ptr += 1;
+            } else {
+                if stack_ptr == 0 {
+                    break;
+                }
 
-            // we know we don't have negative numbers on our hands
-            // so convert the numbers to usize
-            n = _n as usize;
+                node = right.unwrap()
+            }
         }
 
         hits

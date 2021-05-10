@@ -30,7 +30,7 @@ impl Default for Ball {
 #[derive(Clone)]
 pub struct BallPrediction {
     pub num_slices: usize,
-    pub slices: Vec<Ball>
+    pub slices: Vec<Ball>,
 }
 
 impl Ball {
@@ -134,7 +134,7 @@ impl Ball {
 
         BallPrediction {
             slices,
-            num_slices
+            num_slices,
         }
     }
 }

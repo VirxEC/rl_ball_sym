@@ -67,93 +67,86 @@ impl Default for Tri {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Aabb {
-    pub min_x: f64,
-    pub min_y: f64,
-    pub min_z: f64,
-    pub max_x: f64,
-    pub max_y: f64,
-    pub max_z: f64,
+    pub min: Vec3,
+    pub max: Vec3,
 }
 
 impl Default for Aabb {
     fn default() -> Self {
         Self {
-            min_x: 0.,
-            min_y: 0.,
-            min_z: 0.,
-            max_x: 0.,
-            max_y: 0.,
-            max_z: 0.,
+            min: Vec3::default(),
+            max: Vec3::default(),
         }
     }
 }
 
 impl Aabb {
-    pub fn add(&self, b: Aabb) -> Self {
-        let min_x = self.min_x.min(b.min_x);
-        let min_y = self.min_y.min(b.min_y);
-        let min_z = self.min_z.min(b.min_z);
-        let max_x = self.max_x.max(b.max_x);
-        let max_y = self.max_y.max(b.max_y);
-        let max_z = self.max_z.max(b.max_z);
+    pub fn add(&self, b: &Aabb) -> Self {
+        let min = Vec3 {
+            x: self.min.x.min(b.min.x),
+            y: self.min.y.min(b.min.y),
+            z: self.min.z.min(b.min.z),
+        };
+
+        let max = Vec3 {
+            x: self.max.x.max(b.max.x),
+            y: self.max.y.max(b.max.y),
+            z: self.max.z.max(b.max.z),
+        };
 
         Self {
-            min_x,
-            min_y,
-            min_z,
-            max_x,
-            max_y,
-            max_z,
+            min,
+            max,
         }
     }
 
-    pub fn from_tri(t: Tri) -> Self {
-        let min_x = t.p[0].x.min(t.p[1].x.min(t.p[2].x));
-        let min_y = t.p[0].y.min(t.p[1].y.min(t.p[2].y));
-        let min_z = t.p[0].z.min(t.p[1].z.min(t.p[2].z));
+    pub fn from_tri(t: &Tri) -> Self {
+        let min = Vec3 {
+            x: t.p[0].x.min(t.p[1].x.min(t.p[2].x)),
+            y: t.p[0].y.min(t.p[1].y.min(t.p[2].y)),
+            z: t.p[0].z.min(t.p[1].z.min(t.p[2].z)),
+        };
 
-        let max_x = t.p[0].x.max(t.p[1].x.max(t.p[2].x));
-        let max_y = t.p[0].y.max(t.p[1].y.max(t.p[2].y));
-        let max_z = t.p[0].z.max(t.p[1].z.max(t.p[2].z));
+        let max = Vec3 {
+            x: t.p[0].x.max(t.p[1].x.max(t.p[2].x)),
+            y: t.p[0].y.max(t.p[1].y.max(t.p[2].y)),
+            z: t.p[0].z.max(t.p[1].z.max(t.p[2].z)),
+        };
 
         Self {
-            min_x,
-            min_y,
-            min_z,
-            max_x,
-            max_y,
-            max_z,
+            min,
+            max,
         }
     }
 
     pub fn from_sphere(s: &Sphere) -> Self {
-        let min_x = s.center.x - s.radius;
-        let min_y = s.center.y - s.radius;
-        let min_z = s.center.z - s.radius;
+        let min = Vec3 {
+            x: s.center.x - s.radius,
+            y: s.center.y - s.radius,
+            z: s.center.z - s.radius,
+        };
 
-        let max_x = s.center.x + s.radius;
-        let max_y = s.center.y + s.radius;
-        let max_z = s.center.z + s.radius;
+        let max = Vec3 {
+            x: s.center.x + s.radius,
+            y: s.center.y + s.radius,
+            z: s.center.z + s.radius,
+        };
 
         Self {
-            min_x,
-            min_y,
-            min_z,
-            max_x,
-            max_y,
-            max_z,
+            min,
+            max,
         }
     }
 
     pub fn intersect_self(&self, b: &Aabb) -> bool {
-        (self.min_x <= b.max_x) & (self.max_x >= b.min_x) & (self.min_y <= b.max_y) & (self.max_y >= b.min_y) & (self.min_z <= b.max_z) & (self.max_z >= b.min_z)
+        (self.min.x <= b.max.x) & (self.max.x >= b.min.x) & (self.min.y <= b.max.y) & (self.max.y >= b.min.y) & (self.min.z <= b.max.z) & (self.max.z >= b.min.z)
     }
 
     pub fn intersect_sphere(&self, b: &Sphere) -> bool {
         let nearest = Vec3 {
-            x: b.center.x.clamp(self.min_x, self.max_x),
-            y: b.center.y.clamp(self.min_y, self.max_y),
-            z: b.center.z.clamp(self.min_z, self.max_z),
+            x: b.center.x.clamp(self.min.x, self.max.x),
+            y: b.center.y.clamp(self.min.y, self.max.y),
+            z: b.center.z.clamp(self.min.z, self.max.z),
         };
 
         (b.center - nearest).magnitude() <= b.radius
