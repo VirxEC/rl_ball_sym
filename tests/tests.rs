@@ -17,7 +17,7 @@ fn build() {
     assert_eq!(game.gravity.y as i64, 0);
     assert_eq!(game.gravity.z as i64, -650);
 
-    // assert_eq!(&game.field.collision_mesh.global, 0);
+    dbg!(game.field.collision_mesh.global);
     assert_eq!(game.field.collision_mesh.mask, 8191 as u64);
 
     let num_leaves = game.field.collision_mesh.num_leaves as usize;
@@ -25,6 +25,9 @@ fn build() {
     assert_eq!(game.field.collision_mesh.num_leaves, 8028 as u64);
     assert_eq!(game.field.collision_mesh.primitives.len(), num_leaves);
     assert_eq!(game.field.collision_mesh.code_ids.len(), num_leaves);
+
+    // println!("{:?}", game.field.collision_mesh.code_ids);
+
     assert_eq!(game.field.collision_mesh.siblings.len(), 2 * num_leaves);
     assert_eq!(game.field.collision_mesh.parents.len(), 2 * num_leaves);
     assert_eq!(game.field.collision_mesh.ready.len(), 2 * num_leaves);
@@ -46,7 +49,7 @@ fn build() {
 
 #[test]
 fn predict() {
-    let game = load_soccar(0, 0);
+    let mut game = load_soccar(0, 0);
 
     assert_eq!(game.ball.time as i64, 0);
     assert_eq!(game.ball.location.x as i64, 0);
@@ -63,19 +66,7 @@ fn predict() {
 
     let ball_prediction = game.ball.get_ball_prediction_struct(&game);
     let last_slice = &ball_prediction.slices[ball_prediction.num_slices - 1];
-    // let mut last_slice = game.ball.clone();
-    // last_slice.step(&game, 1./120.);
 
-    assert_eq!(last_slice.time as i64, 0);
-    assert_eq!(last_slice.location.x as i64, 0);
-    assert_eq!(last_slice.location.y as i64, 0);
-    assert_eq!(last_slice.location.z as i64, 102);
-    assert_eq!(last_slice.velocity.x as i64, 0);
-    assert_eq!(last_slice.velocity.y as i64, 0);
-    assert_eq!(last_slice.velocity.z as i64, 0);
-    assert_eq!(last_slice.angular_velocity.x as i64, 0);
-    assert_eq!(last_slice.angular_velocity.y as i64, 0);
-    assert_eq!(last_slice.angular_velocity.z as i64, 0);
-    assert_eq!(last_slice.radius as i64, 91);
-    assert_eq!(last_slice.collision_radius as i64, 93);
+    assert_eq!(ball_prediction.num_slices, 360);
+    println!("{:?}", last_slice);
 }
