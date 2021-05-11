@@ -138,9 +138,9 @@ impl Field {
 
         let tris_hit = self.collision_mesh.intersect(&s);
 
-        for id in tris_hit {
-            let p = self.triangles[id as usize].center();
-            let n = self.triangles[id as usize].unit_normal();
+        for tri in tris_hit {
+            let p = tri.center();
+            let n = tri.unit_normal();
 
             let separation = (s.center - p).dot(&n);
             if separation <= s.radius {

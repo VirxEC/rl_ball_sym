@@ -1,9 +1,7 @@
-use crate::simulation::bit_packing::bits_needed;
 use crate::simulation::geometry::Sphere;
 use crate::simulation::geometry::{Aabb, Tri};
 use crate::simulation::morton::Morton;
 use std::boxed::Box;
-// use std::{sync::mpsc, thread};
 
 #[derive(Clone)]
 pub struct BvhNode {
@@ -11,7 +9,6 @@ pub struct BvhNode {
     pub box_: Aabb,
     pub right: Option<Box<BvhNode>>,
     pub left: Option<Box<BvhNode>>,
-    pub code: Option<u64>,
     pub primitive: Option<Tri>,
     pub morton: Option<u64>,
 }
@@ -23,7 +20,6 @@ impl Default for BvhNode {
             box_: Aabb::default(),
             right: None,
             left: None,
-            code: None,
             primitive: None,
             morton: None
         }
@@ -37,33 +33,26 @@ impl BvhNode {
             box_: right.box_.add(&left.box_),
             right: Some(right),
             left: Some(left),
-            code: None,
             primitive: None,
             morton: None
         })
     }
 
-    pub fn leaf(code: u64, primitive: Tri, box_: Aabb, morton_code: u64) -> Box<Self> {
+    pub fn leaf(primitive: Tri, box_: Aabb, morton_code: u64) -> Box<Self> {
         Box::new(Self {
             is_terminal: true,
             box_: box_,
             right: None,
             left: None,
-            code: Some(code),
             primitive: Some(primitive),
             morton: Some(morton_code)
         })
-    }
-
-    pub fn get_box(&self) {
-
     }
 }
 
 // BVH stands for "Bounding Volume Hierarchy"
 pub struct Bvh {
     pub global_box: Aabb,
-    pub mask: u64,
     pub num_leaves: u64,
     pub root: Box<BvhNode>,
 }
@@ -80,7 +69,6 @@ fn global_aabb(boxes: &Vec<Aabb>) -> Aabb {
 impl Bvh {
     pub fn from(primitives: &Vec<Tri>) -> Self {
         let num_leaves = primitives.len();
-        let mask = ((1 as u64) << bits_needed(num_leaves as u32)) - (1 as u64);
 
         let mut boxes: Vec<Aabb> = Vec::with_capacity(num_leaves);
         for primitive in primitives {
@@ -92,41 +80,26 @@ impl Bvh {
         let morton = Morton::from(&global_box, num_leaves as u32);
         let mut leaves = Vec::with_capacity(num_leaves);
 
-        let mut morton_codes: Vec<u64> = Vec::with_capacity(num_leaves);
+        let mut morton_codes: Vec<(usize, u64)> = Vec::with_capacity(num_leaves);
         for (i, box_) in boxes.iter().enumerate() {
-            morton_codes.push(morton.get_code(box_, i as u64));
+            morton_codes.push((i, morton.get_code(box_, i as u64)));
         }
         morton_codes.sort();
-        // dbg!(&morton_codes);
 
         for i in 0..num_leaves {
-            let code = morton_codes[i] & mask;
-            let code_us = code as usize;
-            leaves.push(BvhNode::leaf(code, primitives[code_us], boxes[code_us], morton_codes[i]));
+            let code = morton_codes[i];
+            leaves.push(BvhNode::leaf(primitives[code.0], boxes[code.0], morton_codes[i].1));
         }
 
-        // println!("Start");
-        
-        // let (tx, rx) = mpsc::channel();
-        // let num_leaves_1 = num_leaves - 1;
+        let mut sorted_morton_codes = Vec::with_capacity(num_leaves);
+        for code in morton_codes {
+            sorted_morton_codes.push(code.1)
+        }
 
-        // thread::Builder::new().name("BVH hierarchy generator".into()).stack_size(4000000000).spawn(move || {
-        //     tx.send(Bvh::generate_hierarchy(&morton_codes, &leaves, 0, num_leaves_1)).unwrap();
-        // }).unwrap();
-
-        // let mut root = Box::new(BvhNode::default());
-
-        // for received in rx {
-        //     root = received;
-        // }
-
-        // println!("END!!!");
-
-        let root = Bvh::generate_hierarchy(&morton_codes, &leaves, 0, num_leaves - 1);
+        let root = Bvh::generate_hierarchy(&sorted_morton_codes, &leaves, 0, num_leaves - 1);
 
         Self {
             global_box,
-            mask,
             num_leaves: num_leaves as u64,
             root
         }
@@ -160,10 +133,6 @@ impl Bvh {
             return (first + last) >> 1;
         }
 
-        // if last == first + 1 { // this is required to an infinite loop doesn't happen
-        //     return first;
-        // }
-
         // Calculate the number of highest bits that are the same for all objects by counting the leading zeros
         let common_prefix = (first_code ^ last_code).leading_zeros();
 
@@ -171,8 +140,6 @@ impl Bvh {
         drop(last_code);
 
         let mut split = first;
-        // dbg!(last);
-        // dbg!(first);
         let mut step = last - first;
 
         loop {
@@ -184,7 +151,6 @@ impl Bvh {
                 let split_prefix = (first_code ^ split_code).leading_zeros();
                 if split_prefix > common_prefix {
                     split = new_split; // accept proposal
-                    // common_prefix = split_prefix;
                 }
             }
 
@@ -196,7 +162,7 @@ impl Bvh {
         split
     }
 
-    pub fn intersect(&self, query_object: &Sphere) -> Vec<i32> {
+    pub fn intersect(&self, query_object: &Sphere) -> Vec<Tri> {
         let query_box: Aabb = Aabb::from_sphere(&query_object);
 
         let mut hits = Vec::new();
@@ -220,9 +186,9 @@ impl Bvh {
                 let left = left.as_deref().unwrap();
                 if left.box_.intersect_self(&query_box) {
                     if left.is_terminal {
-                        let left_id = (left.code.unwrap() & self.mask) as i32;
-                        if left.primitive.unwrap().intersect_sphere(&query_object) {
-                            hits.push(left_id);
+                        let left_tri = left.primitive.unwrap();
+                        if left_tri.intersect_sphere(&query_object) {
+                            hits.push(left_tri);
                         }
                     } else {
                         // traverse when a query overlaps with an internal node
@@ -235,9 +201,9 @@ impl Bvh {
                 let right = right.as_deref().unwrap();
                 if right.box_.intersect_self(&query_box) {
                     if right.is_terminal {
-                        let right_id = (right.code.unwrap() & self.mask) as i32;
-                        if right.primitive.unwrap().intersect_sphere(&query_object) {
-                            hits.push(right_id);
+                        let right_tri = right.primitive.unwrap();
+                        if right_tri.intersect_sphere(&query_object) {
+                            hits.push(right_tri);
                         }
                     } else {
                         // traverse when a query overlaps with an internal node

@@ -1,6 +1,6 @@
 use rl_ball_sym::load_soccar;
-use std::time::Duration;
-use std::thread;
+use std::time::Instant;
+
 
 #[test]
 fn build() {
@@ -18,8 +18,7 @@ fn build() {
     assert_eq!(game.gravity.y as i64, 0);
     assert_eq!(game.gravity.z as i64, -650);
 
-    dbg!(game.field.collision_mesh.global_box);
-    assert_eq!(game.field.collision_mesh.mask, 8191 as u64);
+    dbg!(game.field.collision_mesh.root.box_);
 
     assert_eq!(game.field.collision_mesh.num_leaves, 8028 as u64);
 
@@ -35,8 +34,6 @@ fn build() {
     assert_eq!(game.ball.angular_velocity.z as i64, 0);
     assert_eq!(game.ball.radius as i64, 91);
     assert_eq!(game.ball.collision_radius as i64, 93);
-
-    thread::sleep(Duration::from_millis(4000));
 }
 
 #[test]
@@ -56,9 +53,17 @@ fn predict() {
     assert_eq!(game.ball.radius as i64, 91);
     assert_eq!(game.ball.collision_radius as i64, 93);
 
-    let ball_prediction = game.ball.get_ball_prediction_struct(&game);
+    let mut ball = game.ball.clone();
+    ball.location.z = 300.;
+    ball.velocity.z = 600.;
+    ball.velocity.x = 1000.;
+
+    let start = Instant::now();
+    let ball_prediction = ball.get_ball_prediction_struct(&game);
+    println!("Ran ball prediction in {}ms", start.elapsed().as_millis());
     let last_slice = &ball_prediction.slices[ball_prediction.num_slices - 1];
 
     assert_eq!(ball_prediction.num_slices, 720);
     println!("{:?}", last_slice);
+    assert!(last_slice.location.z > 0.);
 }
