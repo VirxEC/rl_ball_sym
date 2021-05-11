@@ -51,9 +51,9 @@ impl Mesh {
             let v = dot(
                 &a,
                 &Vec3 {
-                    x: self.vertices[i * 3 + 0] as f64,
-                    y: self.vertices[i * 3 + 1] as f64,
-                    z: self.vertices[i * 3 + 2] as f64,
+                    x: self.vertices[i * 3 + 0] as f32,
+                    y: self.vertices[i * 3 + 1] as f32,
+                    z: self.vertices[i * 3 + 2] as f32,
                 },
             );
 
@@ -64,7 +64,7 @@ impl Mesh {
 
         // for transformations that flip things
         // inside-out, change triangle winding
-        if det(&a) < 0 as f64 {
+        if det(&a) < 0 as f32 {
             let n = ids.len() / 3;
             for i in 0..n {
                 ids[i * 3 + 0] = self.ids[i * 3 + 1];
@@ -105,9 +105,9 @@ impl Mesh {
             for j in 0..3 {
                 let id = self.ids[i * 3 + j] as usize;
                 triangles[i].p[j] = Vec3 {
-                    x: self.vertices[id * 3 + 0] as f64,
-                    y: self.vertices[id * 3 + 1] as f64,
-                    z: self.vertices[id * 3 + 2] as f64,
+                    x: self.vertices[id * 3 + 0] as f32,
+                    y: self.vertices[id * 3 + 1] as f32,
+                    z: self.vertices[id * 3 + 2] as f32,
                 };
             }
         }

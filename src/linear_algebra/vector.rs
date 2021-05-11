@@ -2,17 +2,17 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vec3 {
-    pub x: f64,
-    pub y: f64,
-    pub z: f64,
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
 }
 
 impl Vec3 {
-    pub fn dot(&self, vec: &Self) -> f64 {
+    pub fn dot(&self, vec: &Self) -> f32 {
         self.x * vec.x + self.y * vec.y + self.z * vec.z
     }
 
-    pub fn magnitude(&self) -> f64 {
+    pub fn magnitude(&self) -> f32 {
         self.dot(self).sqrt()
     }
 
@@ -29,7 +29,7 @@ impl Vec3 {
         *self / size
     }
 
-    pub fn scale(&self, value: f64) -> Self {
+    pub fn scale(&self, value: f32) -> Self {
         self.normalize() * value
     }
 
@@ -86,10 +86,10 @@ impl Mul<Vec3> for Vec3 {
     }
 }
 
-impl Mul<f64> for Vec3 {
+impl Mul<f32> for Vec3 {
     type Output = Self;
 
-    fn mul(self, other: f64) -> Self {
+    fn mul(self, other: f32) -> Self {
         Self {
             x: self.x * other,
             y: self.y * other,
@@ -106,8 +106,8 @@ impl MulAssign<Vec3> for Vec3 {
     }
 }
 
-impl MulAssign<f64> for Vec3 {
-    fn mul_assign(&mut self, other: f64) {
+impl MulAssign<f32> for Vec3 {
+    fn mul_assign(&mut self, other: f32) {
         self.x *= other;
         self.y *= other;
         self.z *= other;
@@ -126,10 +126,10 @@ impl Div<Vec3> for Vec3 {
     }
 }
 
-impl Div<f64> for Vec3 {
+impl Div<f32> for Vec3 {
     type Output = Self;
 
-    fn div(self, other: f64) -> Self {
+    fn div(self, other: f32) -> Self {
         Self {
             x: self.x / other,
             y: self.y / other,
@@ -138,7 +138,7 @@ impl Div<f64> for Vec3 {
     }
 }
 
-impl Div<Vec3> for f64 {
+impl Div<Vec3> for f32 {
     type Output = Vec3;
 
     fn div(self, other: Vec3) -> Vec3 {
@@ -150,8 +150,8 @@ impl Div<Vec3> for f64 {
     }
 }
 
-impl DivAssign<f64> for Vec3 {
-    fn div_assign(&mut self, other: f64) {
+impl DivAssign<f32> for Vec3 {
+    fn div_assign(&mut self, other: f32) {
         self.x /= other;
         self.y /= other;
         self.z /= other;

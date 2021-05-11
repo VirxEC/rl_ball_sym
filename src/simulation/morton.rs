@@ -18,7 +18,7 @@ impl Morton {
         let bits_per_dimension = (64 - b) / (Morton::DIM as i32);
         let divisions_per_dimension = 1 << bits_per_dimension;
 
-        let scale = ((divisions_per_dimension - 1) as f64) / (global_box.max - global_box.min);
+        let scale = ((divisions_per_dimension - 1) as f32) / (global_box.max - global_box.min);
 
         Morton {
             offset,

@@ -2,7 +2,7 @@ use crate::linear_algebra::mat::{inv, Mat3};
 use crate::linear_algebra::math::dot;
 use crate::linear_algebra::vector::Vec3;
 
-pub fn distance_between(start: &Vec3, dir: &Vec3, p: &Vec3) -> f64 {
+pub fn distance_between(start: &Vec3, dir: &Vec3, p: &Vec3) -> f32 {
     let u = ((*p - *start).dot(dir) / dir.dot(dir)).clamp(0., 1.);
     (*start + *dir * u - *p).magnitude()
 }
@@ -190,5 +190,5 @@ impl Default for Ray {
 #[derive(Clone, Copy, Debug)]
 pub struct Sphere {
     pub center: Vec3,
-    pub radius: f64,
+    pub radius: f32,
 }

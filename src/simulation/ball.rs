@@ -4,13 +4,13 @@ use crate::simulation::geometry::{Ray, Sphere};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Ball {
-    pub time: f64,
+    pub time: f32,
     pub location: Vec3,
     pub velocity: Vec3,
     pub angular_velocity: Vec3,
-    pub radius: f64,
-    pub collision_radius: f64,
-    pub moi: f64,
+    pub radius: f32,
+    pub collision_radius: f32,
+    pub moi: f32,
 }
 
 impl Default for Ball {
@@ -34,20 +34,20 @@ pub struct BallPrediction {
 }
 
 impl Ball {
-    const RESTITUTION: f64 = 0.6;
-    const DRAG: f64 = -0.0305;
-    const MU: f64 = 2.;
+    const RESTITUTION: f32 = 0.6;
+    const DRAG: f32 = -0.0305;
+    const MU: f32 = 2.;
 
-    const V_MAX: f64 = 4000.;
-    const W_MAX: f64 = 6.;
+    const V_MAX: f32 = 4000.;
+    const W_MAX: f32 = 6.;
 
-    const M: f64 = 30.;
-    const SOCCAR_RADIUS: f64 = 91.25;
-    const HOOPS_RADIUS: f64 = 91.25;
-    const DROPSHOT_RADIUS: f64 = 100.45;
-    const SOCCAR_COLLISION_RADIUS: f64 = 93.15;
-    const HOOPS_COLLISION_RADIUS: f64 = 93.15;
-    const DROPSHOT_COLLISION_RADIUS: f64 = 103.6;
+    const M: f32 = 30.;
+    const SOCCAR_RADIUS: f32 = 91.25;
+    const HOOPS_RADIUS: f32 = 91.25;
+    const DROPSHOT_RADIUS: f32 = 100.45;
+    const SOCCAR_COLLISION_RADIUS: f32 = 93.15;
+    const HOOPS_COLLISION_RADIUS: f32 = 93.15;
+    const DROPSHOT_COLLISION_RADIUS: f32 = 103.6;
 
     pub fn initialize_soccar() -> Self {
         let mut ball = Ball::default();
@@ -59,7 +59,7 @@ impl Ball {
         ball
     }
 
-    pub fn update(&mut self, time: f64, location: Vec3, velocity: Vec3, angular_velocity: Vec3) {
+    pub fn update(&mut self, time: f32, location: Vec3, velocity: Vec3, angular_velocity: Vec3) {
         self.time = time;
         self.location = location;
         self.velocity = velocity;
@@ -73,7 +73,7 @@ impl Ball {
         }
     }
 
-    pub fn step(&mut self, game: &Game, dt: f64) {
+    pub fn step(&mut self, game: &Game, dt: f32) {
         let contact: Ray = game.field.collide(&self.hitbox());
 
         if contact.direction.magnitude() > 0. {
@@ -112,9 +112,29 @@ impl Ball {
         self.time += dt;
     }
 
+    pub fn get_ball_prediction_struct_for_time(&self, game: &Game, time: f32) -> BallPrediction {
+        let tps = 120 as f32;
+
+        let num_slices = (time * tps) as usize;
+        let dt = 1. / tps;
+
+        let mut slices = Vec::with_capacity(num_slices);
+        let mut ball = self.clone();
+
+        for _ in 0..num_slices {
+            ball.step(&game, dt);
+            slices.push(ball);
+        }
+
+        BallPrediction {
+            slices,
+            num_slices,
+        }
+    }
+
     pub fn get_ball_prediction_struct(&self, game: &Game) -> BallPrediction {
         let time = 6.;
-        let tps = 120 as f64;
+        let tps = 120 as f32;
 
         let num_slices = (time * tps) as usize;
         let dt = 1. / tps;
