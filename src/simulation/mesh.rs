@@ -1,4 +1,4 @@
-use crate::linear_algebra::mat::{det, Mat3};
+use crate::linear_algebra::mat::Mat3;
 use crate::linear_algebra::math::dot;
 use crate::linear_algebra::vector::Vec3;
 use crate::simulation::geometry::Tri;
@@ -64,7 +64,7 @@ impl Mesh {
 
         // for transformations that flip things
         // inside-out, change triangle winding
-        if det(&a) < 0 as f32 {
+        if a.det() < 0 as f32 {
             let n = ids.len() / 3;
             for i in 0..n {
                 ids[i * 3 + 0] = self.ids[i * 3 + 1];

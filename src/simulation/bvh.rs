@@ -21,7 +21,7 @@ impl Default for BvhNode {
             right: None,
             left: None,
             primitive: None,
-            morton: None
+            morton: None,
         }
     }
 }
@@ -34,18 +34,18 @@ impl BvhNode {
             right: Some(right),
             left: Some(left),
             primitive: None,
-            morton: None
+            morton: None,
         })
     }
 
     pub fn leaf(primitive: Tri, box_: Aabb, morton_code: u64) -> Box<Self> {
         Box::new(Self {
             is_terminal: true,
-            box_: box_,
+            box_,
             right: None,
             left: None,
             primitive: Some(primitive),
-            morton: Some(morton_code)
+            morton: Some(morton_code),
         })
     }
 }
@@ -101,7 +101,7 @@ impl Bvh {
         Self {
             global_box,
             num_leaves: num_leaves as u64,
-            root
+            root,
         }
     }
 

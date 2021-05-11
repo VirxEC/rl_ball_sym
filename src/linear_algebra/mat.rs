@@ -1,34 +1,44 @@
-pub type Mat3 = [[f32; 3]; 3];
-
-pub fn empty_mat3() -> Mat3 {
-    [[0., 0., 0.], [0., 0., 0.], [0., 0., 0.]]
+pub struct Mat3 {
+    pub m: [[f32; 3]; 3],
 }
 
-pub fn det(a: &Mat3) -> f32 {
-    a[0][0] * a[1][1] * a[2][2] + a[0][1] * a[1][2] * a[2][0] + a[0][2] * a[1][0] * a[2][1] - a[0][0] * a[1][2] * a[2][1] - a[0][1] * a[1][0] * a[2][2] - a[0][2] * a[1][1] * a[2][0]
-}
-
-pub fn dot(a: &Mat3, b: &Mat3) -> Mat3 {
-    let mut c: Mat3 = empty_mat3();
-
-    for i in 0..3 {
-        for j in 0..3 {
-            c[i][j] = 0.;
-            for k in 0..3 {
-                c[i][j] += a[i][k] * b[k][j];
-            }
+impl Default for Mat3 {
+    fn default() -> Self {
+        Self {
+            m: [[0.; 3]; 3],
         }
     }
-
-    c
 }
 
-pub fn inv(a: &Mat3) -> Mat3 {
-    let inv_det_a = 1. / det(&a);
+impl Mat3 {
+    pub fn det(&self) -> f32 {
+        self.m[0][0] * self.m[1][1] * self.m[2][2] + self.m[0][1] * self.m[1][2] * self.m[2][0] + self.m[0][2] * self.m[1][0] * self.m[2][1] - self.m[0][0] * self.m[1][2] * self.m[2][1] - self.m[0][1] * self.m[1][0] * self.m[2][2] - self.m[0][2] * self.m[1][1] * self.m[2][0]
+    }
 
-    [
-        [(a[1][1] * a[2][2] - a[1][2] * a[2][1]) * inv_det_a, (a[0][2] * a[2][1] - a[0][1] * a[2][2]) * inv_det_a, (a[0][1] * a[1][2] - a[0][2] * a[1][1]) * inv_det_a],
-        [(a[1][2] * a[2][0] - a[1][0] * a[2][2]) * inv_det_a, (a[0][0] * a[2][2] - a[0][2] * a[2][0]) * inv_det_a, (a[0][2] * a[1][0] - a[0][0] * a[1][2]) * inv_det_a],
-        [(a[1][0] * a[2][1] - a[1][1] * a[2][0]) * inv_det_a, (a[0][1] * a[2][0] - a[0][0] * a[2][1]) * inv_det_a, (a[0][0] * a[1][1] - a[0][1] * a[1][0]) * inv_det_a],
-    ]
+    pub fn dot(&self, b: &Mat3) -> Mat3 {
+        let mut c: Mat3 = Mat3::default();
+
+        for i in 0..3 {
+            for j in 0..3 {
+                c.m[i][j] = 0.;
+                for k in 0..3 {
+                    c.m[i][j] += self.m[i][k] * b.m[k][j];
+                }
+            }
+        }
+
+        c
+    }
+
+    pub fn inv(&self) -> Mat3 {
+        let inv_det_a = 1. / self.det();
+
+        Self {
+            m: [
+                [(self.m[1][1] * self.m[2][2] - self.m[1][2] * self.m[2][1]) * inv_det_a, (self.m[0][2] * self.m[2][1] - self.m[0][1] * self.m[2][2]) * inv_det_a, (self.m[0][1] * self.m[1][2] - self.m[0][2] * self.m[1][1]) * inv_det_a],
+                [(self.m[1][2] * self.m[2][0] - self.m[1][0] * self.m[2][2]) * inv_det_a, (self.m[0][0] * self.m[2][2] - self.m[0][2] * self.m[2][0]) * inv_det_a, (self.m[0][2] * self.m[1][0] - self.m[0][0] * self.m[1][2]) * inv_det_a],
+                [(self.m[1][0] * self.m[2][1] - self.m[1][1] * self.m[2][0]) * inv_det_a, (self.m[0][1] * self.m[2][0] - self.m[0][0] * self.m[2][1]) * inv_det_a, (self.m[0][0] * self.m[1][1] - self.m[0][1] * self.m[1][0]) * inv_det_a],
+            ],
+        }
+    }
 }

@@ -30,7 +30,7 @@ impl Default for Ball {
 #[derive(Clone)]
 pub struct BallPrediction {
     pub num_slices: usize,
-    pub slices: Vec<Ball>,
+    pub slices: Vec<Box<Ball>>,
 }
 
 impl Ball {
@@ -42,12 +42,16 @@ impl Ball {
     const W_MAX: f32 = 6.;
 
     const M: f32 = 30.;
+
     const SOCCAR_RADIUS: f32 = 91.25;
     const HOOPS_RADIUS: f32 = 91.25;
     const DROPSHOT_RADIUS: f32 = 100.45;
     const SOCCAR_COLLISION_RADIUS: f32 = 93.15;
     const HOOPS_COLLISION_RADIUS: f32 = 93.15;
     const DROPSHOT_COLLISION_RADIUS: f32 = 103.6;
+
+    const INV_M: f32 = 1. / 30.;
+    const RESTITUTION_M: f32 = -(1. + Ball::RESTITUTION) * Ball::M;
 
     pub fn initialize_soccar() -> Self {
         let mut ball = Ball::default();
@@ -74,22 +78,23 @@ impl Ball {
     }
 
     pub fn step(&mut self, game: &Game, dt: f32) {
-        let contact: Ray = game.field.collide(&self.hitbox());
+        let contact: Option<Ray> = game.field.collide(&self.hitbox());
 
-        if contact.direction.magnitude() > 0. {
+        if contact.is_some() {
+            let contact = contact.unwrap();
             let p = contact.start;
             let n = contact.direction;
 
             let loc = p - self.location;
 
-            let m_reduced = 1. / ((1. / Ball::M) + loc.dot(&loc) / self.moi);
+            let m_reduced = 1. / (Ball::INV_M + loc.dot(&loc) / self.moi);
 
             let v_perp = n * self.velocity.dot(&n).min(0.);
             let v_para = self.velocity - v_perp - loc.cross(&self.angular_velocity);
 
             let ratio = v_perp.magnitude() / v_para.magnitude().max(0.0001);
 
-            let j_perp = v_perp * (-(1. + Ball::RESTITUTION) * Ball::M);
+            let j_perp = v_perp * Ball::RESTITUTION_M;
             let j_para = v_para * (-((Ball::MU * ratio).min(1.)) * m_reduced);
 
             let j = j_perp + j_para;
@@ -123,7 +128,7 @@ impl Ball {
 
         for _ in 0..num_slices {
             ball.step(&game, dt);
-            slices.push(ball);
+            slices.push(Box::new(ball));
         }
 
         BallPrediction {
@@ -144,7 +149,7 @@ impl Ball {
 
         for _ in 0..num_slices {
             ball.step(&game, dt);
-            slices.push(ball);
+            slices.push(Box::new(ball));
         }
 
         BallPrediction {

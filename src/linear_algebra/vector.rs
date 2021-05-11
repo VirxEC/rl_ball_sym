@@ -19,11 +19,7 @@ impl Vec3 {
     pub fn normalize(&self) -> Self {
         let size = self.magnitude();
         if size == 0. {
-            return Self {
-                x: 0.,
-                y: 0.,
-                z: 0.,
-            };
+            return Vec3::default();
         }
 
         *self / size

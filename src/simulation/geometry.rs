@@ -1,4 +1,4 @@
-use crate::linear_algebra::mat::{inv, Mat3};
+use crate::linear_algebra::mat::Mat3;
 use crate::linear_algebra::math::dot;
 use crate::linear_algebra::vector::Vec3;
 
@@ -29,9 +29,11 @@ impl Tri {
         let e3 = self.p[0] - self.p[2];
         let n = (&e3).cross(&e1).normalize();
 
-        let a: Mat3 = [[e1.x, -e3.x, n.x], [e1.y, -e3.y, n.y], [e1.z, -e3.z, n.z]];
+        let a = Mat3 {
+            m: [[e1.x, -e3.x, n.x], [e1.y, -e3.y, n.y], [e1.z, -e3.z, n.z]],
+        };
 
-        let x = dot(&inv(&a), &(b.center - self.p[0]));
+        let x = dot(&a.inv(), &(b.center - self.p[0]));
 
         let u = x.x;
         let v = x.y;
@@ -64,7 +66,6 @@ impl Default for Tri {
         }
     }
 }
-
 
 // AABB stands for "Axis-Aligned Bounding Boxes"
 // Learn more here: https://developer.nvidia.com/blog/thinking-parallel-part-i-collision-detection-gpu/

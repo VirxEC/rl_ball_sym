@@ -1,4 +1,4 @@
-use crate::linear_algebra::mat::{dot, Mat3};
+use crate::linear_algebra::mat::Mat3;
 use crate::linear_algebra::vector::Vec3;
 use crate::simulation::bvh::Bvh;
 use crate::simulation::geometry::{Ray, Sphere, Tri};
@@ -10,9 +10,13 @@ pub struct Field {
     pub collision_mesh: Bvh,
 }
 
-static FLIP_X: Mat3 = [[-1., 0., 0.], [0., 1., 0.], [0., 0., 1.]];
+static FLIP_X: Mat3 = Mat3 {
+    m: [[-1., 0., 0.], [0., 1., 0.], [0., 0., 1.]],
+};
 
-static FLIP_Y: Mat3 = [[1., 0., 0.], [0., -1., 0.], [0., 0., 1.]];
+static FLIP_Y: Mat3 = Mat3 {
+    m: [[1., 0., 0.], [0., -1., 0.], [0., 0., 1.]],
+};
 
 fn quad(p: Vec3, e1: Vec3, e2: Vec3) -> Mesh {
     let vertices: [Vec3; 4] = [p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2];
@@ -98,7 +102,7 @@ impl Field {
             soccar_corner,
             &soccar_corner.transform(&FLIP_X),
             &soccar_corner.transform(&FLIP_Y),
-            &soccar_corner.transform(&dot(&FLIP_X, &FLIP_Y)),
+            &soccar_corner.transform(&FLIP_X.dot(&FLIP_Y)),
             &soccar_goal.translate(&Vec3 {
                 x: 0.,
                 y: -5120.,
@@ -131,10 +135,10 @@ impl Field {
         }
     }
 
-    pub fn collide(&self, s: &Sphere) -> Ray {
+    pub fn collide(&self, s: &Sphere) -> Option<Ray> {
         let mut contact_point = Ray::default();
 
-        let mut count = 0.;
+        let mut count = 0;
 
         let tris_hit = self.collision_mesh.intersect(&s);
 
@@ -144,17 +148,21 @@ impl Field {
 
             let separation = (s.center - p).dot(&n);
             if separation <= s.radius {
-                count += 1.;
+                count += 1;
                 contact_point.start += s.center - n * separation;
                 contact_point.direction += n * (s.radius - separation);
             }
         }
 
-        if count > 0. {
-            contact_point.start /= count;
+        if count > 0 {
+            contact_point.start /= count as f32;
             contact_point.direction = contact_point.direction.normalize();
         }
 
-        contact_point
+        if count == 0 {
+            None
+        } else {
+            Some(contact_point)
+        }
     }
 }
