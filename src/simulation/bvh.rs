@@ -217,7 +217,7 @@ impl Bvh {
             let mut traverse_right = false;
 
             if left.is_some() {
-                let left = left.unwrap();
+                let left = left.as_deref().unwrap();
                 if left.box_.intersect_self(&query_box) {
                     if left.is_terminal {
                         let left_id = (left.code.unwrap() & self.mask) as i32;
