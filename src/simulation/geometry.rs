@@ -65,6 +65,9 @@ impl Default for Tri {
     }
 }
 
+
+// AABB stands for "Axis-Aligned Bounding Boxes"
+// Learn more here: https://developer.nvidia.com/blog/thinking-parallel-part-i-collision-detection-gpu/
 #[derive(Clone, Copy, Debug)]
 pub struct Aabb {
     pub min: Vec3,

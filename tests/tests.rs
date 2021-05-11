@@ -1,4 +1,6 @@
 use rl_ball_sym::load_soccar;
+use std::time::Duration;
+use std::thread;
 
 #[test]
 fn build() {
@@ -33,6 +35,8 @@ fn build() {
     assert_eq!(game.ball.angular_velocity.z as i64, 0);
     assert_eq!(game.ball.radius as i64, 91);
     assert_eq!(game.ball.collision_radius as i64, 93);
+
+    thread::sleep(Duration::from_millis(4000));
 }
 
 #[test]
@@ -52,9 +56,9 @@ fn predict() {
     assert_eq!(game.ball.radius as i64, 91);
     assert_eq!(game.ball.collision_radius as i64, 93);
 
-    // let ball_prediction = game.ball.get_ball_prediction_struct(&game);
-    // let last_slice = &ball_prediction.slices[ball_prediction.num_slices - 1];
+    let ball_prediction = game.ball.get_ball_prediction_struct(&game);
+    let last_slice = &ball_prediction.slices[ball_prediction.num_slices - 1];
 
-    // assert_eq!(ball_prediction.num_slices, 720);
-    // println!("{:?}", last_slice);
+    assert_eq!(ball_prediction.num_slices, 720);
+    println!("{:?}", last_slice);
 }
