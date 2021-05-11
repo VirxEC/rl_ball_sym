@@ -1,5 +1,8 @@
 use rl_ball_sym::load_soccar;
+#[macro_use]
+extern crate json;
 use std::time::Instant;
+use std::fs;
 
 
 #[test]
@@ -66,4 +69,28 @@ fn predict() {
     assert_eq!(ball_prediction.num_slices, 720);
     println!("{:?}", last_slice);
     assert!(last_slice.location.z > 0.);
+
+    let mut json_obj =  json::JsonValue::new_array();
+    for ball in ball_prediction.slices {
+        json_obj.push(object! {
+            time: ball.time,
+            location: array![ball.location.x, ball.location.y, ball.location.z],
+            velocity: array![ball.velocity.x, ball.velocity.y, ball.velocity.z],
+            angular_velocity: array![ball.angular_velocity.x, ball.angular_velocity.y, ball.angular_velocity.z]
+        }).unwrap();
+    }
+    fs::write("ball_prediction.json", json_obj.dump()).expect("Unable to write file");
+}
+
+#[test]
+fn time_limit() {
+    let game = load_soccar(0, 0);
+
+    let start = Instant::now();
+    let ball_prediction = game.ball.get_ball_prediction_struct(&game);
+    let elapsed = start.elapsed().as_millis();
+    println!("Ran ball prediction in {}ms", &elapsed);
+
+    assert_eq!(ball_prediction.num_slices, 720);
+    assert!(elapsed < 2);
 }

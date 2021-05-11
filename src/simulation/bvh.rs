@@ -165,7 +165,7 @@ impl Bvh {
     pub fn intersect(&self, query_object: &Sphere) -> Vec<Tri> {
         let query_box: Aabb = Aabb::from_sphere(&query_object);
 
-        let mut hits = Vec::new();
+        let mut hits = Vec::with_capacity(8);
 
         // Allocate traversal stack from thread-local memory,
         // and push NULL to indicate that there are no postponed nodes.
@@ -216,23 +216,21 @@ impl Bvh {
                 // pop
                 stack_ptr -= 1;
 
-                if stack_ptr == 0 {
-                    break;
-                }
-
                 node = &stack[stack_ptr];
             } else if traverse_left {
                 node = left.unwrap();
-            } else if traverse_right {
-                // push
-                stack[stack_ptr] = right.unwrap();
-                stack_ptr += 1;
-            } else {
-                if stack_ptr == 0 {
-                    break;
-                }
 
-                node = right.unwrap()
+                if traverse_right {
+                    // push
+                    stack[stack_ptr] = right.unwrap();
+                    stack_ptr += 1;
+                }
+            } else {
+                node = right.unwrap();
+            }
+
+            if stack_ptr == 0 {
+                break;
             }
         }
 
