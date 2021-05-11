@@ -1,4 +1,4 @@
-use rl_ball_sym::load_soccar;
+use rl_ball_sym::{linear_algebra::vector::Vec3, load_soccar, simulation::ball::Ball};
 #[macro_use]
 extern crate json;
 use std::time::Instant;
@@ -56,17 +56,35 @@ fn predict() {
     assert_eq!(game.ball.radius as i64, 91);
     assert_eq!(game.ball.collision_radius as i64, 93);
 
-    let mut ball = game.ball.clone();
-    ball.location.z = 300.;
-    ball.velocity.z = 600.;
-    ball.velocity.x = 1000.;
+    let ball = Ball {
+        time: 0.098145,
+        location: Vec3 {
+            x: -2294.524658,
+            y: 1684.135986,
+            z: 317.176727
+        },
+        velocity: Vec3 {
+            x: 1273.753662,
+            y: -39.792305,
+            z: 763.282715,
+        },
+        angular_velocity: Vec3 {
+            x: 2.3894,
+            y: -0.8755,
+            z: 3.8078
+        },
+        radius: game.ball.radius,
+        collision_radius: game.ball.collision_radius,
+        moi: game.ball.moi
+    };
 
     let start = Instant::now();
-    let ball_prediction = ball.get_ball_prediction_struct(&game);
+    let time = 10.;
+    let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, time);
     println!("Ran ball prediction in {}ms", start.elapsed().as_millis());
     let last_slice = &ball_prediction.slices[ball_prediction.num_slices - 1];
 
-    assert_eq!(ball_prediction.num_slices, 720);
+    assert_eq!(ball_prediction.num_slices, time as usize * 120);
     println!("{:?}", last_slice);
     assert!(last_slice.location.z > 0.);
 
@@ -90,7 +108,7 @@ fn predict() {
 }
 
 #[test]
-fn time_limit() {
+fn time() {
     let game = load_soccar(0, 0);
 
     let start = Instant::now();
