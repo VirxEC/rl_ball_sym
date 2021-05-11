@@ -74,9 +74,7 @@ impl Ball {
     }
 
     pub fn step(&mut self, game: &Game, dt: f64) {
-        println!("COLLIDE");
         let contact: Ray = game.field.collide(&self.hitbox());
-        println!("GOT");
 
         if contact.direction.magnitude() > 0. {
             let p = contact.start;
@@ -125,10 +123,7 @@ impl Ball {
         let mut ball = self.clone();
 
         for _ in 0..num_slices {
-            println!("STEP");
             ball.step(&game, dt);
-            println!("PUSH");
-            println!("{} | {}", ball.location.z, ball.velocity.z);
             slices.push(ball);
         }
 

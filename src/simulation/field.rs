@@ -136,9 +136,7 @@ impl Field {
 
         let mut count = 0.;
 
-        println!("INTERSECT");
         let tris_hit = self.collision_mesh.intersect(&s);
-        println!("GOT");
 
         for id in tris_hit {
             let p = self.triangles[id as usize].center();
