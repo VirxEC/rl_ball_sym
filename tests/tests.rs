@@ -74,9 +74,16 @@ fn predict() {
     for ball in ball_prediction.slices {
         json_obj.push(object! {
             time: ball.time,
-            location: array![ball.location.x, ball.location.y, ball.location.z],
-            velocity: array![ball.velocity.x, ball.velocity.y, ball.velocity.z],
-            angular_velocity: array![ball.angular_velocity.x, ball.angular_velocity.y, ball.angular_velocity.z]
+            location: object! {
+                x: ball.location.x,
+                y: ball.location.y,
+                z: ball.location.z
+            },
+            velocity: object! {
+                x: ball.velocity.x,
+                y: ball.velocity.y,
+                z: ball.velocity.z
+            }
         }).unwrap();
     }
     fs::write("ball_prediction.json", json_obj.dump()).expect("Unable to write file");
