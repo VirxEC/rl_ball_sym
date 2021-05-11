@@ -1,8 +1,11 @@
-use rl_ball_sym::{linear_algebra::vector::Vec3, load_soccar, simulation::ball::Ball};
-#[macro_use]
-extern crate json;
+use rl_ball_sym::linear_algebra::vector::Vec3;
+use rl_ball_sym::simulation::ball::Ball;
+use rl_ball_sym::{load_hoops, load_soccar};
 use std::fs;
 use std::time::Instant;
+
+#[macro_use]
+extern crate json;
 
 #[test]
 fn gamemode_soccar() {
@@ -23,6 +26,40 @@ fn gamemode_soccar() {
     dbg!(game.field.collision_mesh.root.box_);
 
     assert_eq!(game.field.collision_mesh.num_leaves, 8028 as u64);
+
+    assert_eq!(game.ball.time as i64, 0);
+    assert_eq!(game.ball.location.x as i64, 0);
+    assert_eq!(game.ball.location.y as i64, 0);
+    assert_eq!(game.ball.location.z as i64, 102);
+    assert_eq!(game.ball.velocity.x as i64, 0);
+    assert_eq!(game.ball.velocity.y as i64, 0);
+    assert_eq!(game.ball.velocity.z as i64, 0);
+    assert_eq!(game.ball.angular_velocity.x as i64, 0);
+    assert_eq!(game.ball.angular_velocity.y as i64, 0);
+    assert_eq!(game.ball.angular_velocity.z as i64, 0);
+    assert_eq!(game.ball.radius as i64, 91);
+    assert_eq!(game.ball.collision_radius as i64, 93);
+}
+
+#[test]
+fn gamemode_hoops() {
+    let game = load_hoops(0, 0);
+
+    // test all the default values to make sure they're proper
+
+    assert_eq!(game.index, 0 as u8);
+    assert_eq!(game.team, 0 as u8);
+
+    assert_eq!(game.field.field_mesh.ids.len(), 47196);
+    assert_eq!(game.field.field_mesh.vertices.len(), 25224);
+
+    assert_eq!(game.gravity.x as i64, 0);
+    assert_eq!(game.gravity.y as i64, 0);
+    assert_eq!(game.gravity.z as i64, -650);
+
+    dbg!(game.field.collision_mesh.root.box_);
+
+    assert_eq!(game.field.collision_mesh.num_leaves, 15732 as u64);
 
     assert_eq!(game.ball.time as i64, 0);
     assert_eq!(game.ball.location.x as i64, 0);
@@ -109,9 +146,9 @@ fn basic_predict() {
 }
 
 #[test]
-fn fast_execution() {
+fn fast_execution_soccar() {
     let game = load_soccar(0, 0);
-    let runs = 5000;
+    let runs = 2000;
     let mut times: Vec<f32> = Vec::with_capacity(runs);
     println!("Testing for average ball prediction struct generation time - running function {} times.", &runs);
 
@@ -123,9 +160,31 @@ fn fast_execution() {
 
     let elapsed: f32 = times.iter().sum::<f32>() / (runs as f32);
     let elapsed_ms = elapsed * 1000.;
-    println!("Ran ball prediction in an average of {} seconds ({}ms)", &elapsed, elapsed_ms);
+    println!("Ran ball prediction on soccar map in an average of {} seconds ({}ms)", &elapsed, elapsed_ms);
 
     let ball_prediction = game.ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.num_slices, 720);
-    assert!(elapsed_ms < 2.5);
+    assert!(elapsed_ms < 2.6);
+}
+
+#[test]
+fn fast_execution_hoops() {
+    let game = load_hoops(0, 0);
+    let runs = 2000;
+    let mut times: Vec<f32> = Vec::with_capacity(runs);
+    println!("Testing for average ball prediction struct generation time - running function {} times.", &runs);
+
+    for _ in 0..runs {
+        let start = Instant::now();
+        game.ball.get_ball_prediction_struct(&game);
+        times.push(start.elapsed().as_secs_f32());
+    }
+
+    let elapsed: f32 = times.iter().sum::<f32>() / (runs as f32);
+    let elapsed_ms = elapsed * 1000.;
+    println!("Ran ball prediction on hoops map in an average of {} seconds ({}ms)", &elapsed, elapsed_ms);
+
+    let ball_prediction = game.ball.get_ball_prediction_struct(&game);
+    assert_eq!(ball_prediction.num_slices, 720);
+    assert!(elapsed_ms < 3.);
 }

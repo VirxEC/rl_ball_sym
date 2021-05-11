@@ -61,7 +61,7 @@ impl Field {
             },
         );
 
-        let side_walls: [Mesh; 2] = [
+        let side_walls = [
             quad(
                 Vec3 {
                     x: 4096.,
@@ -123,6 +123,160 @@ impl Field {
             &ceiling,
             &side_walls[0],
             &side_walls[1],
+        ]);
+
+        let triangles = field_mesh.to_triangles();
+        let collision_mesh = Bvh::from(&triangles);
+
+        Field {
+            field_mesh,
+            triangles,
+            collision_mesh,
+        }
+    }
+
+    pub fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh, hoops_ramps_0: &Mesh, hoops_ramps_1: &Mesh) -> Field {
+        let scale = 0.9;
+        let y_offset = 431.664;
+
+        let s = Mat3 {
+            m: [[scale, 0., 0.], [0., scale, 0.], [0., 0., scale]],
+        };
+
+        let dy = Vec3 {
+            x: 0.,
+            y: y_offset,
+            z: 0.,
+        };
+
+        let transformed_hoops_net = hoops_net.transform(&s).translate(&dy);
+        let transformed_hoops_rim = hoops_rim.transform(&s).translate(&dy);
+
+        let floor = quad(
+            Vec3::default(),
+            Vec3 {
+                x: 2966.,
+                y: 0.,
+                z: 0.,
+            },
+            Vec3 {
+                x: 0.,
+                y: 3581.,
+                z: 0.,
+            },
+        );
+
+        let ceiling = quad(
+            Vec3 {
+                x: 0.,
+                y: 0.,
+                z: 1820.,
+            },
+            Vec3 {
+                x: -2966.,
+                y: 0.,
+                z: 0.,
+            },
+            Vec3 {
+                x: 0.,
+                y: 3581.,
+                z: 0.,
+            },
+        );
+
+        let side_walls = [
+            quad(
+                Vec3 {
+                    x: 2966.,
+                    y: 0.,
+                    z: 910.,
+                },
+                Vec3 {
+                    x: 0.,
+                    y: -3581.,
+                    z: 0.,
+                },
+                Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 910.,
+                },
+            ),
+            quad(
+                Vec3 {
+                    x: -2966.,
+                    y: 0.,
+                    z: 910.,
+                },
+                Vec3 {
+                    x: 0.,
+                    y: 3581.,
+                    z: 0.,
+                },
+                Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 910.,
+                },
+            ),
+        ];
+
+        let back_walls = [
+            quad(
+                Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 1024.,
+                },
+                Vec3 {
+                    x: 0.,
+                    y: -5120.,
+                    z: 0.,
+                },
+                Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 1024.,
+                },
+            ),
+            quad(
+                Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 1024.,
+                },
+                Vec3 {
+                    x: 0.,
+                    y: 5120.,
+                    z: 0.,
+                },
+                Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 1024.,
+                },
+            ),
+        ];
+
+        let field_mesh = Mesh::from(vec![
+            &hoops_corner,
+            &hoops_corner.transform(&FLIP_X),
+            &hoops_corner.transform(&FLIP_Y),
+            &hoops_corner.transform(&FLIP_X.dot(&FLIP_Y)),
+            &transformed_hoops_net,
+            &transformed_hoops_net.transform(&FLIP_Y),
+            &transformed_hoops_rim,
+            &transformed_hoops_rim.transform(&FLIP_Y),
+            &hoops_ramps_0,
+            &hoops_ramps_0.transform(&FLIP_X),
+            &hoops_ramps_1,
+            &hoops_ramps_1.transform(&FLIP_Y),
+            &floor,
+            &ceiling,
+            &side_walls[0],
+            &side_walls[1],
+            &back_walls[0],
+            &back_walls[1],
         ]);
 
         let triangles = field_mesh.to_triangles();

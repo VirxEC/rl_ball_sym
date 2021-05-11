@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Cursor, ErrorKind};
 use std::time::Instant;
@@ -68,6 +66,36 @@ pub fn load_soccar(index: u8, team: u8) -> Game {
     };
 
     println!("Loaded soccar game mode in {}ms", start.elapsed().as_millis());
+
+    Game {
+        index,
+        team,
+        gravity,
+        field,
+        ball,
+    }
+}
+
+pub fn load_hoops(index: u8, team: u8) -> Game {
+    let start = Instant::now();
+
+    let hoops_corner: Mesh = read_mesh(include_bytes!("../assets/hoops/hoops_corner_ids.bin").to_vec(), include_bytes!("../assets/hoops/hoops_corner_vertices.bin").to_vec());
+    let hoops_net: Mesh = read_mesh(include_bytes!("../assets/hoops/hoops_net_ids.bin").to_vec(), include_bytes!("../assets/hoops/hoops_net_vertices.bin").to_vec());
+    let hoops_rim: Mesh = read_mesh(include_bytes!("../assets/hoops/hoops_rim_ids.bin").to_vec(), include_bytes!("../assets/hoops/hoops_rim_vertices.bin").to_vec());
+    let hoops_ramps_0: Mesh = read_mesh(include_bytes!("../assets/hoops/hoops_ramps_0_ids.bin").to_vec(), include_bytes!("../assets/hoops/hoops_ramps_0_vertices.bin").to_vec());
+    let hoops_ramps_1: Mesh = read_mesh(include_bytes!("../assets/hoops/hoops_ramps_1_ids.bin").to_vec(), include_bytes!("../assets/hoops/hoops_ramps_1_vertices.bin").to_vec());
+
+    let field = Field::initialize_hoops(&hoops_corner, &hoops_net, &hoops_rim, &hoops_ramps_0, &hoops_ramps_1);
+
+    let ball = Ball::initialize_hoops();
+
+    let gravity = Vec3 {
+        x: 0.,
+        y: 0.,
+        z: -650.,
+    };
+
+    println!("Loaded hoops game mode in {}ms", start.elapsed().as_millis());
 
     Game {
         index,

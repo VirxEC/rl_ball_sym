@@ -45,10 +45,10 @@ impl Ball {
 
     const SOCCAR_RADIUS: f32 = 91.25;
     const HOOPS_RADIUS: f32 = 91.25;
-    const DROPSHOT_RADIUS: f32 = 100.45;
+    // const DROPSHOT_RADIUS: f32 = 100.45;
     const SOCCAR_COLLISION_RADIUS: f32 = 93.15;
     const HOOPS_COLLISION_RADIUS: f32 = 93.15;
-    const DROPSHOT_COLLISION_RADIUS: f32 = 103.6;
+    // const DROPSHOT_COLLISION_RADIUS: f32 = 103.6;
 
     const INV_M: f32 = 1. / 30.;
     const RESTITUTION_M: f32 = -(1. + Ball::RESTITUTION) * Ball::M;
@@ -57,10 +57,23 @@ impl Ball {
         let mut ball = Ball::default();
         ball.radius = Ball::SOCCAR_RADIUS;
         ball.collision_radius = Ball::SOCCAR_COLLISION_RADIUS;
-        ball.location.z = 1.1 * ball.collision_radius;
-        ball.moi = 0.4 * Ball::M * ball.radius * ball.radius;
+        ball.initialize();
 
         ball
+    }
+
+    pub fn initialize_hoops() -> Self {
+        let mut ball = Ball::default();
+        ball.radius = Ball::HOOPS_RADIUS;
+        ball.collision_radius = Ball::HOOPS_COLLISION_RADIUS;
+        ball.initialize();
+
+        ball
+    }
+
+    fn initialize(&mut self) {
+        self.location.z = 1.1 * self.collision_radius;
+        self.moi = 0.4 * Ball::M * self.radius * self.radius;
     }
 
     pub fn update(&mut self, time: f32, location: Vec3, velocity: Vec3, angular_velocity: Vec3) {
