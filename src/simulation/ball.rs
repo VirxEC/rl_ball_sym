@@ -53,6 +53,9 @@ impl Ball {
     const INV_M: f32 = 1. / 30.;
     const RESTITUTION_M: f32 = -(1. + Ball::RESTITUTION) * Ball::M;
 
+    const SIMULATION_DT: f32 = 1. / 120.;
+    const STANDARD_NUM_SLICES: usize = 720;
+
     pub fn initialize_soccar() -> Self {
         let mut ball = Ball::default();
         ball.radius = Ball::SOCCAR_RADIUS;
@@ -117,7 +120,7 @@ impl Ball {
             let ratio = v_perp.magnitude() / v_para.magnitude().max(0.0001);
 
             let j_perp = v_perp * Ball::RESTITUTION_M;
-            let j_para = v_para * (-((Ball::MU * ratio).min(1.)) * m_reduced);
+            let j_para = -(Ball::MU * ratio).min(1.) * m_reduced * v_para;
 
             let j = j_perp + j_para;
 
@@ -140,16 +143,13 @@ impl Ball {
     }
 
     pub fn get_ball_prediction_struct_for_time(&self, game: &Game, time: f32) -> BallPrediction {
-        let tps = 120 as f32;
-
-        let num_slices = (time * tps) as usize;
-        let dt = 1. / tps;
+        let num_slices = (time / Ball::SIMULATION_DT).round() as usize;
 
         let mut slices = Vec::with_capacity(num_slices);
         let mut ball = self.clone();
 
         for _ in 0..num_slices {
-            ball.step(&game, dt);
+            ball.step(&game, Ball::SIMULATION_DT);
             slices.push(Box::new(ball));
         }
 
@@ -160,17 +160,12 @@ impl Ball {
     }
 
     pub fn get_ball_prediction_struct(&self, game: &Game) -> BallPrediction {
-        let time = 6.;
-        let tps = 120 as f32;
-
-        let num_slices = (time * tps) as usize;
-        let dt = 1. / tps;
-
+        let num_slices = Ball::STANDARD_NUM_SLICES;
         let mut slices = Vec::with_capacity(num_slices);
         let mut ball = self.clone();
 
-        for _ in 0..num_slices {
-            ball.step(&game, dt);
+        for _ in 0..Ball::STANDARD_NUM_SLICES {
+            ball.step(&game, Ball::SIMULATION_DT);
             slices.push(Box::new(ball));
         }
 

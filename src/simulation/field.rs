@@ -387,6 +387,182 @@ impl Field {
         }
     }
 
+    pub fn initialize_throwback(back_ramps_lower: &Mesh, back_ramps_upper: &Mesh, corner_ramps_lower: &Mesh, corner_ramps_upper: &Mesh, corner_wall_0: &Mesh, corner_wall_1: &Mesh, corner_wall_2: &Mesh, goal: &Mesh, side_ramps_lower: &Mesh, side_ramps_upper: &Mesh) -> Field {
+        let scale = 100.;
+
+        let s = Mat3 {
+            m: [[scale, 0., 0.], [0., scale, 0.], [0., 0., scale]],
+        };
+
+        let floor = quad(
+            Vec3::default(),
+            Vec3 {
+                x: 4096.6,
+                y: 0.,
+                z: 0.,
+            },
+            Vec3 {
+                x: 0.,
+                y: 6910.,
+                z: 0.,
+            },
+        );
+        let ceiling = quad(
+            Vec3 {
+                x: 0.,
+                y: 0.,
+                z: 2048.,
+            },
+            Vec3 {
+                x: -4096.6,
+                y: 0.,
+                z: 0.,
+            },
+            Vec3 {
+                x: 0.,
+                y: 6910.,
+                z: 0.,
+            },
+        );
+        let side_walls: [Mesh; 2] = [
+            quad(
+                Vec3 {
+                    x: 4096.6,
+                    y: 0.,
+                    z: 1024.,
+                },
+                Vec3 {
+                    x: 0.,
+                    y: -6910.,
+                    z: 0.,
+                },
+                Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 1024.,
+                },
+            ),
+            quad(
+                Vec3 {
+                    x: -4096.6,
+                    y: 0.,
+                    z: 1024.,
+                },
+                Vec3 {
+                    x: 0.,
+                    y: 6910.,
+                    z: 0.,
+                },
+                Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 1024.,
+                },
+            ),
+        ];
+
+        let back_walls: [Mesh; 2] = [
+            quad(
+                Vec3 {
+                    x: 0.,
+                    y: 6910.,
+                    z: 1024.,
+                },
+                Vec3 {
+                    x: 4096.,
+                    y: 0.,
+                    z: 0.,
+                },
+                Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 1024.,
+                },
+            ),
+            quad(
+                Vec3 {
+                    x: 0.,
+                    y: -6910.,
+                    z: 1024.,
+                },
+                Vec3 {
+                    x: -4096.,
+                    y: 0.,
+                    z: 0.,
+                },
+                Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 1024.,
+                },
+            ),
+        ];
+
+        let throwback_goal = goal.transform(&s);
+        let throwback_side_ramps_lower = side_ramps_lower.transform(&s);
+        let throwback_side_ramps_upper = side_ramps_upper.transform(&s);
+        let throwback_back_ramps_lower = back_ramps_lower.transform(&s);
+        let throwback_back_ramps_upper = back_ramps_upper.transform(&s);
+        let throwback_corner_ramps_lower = corner_ramps_lower.transform(&s);
+        let throwback_corner_ramps_lower_y_flip = corner_ramps_lower.transform(&FLIP_Y);
+        let throwback_corner_ramps_upper = corner_ramps_upper.transform(&s);
+        let throwback_corner_ramps_upper_y_flip = corner_ramps_upper.transform(&FLIP_Y);
+        let throwback_corner_wall_0 = corner_wall_0.transform(&s);
+        let throwback_corner_wall_0_y_flip = corner_wall_0.transform(&FLIP_Y);
+        let throwback_corner_wall_1 = corner_wall_0.transform(&s);
+        let throwback_corner_wall_1_y_flip = corner_wall_1.transform(&FLIP_Y);
+        let throwback_corner_wall_2 = corner_wall_0.transform(&s);
+        let throwback_corner_wall_2_y_flip = corner_wall_2.transform(&FLIP_Y);
+
+        let field_mesh = Mesh::from(vec![
+            &throwback_corner_ramps_lower,
+            &throwback_corner_ramps_lower.transform(&FLIP_X),
+            &throwback_corner_ramps_lower_y_flip,
+            &throwback_corner_ramps_lower_y_flip.transform(&FLIP_X),
+            &throwback_corner_ramps_upper,
+            &throwback_corner_ramps_upper.transform(&FLIP_X),
+            &throwback_corner_ramps_upper_y_flip,
+            &throwback_corner_ramps_upper_y_flip.transform(&FLIP_X),
+            &throwback_goal,
+            &throwback_goal.transform(&FLIP_Y),
+            &throwback_side_ramps_lower,
+            &throwback_side_ramps_lower.transform(&FLIP_X),
+            &throwback_side_ramps_upper,
+            &throwback_side_ramps_upper.transform(&FLIP_X),
+            &throwback_back_ramps_lower,
+            &throwback_back_ramps_lower.transform(&FLIP_Y),
+            &throwback_back_ramps_upper,
+            &throwback_back_ramps_upper.transform(&FLIP_Y),
+            &throwback_corner_wall_0,
+            &throwback_corner_wall_0.transform(&FLIP_X),
+            &throwback_corner_wall_0_y_flip,
+            &throwback_corner_wall_0_y_flip.transform(&FLIP_X),
+            &throwback_corner_wall_1,
+            &throwback_corner_wall_1.transform(&FLIP_X),
+            &throwback_corner_wall_1_y_flip,
+            &throwback_corner_wall_1_y_flip.transform(&FLIP_X),
+            &throwback_corner_wall_2,
+            &throwback_corner_wall_2.transform(&FLIP_X),
+            &throwback_corner_wall_2_y_flip,
+            &throwback_corner_wall_2_y_flip.transform(&FLIP_X),
+            &floor,
+            &ceiling,
+            &side_walls[0],
+            &side_walls[1],
+            &back_walls[0],
+            &back_walls[1],
+        ]);
+
+        let triangles = field_mesh.to_triangles();
+        let collision_mesh = Bvh::from(&triangles);
+
+        Field {
+            field_mesh,
+            triangles,
+            collision_mesh,
+        }
+    }
+
     pub fn collide(&self, s: &Sphere) -> Option<Ray> {
         let mut contact_point = Ray::default();
 

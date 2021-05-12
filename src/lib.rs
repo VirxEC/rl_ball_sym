@@ -1,6 +1,5 @@
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Cursor, ErrorKind};
-use std::time::Instant;
 
 pub mod linear_algebra;
 pub mod simulation;
@@ -47,9 +46,7 @@ fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> Mesh {
     };
 }
 
-pub fn load_soccar(index: u8, team: u8) -> Game {
-    let start = Instant::now();
-
+pub fn load_soccar() -> Game {
     let soccar_corner: Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_corner_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_corner_vertices.bin").to_vec());
     let soccar_goal: Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_goal_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_goal_vertices.bin").to_vec());
     let soccar_ramps_0: Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_ramps_0_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_ramps_0_vertices.bin").to_vec());
@@ -65,20 +62,14 @@ pub fn load_soccar(index: u8, team: u8) -> Game {
         z: -650.,
     };
 
-    println!("Loaded soccar game mode in {}ms", start.elapsed().as_millis());
-
     Game {
-        index,
-        team,
         gravity,
         field,
         ball,
     }
 }
 
-pub fn load_hoops(index: u8, team: u8) -> Game {
-    let start = Instant::now();
-
+pub fn load_hoops() -> Game {
     let hoops_corner: Mesh = read_mesh(include_bytes!("../assets/hoops/hoops_corner_ids.bin").to_vec(), include_bytes!("../assets/hoops/hoops_corner_vertices.bin").to_vec());
     let hoops_net: Mesh = read_mesh(include_bytes!("../assets/hoops/hoops_net_ids.bin").to_vec(), include_bytes!("../assets/hoops/hoops_net_vertices.bin").to_vec());
     let hoops_rim: Mesh = read_mesh(include_bytes!("../assets/hoops/hoops_rim_ids.bin").to_vec(), include_bytes!("../assets/hoops/hoops_rim_vertices.bin").to_vec());
@@ -95,20 +86,14 @@ pub fn load_hoops(index: u8, team: u8) -> Game {
         z: -650.,
     };
 
-    println!("Loaded hoops game mode in {}ms", start.elapsed().as_millis());
-
     Game {
-        index,
-        team,
         gravity,
         field,
         ball,
     }
 }
 
-pub fn load_dropshot(index: u8, team: u8) -> Game {
-    let start = Instant::now();
-
+pub fn load_dropshot() -> Game {
     let dropshot: Mesh = read_mesh(include_bytes!("../assets/dropshot/dropshot_ids.bin").to_vec(), include_bytes!("../assets/dropshot/dropshot_vertices.bin").to_vec());
 
     let field = Field::initialize_dropshot(&dropshot);
@@ -121,13 +106,38 @@ pub fn load_dropshot(index: u8, team: u8) -> Game {
         z: -650.,
     };
 
-    println!("Loaded dropshot game mode in {}ms", start.elapsed().as_millis());
-
     Game {
-        index,
-        team,
         gravity,
         field,
         ball,
     }
 }
+
+// pub fn load_soccar_throwback() -> Game {
+//     let back_ramps_lower: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_back_ramps_lower_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_back_ramps_lower_vertices.bin").to_vec());
+//     let back_ramps_upper: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_back_ramps_upper_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_back_ramps_upper_vertices.bin").to_vec());
+//     let corner_ramps_lower: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_ramps_lower_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_ramps_lower_vertices.bin").to_vec());
+//     let corner_ramps_upper: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_ramps_upper_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_ramps_upper_vertices.bin").to_vec());
+//     let corner_wall_0: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_wall_0_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_wall_0_vertices.bin").to_vec());
+//     let corner_wall_1: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_wall_1_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_wall_1_vertices.bin").to_vec());
+//     let corner_wall_2: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_wall_2_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_wall_2_vertices.bin").to_vec());
+//     let goal: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_goal_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_goal_vertices.bin").to_vec());
+//     let side_ramps_lower: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_side_ramps_lower_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_side_ramps_lower_vertices.bin").to_vec());
+//     let side_ramps_upper: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_side_ramps_upper_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_side_ramps_upper_vertices.bin").to_vec());
+
+//     let field = Field::initialize_throwback(&back_ramps_lower, &back_ramps_upper, &corner_ramps_lower, &corner_ramps_upper, &corner_wall_0, &corner_wall_1, &corner_wall_2, &goal, &side_ramps_lower, &side_ramps_upper);
+
+//     let ball = Ball::initialize_soccar();
+
+//     let gravity = Vec3 {
+//         x: 0.,
+//         y: 0.,
+//         z: -650.,
+//     };
+
+//     Game {
+//         gravity,
+//         field,
+//         ball,
+//     }
+// }

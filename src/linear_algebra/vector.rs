@@ -53,6 +53,30 @@ impl Vec3 {
             m: [[u.x * u.x * (1. - c) + c, u.x * u.y * (1. - c) - u.z * s, u.x * u.z * (1. - c) + u.y * s], [u.y * u.x * (1. - c) + u.z * s, u.y * u.y * (1. - c) + c, u.y * u.z * (1. - c) - u.x * s], [u.y * u.x * (1. - c) - u.y * s, u.y * u.y * (1. - c) + u.x * s, u.y * u.z * (1. - c) + c]],
         }
     }
+
+    pub fn min(&self, vec: &Self) -> Self {
+        Self {
+            x: self.x.min(vec.x),
+            y: self.y.min(vec.y),
+            z: self.z.min(vec.z),
+        }
+    }
+
+    pub fn max(&self, vec: &Self) -> Self {
+        Self {
+            x: self.x.max(vec.x),
+            y: self.y.max(vec.y),
+            z: self.z.max(vec.z),
+        }
+    }
+
+    pub fn clamp(&self, min: &Self, max: &Self) -> Self {
+        Self {
+            x: self.x.max(min.x).min(max.x),
+            y: self.y.max(min.y).min(max.y),
+            z: self.z.max(min.z).min(max.z),
+        }
+    }
 }
 
 impl Add for Vec3 {
@@ -107,6 +131,18 @@ impl Mul<f32> for Vec3 {
             x: self.x * other,
             y: self.y * other,
             z: self.z * other,
+        }
+    }
+}
+
+impl Mul<Vec3> for f32 {
+    type Output = Vec3;
+
+    fn mul(self, other: Vec3) -> Vec3 {
+        Vec3 {
+            x: self * other.x,
+            y: self * other.y,
+            z: self * other.z,
         }
     }
 }

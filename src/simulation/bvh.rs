@@ -78,25 +78,17 @@ impl Bvh {
         let global_box = global_aabb(&boxes);
 
         let morton = Morton::from(&global_box);
-        let mut leaves = Vec::with_capacity(num_leaves);
+        let mut sorted_leaves: Vec<Box<BvhNode>> = Vec::with_capacity(num_leaves);
 
-        let mut morton_codes: Vec<(usize, u64)> = Vec::with_capacity(num_leaves);
         for (i, box_) in boxes.iter().enumerate() {
-            morton_codes.push((i, morton.get_code(box_)));
-        }
-        morton_codes.sort();
-
-        for i in 0..num_leaves {
-            let code = morton_codes[i];
-            leaves.push(BvhNode::leaf(primitives[code.0], boxes[code.0], morton_codes[i].1));
+            sorted_leaves.push(BvhNode::leaf(primitives[i], *box_, morton.get_code(box_)));
         }
 
-        let mut sorted_morton_codes = Vec::with_capacity(num_leaves);
-        for code in morton_codes {
-            sorted_morton_codes.push(code.1)
-        }
+        sorted_leaves.sort_unstable_by_key(|leaf| leaf.morton);
 
-        let root = Bvh::generate_hierarchy(&sorted_morton_codes, &leaves, 0, num_leaves - 1);
+        let sorted_morton_codes = sorted_leaves.iter().map(|f| f.morton.unwrap()).collect();
+
+        let root = Bvh::generate_hierarchy(&sorted_morton_codes, &sorted_leaves, 0, num_leaves - 1);
 
         Self {
             global_box,

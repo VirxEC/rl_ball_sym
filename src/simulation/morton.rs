@@ -7,9 +7,11 @@ pub struct Morton {
 }
 
 impl Morton {
+    // 2 ^ 21 - 1 = 2097151
+
     pub fn from(global_box: &Aabb) -> Morton {
         let offset = global_box.min;
-        let scale = 1. / (global_box.max - global_box.min);
+        let scale = 1. / (global_box.max - offset);
 
         Morton {
             offset,
@@ -20,27 +22,30 @@ impl Morton {
     fn expand3(a: u32) -> u64 {
         let mut x = (a as u64) & 0x1fffff; // we only look at the first 21 bits
 
-        x = (x | x << 32) & 0x1f00000000ffff; // shift left 32 bits, OR with self, and 00011111000000000000000000000000000000001111111111111111
-        x = (x | x << 16) & 0x1f0000ff0000ff; // shift left 32 bits, OR with self, and 00011111000000000000000011111111000000000000000011111111
-        x = (x | x << 8) & 0x100f00f00f00f00f; // shift left 32 bits, OR with self, and 0001000000001111000000001111000000001111000000001111000000000000
-        x = (x | x << 4) & 0x10c30c30c30c30c3; // shift left 32 bits, OR with self, and 0001000011000011000011000011000011000011000011000011000100000000
-        x = (x | x << 2) & 0x1249249249249249;
+        x = (x | x << 16) & 0x0000ffff0000ffff;
+        x = (x | x << 8) & 0x00ff00ff00ff00ff;
+        x = (x | x << 4) & 0x0f0f0f0f0f0f0f0f;
+        x = (x | x << 2) & 0x3333333333333333;
+        x = (x | x << 1) & 0x5555555555555555;
 
         x
     }
 
-    fn encode(x: u32, y: u32, z: u32) -> u64 {
-        0 | Morton::expand3(x) | (Morton::expand3(y) << 1) | (Morton::expand3(z) << 2)
+    fn encode(u: Vec3) -> u64 {
+        // These should actually be 21 bits, but there's no u21 type
+        let x = u.x as u32;
+        let y = u.y as u32;
+        let z = u.z as u32;
+
+        Morton::expand3(x) | Morton::expand3(y) << 1 | Morton::expand3(z) << 2
     }
 
     pub fn get_code(&self, box_: &Aabb) -> u64 {
         // get the centroid of the ith bounding box
-        let c = (box_.min + box_.max) * 0.5;
+        let c = (box_.min + box_.max) / 2.;
 
-        let ux = ((c.x - self.offset.x) * self.scale.x) as u32;
-        let uy = ((c.y - self.offset.y) * self.scale.y) as u32;
-        let uz = ((c.z - self.offset.z) * self.scale.z) as u32;
+        let u = (c - self.offset) * self.scale;
 
-        Morton::encode(ux, uy, uz)
+        Morton::encode(u)
     }
 }
