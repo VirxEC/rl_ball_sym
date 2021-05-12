@@ -51,6 +51,7 @@ impl BvhNode {
 }
 
 // BVH stands for "Bounding Volume Hierarchy"
+#[derive(Clone)]
 pub struct Bvh {
     pub global_box: Aabb,
     pub num_leaves: u64,

@@ -5,6 +5,7 @@ use crate::simulation::bvh::Bvh;
 use crate::simulation::geometry::{Ray, Sphere, Tri};
 use crate::simulation::mesh::Mesh;
 
+#[derive(Clone)]
 pub struct Field {
     pub field_mesh: Mesh,
     pub triangles: Vec<Tri>,

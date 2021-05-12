@@ -1,4 +1,4 @@
-use rl_ball_sym::linear_algebra::vector::Vec3;
+use rl_ball_sym::{linear_algebra::vector::Vec3};
 use rl_ball_sym::simulation::ball::Ball;
 use rl_ball_sym::simulation::game::Game;
 use rl_ball_sym::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
@@ -12,9 +12,15 @@ static mut GAME: Option<Game> = None;
 
 #[test]
 fn init() {
+    let mut game: Game;
     unsafe {
         GAME = Some(load_soccar());
+        game = GAME.clone().unwrap();
     }
+
+    game.ball.location.z = 1900.;
+    let ball_prediction_struct = game.ball.get_ball_prediction_struct(&game);
+    dbg!(ball_prediction_struct.num_slices);
 }
 
 #[test]
