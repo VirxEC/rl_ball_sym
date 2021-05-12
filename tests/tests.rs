@@ -146,7 +146,7 @@ fn basic_predict() {
 }
 
 #[test]
-fn fast_execution_soccar() {
+fn fast_predict_soccar() {
     let game = load_soccar(0, 0);
     let runs = 2000;
     let mut times: Vec<f32> = Vec::with_capacity(runs);
@@ -164,11 +164,11 @@ fn fast_execution_soccar() {
 
     let ball_prediction = game.ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.num_slices, 720);
-    assert!(elapsed_ms < 2.6);
+    assert!(elapsed_ms < 1.);
 }
 
 #[test]
-fn fast_execution_hoops() {
+fn fast_predict_hoops() {
     let game = load_hoops(0, 0);
     let runs = 2000;
     let mut times: Vec<f32> = Vec::with_capacity(runs);
@@ -186,5 +186,5 @@ fn fast_execution_hoops() {
 
     let ball_prediction = game.ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.num_slices, 720);
-    assert!(elapsed_ms < 3.);
+    assert!(elapsed_ms < 1.);
 }

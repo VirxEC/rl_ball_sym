@@ -77,7 +77,7 @@ impl Bvh {
 
         let global_box = global_aabb(&boxes);
 
-        let morton = Morton::from(&global_box, num_leaves as u32);
+        let morton = Morton::from(&global_box);
         let mut leaves = Vec::with_capacity(num_leaves);
 
         let mut morton_codes: Vec<(usize, u64)> = Vec::with_capacity(num_leaves);

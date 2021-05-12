@@ -1,5 +1,4 @@
 use crate::linear_algebra::vector::Vec3;
-use crate::simulation::bit_packing::bits_needed;
 use crate::simulation::geometry::Aabb;
 
 pub struct Morton {
@@ -8,16 +7,8 @@ pub struct Morton {
 }
 
 impl Morton {
-    const DIM: u32 = 3;
-
-    pub fn from(global_box: &Aabb, num_boxes: u32) -> Morton {
+    pub fn from(global_box: &Aabb) -> Morton {
         let offset = global_box.min;
-
-        // let b = bits_needed(num_boxes) as i32;
-        // let bits_per_dimension = (64 - b) / (Morton::DIM as i32);
-        // let divisions_per_dimension = 1 << bits_per_dimension;
-
-        // let scale = ((divisions_per_dimension - 1) as f32) / (global_box.max - global_box.min);
         let scale = 1. / (global_box.max - global_box.min);
 
         Morton {

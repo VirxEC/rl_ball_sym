@@ -45,10 +45,10 @@ impl Ball {
 
     const SOCCAR_RADIUS: f32 = 91.25;
     const HOOPS_RADIUS: f32 = 91.25;
-    // const DROPSHOT_RADIUS: f32 = 100.45;
+    const DROPSHOT_RADIUS: f32 = 100.45;
     const SOCCAR_COLLISION_RADIUS: f32 = 93.15;
     const HOOPS_COLLISION_RADIUS: f32 = 93.15;
-    // const DROPSHOT_COLLISION_RADIUS: f32 = 103.6;
+    const DROPSHOT_COLLISION_RADIUS: f32 = 103.6;
 
     const INV_M: f32 = 1. / 30.;
     const RESTITUTION_M: f32 = -(1. + Ball::RESTITUTION) * Ball::M;
@@ -66,6 +66,15 @@ impl Ball {
         let mut ball = Ball::default();
         ball.radius = Ball::HOOPS_RADIUS;
         ball.collision_radius = Ball::HOOPS_COLLISION_RADIUS;
+        ball.initialize();
+
+        ball
+    }
+
+    pub fn initialize_dropshot() -> Self {
+        let mut ball = Ball::default();
+        ball.radius = Ball::DROPSHOT_RADIUS;
+        ball.collision_radius = Ball::DROPSHOT_COLLISION_RADIUS;
         ball.initialize();
 
         ball
