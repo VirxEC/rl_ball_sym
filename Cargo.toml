@@ -12,5 +12,11 @@ json = "0.12.*"
 [dependencies]
 byteorder = "1.*"
 
-[profile.dev]
-opt-level=3
+[profile.release]
+codegen-units=1
+lto = "fat"
+panic = "abort"
+
+[profile.bench]
+codegen-units=1
+lto = "fat"
