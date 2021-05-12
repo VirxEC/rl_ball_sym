@@ -1,3 +1,4 @@
+use crate::linear_algebra::mat::Mat3;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
 
 #[derive(Clone, Copy, Debug)]
@@ -34,6 +35,22 @@ impl Vec3 {
             x: self.y * vec.z - self.z * vec.y,
             y: self.z * vec.x - self.x * vec.z,
             z: self.x * vec.y - self.y * vec.x,
+        }
+    }
+
+    pub fn axis_to_rotation(&self) -> Mat3 {
+        let norm_omega = self.magnitude();
+
+        if norm_omega.abs() < 0.000001 {
+            return Mat3::eye();
+        }
+        let u = *self / norm_omega;
+
+        let c = norm_omega.cos();
+        let s = norm_omega.sin();
+
+        Mat3 {
+            m: [[u.x * u.x * (1. - c) + c, u.x * u.y * (1. - c) - u.z * s, u.x * u.z * (1. - c) + u.y * s], [u.y * u.x * (1. - c) + u.z * s, u.y * u.y * (1. - c) + c, u.y * u.z * (1. - c) - u.x * s], [u.y * u.x * (1. - c) - u.y * s, u.y * u.y * (1. - c) + u.x * s, u.y * u.z * (1. - c) + c]],
         }
     }
 }

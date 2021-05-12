@@ -11,6 +11,12 @@ impl Default for Mat3 {
 }
 
 impl Mat3 {
+    pub fn eye() -> Mat3 {
+        Mat3 {
+            m: [[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]],
+        }
+    }
+
     pub fn det(&self) -> f32 {
         self.m[0][0] * self.m[1][1] * self.m[2][2] + self.m[0][1] * self.m[1][2] * self.m[2][0] + self.m[0][2] * self.m[1][0] * self.m[2][1] - self.m[0][0] * self.m[1][2] * self.m[2][1] - self.m[0][1] * self.m[1][0] * self.m[2][2] - self.m[0][2] * self.m[1][1] * self.m[2][0]
     }

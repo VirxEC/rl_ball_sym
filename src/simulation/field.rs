@@ -1,4 +1,5 @@
 use crate::linear_algebra::mat::Mat3;
+use crate::linear_algebra::math::dot;
 use crate::linear_algebra::vector::Vec3;
 use crate::simulation::bvh::Bvh;
 use crate::simulation::geometry::{Ray, Sphere, Tri};
@@ -278,6 +279,103 @@ impl Field {
             &back_walls[0],
             &back_walls[1],
         ]);
+
+        let triangles = field_mesh.to_triangles();
+        let collision_mesh = Bvh::from(&triangles);
+
+        Field {
+            field_mesh,
+            triangles,
+            collision_mesh,
+        }
+    }
+
+    pub fn initialize_dropshot(dropshot: &Mesh) -> Field {
+        let scale = 0.393;
+        let z_offset = -207.565;
+
+        let q = (Vec3 {
+            x: 0.,
+            y: 0.,
+            z: 0.52359877559,
+        })
+        .axis_to_rotation();
+
+        let s = Mat3 {
+            m: [[scale, 0., 0.], [0., scale, 0.], [0., 0., scale]],
+        };
+
+        let dz = Vec3 {
+            x: 0.,
+            y: 0.,
+            z: z_offset,
+        };
+
+        let floor = quad(
+            Vec3 {
+                x: 0.,
+                y: 0.,
+                z: 2.,
+            },
+            Vec3 {
+                x: 10000.,
+                y: 0.,
+                z: 0.,
+            },
+            Vec3 {
+                x: 0.,
+                y: 7000.,
+                z: 0.,
+            },
+        );
+        let ceiling = quad(
+            Vec3 {
+                x: 0.,
+                y: 0.,
+                z: 2020.,
+            },
+            Vec3 {
+                x: -10000.,
+                y: 0.,
+                z: 0.,
+            },
+            Vec3 {
+                x: 0.,
+                y: 7000.,
+                z: 0.,
+            },
+        );
+        let mut walls: Vec<Mesh> = Vec::with_capacity(6);
+
+        let mut p = Vec3 {
+            x: 0.,
+            y: 11683.6 * scale,
+            z: 2768.64 * scale - z_offset,
+        };
+        let mut x = Vec3 {
+            x: 5000.,
+            y: 0.,
+            z: 0.,
+        };
+        let z = Vec3 {
+            x: 0.,
+            y: 0.,
+            z: 1010.,
+        };
+        let r = (Vec3 {
+            x: 0.,
+            y: 0.,
+            z: 1.047197551196598,
+        })
+        .axis_to_rotation();
+
+        for _ in 0..6 {
+            walls.push(quad(p, x, z));
+            p = dot(&r, &p);
+            x = dot(&r, &x);
+        }
+
+        let field_mesh = Mesh::from(vec![&dropshot.transform(&q.dot(&s)).translate(&dz), &floor, &ceiling, &walls[0], &walls[1], &walls[2], &walls[3], &walls[4], &walls[5]]);
 
         let triangles = field_mesh.to_triangles();
         let collision_mesh = Bvh::from(&triangles);

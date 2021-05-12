@@ -105,3 +105,29 @@ pub fn load_hoops(index: u8, team: u8) -> Game {
         ball,
     }
 }
+
+pub fn load_dropshot(index: u8, team: u8) -> Game {
+    let start = Instant::now();
+
+    let dropshot: Mesh = read_mesh(include_bytes!("../assets/dropshot/dropshot_ids.bin").to_vec(), include_bytes!("../assets/dropshot/dropshot_vertices.bin").to_vec());
+
+    let field = Field::initialize_dropshot(&dropshot);
+
+    let ball = Ball::initialize_dropshot();
+
+    let gravity = Vec3 {
+        x: 0.,
+        y: 0.,
+        z: -650.,
+    };
+
+    println!("Loaded dropshot game mode in {}ms", start.elapsed().as_millis());
+
+    Game {
+        index,
+        team,
+        gravity,
+        field,
+        ball,
+    }
+}
