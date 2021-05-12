@@ -8,6 +8,15 @@ pub struct Mesh {
     pub vertices: Vec<f32>,
 }
 
+impl Default for Mesh {
+    fn default() -> Self {
+        Self {
+            ids: Vec::new(),
+            vertices: Vec::new()
+        }
+    }
+}
+
 impl Mesh {
     pub fn from(other_meshes: Vec<&Self>) -> Self {
         let mut id_offset = 0;

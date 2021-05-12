@@ -7,3 +7,13 @@ pub struct Game {
     pub field: Field,
     pub ball: Ball,
 }
+
+impl Default for Game {
+    fn default() -> Self {
+        Self {
+            gravity: Vec3::default(),
+            field: Field::default(),
+            ball: Ball::default()
+        }
+    }
+}

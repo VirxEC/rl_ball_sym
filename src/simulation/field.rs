@@ -11,6 +11,16 @@ pub struct Field {
     pub collision_mesh: Bvh,
 }
 
+impl Default for Field {
+    fn default() -> Self {
+        Self {
+            field_mesh: Mesh::default(),
+            triangles: Vec::new(),
+            collision_mesh: Bvh::default()
+        }
+    }
+}
+
 static FLIP_X: Mat3 = Mat3 {
     m: [[-1., 0., 0.], [0., 1., 0.], [0., 0., 1.]],
 };

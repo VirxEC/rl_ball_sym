@@ -66,6 +66,16 @@ fn global_aabb(boxes: &Vec<Aabb>) -> Aabb {
     global_box
 }
 
+impl Default for Bvh {
+    fn default() -> Self {
+        Self {
+            global_box: Aabb::default(),
+            num_leaves: 0,
+            root: Box::new(BvhNode::default())
+        }
+    }
+}
+
 impl Bvh {
     pub fn from(primitives: &Vec<Tri>) -> Self {
         let num_leaves = primitives.len();

@@ -113,31 +113,31 @@ pub fn load_dropshot() -> Game {
     }
 }
 
-// pub fn load_soccar_throwback() -> Game {
-//     let back_ramps_lower: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_back_ramps_lower_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_back_ramps_lower_vertices.bin").to_vec());
-//     let back_ramps_upper: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_back_ramps_upper_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_back_ramps_upper_vertices.bin").to_vec());
-//     let corner_ramps_lower: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_ramps_lower_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_ramps_lower_vertices.bin").to_vec());
-//     let corner_ramps_upper: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_ramps_upper_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_ramps_upper_vertices.bin").to_vec());
-//     let corner_wall_0: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_wall_0_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_wall_0_vertices.bin").to_vec());
-//     let corner_wall_1: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_wall_1_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_wall_1_vertices.bin").to_vec());
-//     let corner_wall_2: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_wall_2_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_wall_2_vertices.bin").to_vec());
-//     let goal: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_goal_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_goal_vertices.bin").to_vec());
-//     let side_ramps_lower: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_side_ramps_lower_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_side_ramps_lower_vertices.bin").to_vec());
-//     let side_ramps_upper: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_side_ramps_upper_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_side_ramps_upper_vertices.bin").to_vec());
+pub fn load_soccar_throwback() -> Game {
+    let back_ramps_lower: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_back_ramps_lower_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_back_ramps_lower_vertices.bin").to_vec());
+    let back_ramps_upper: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_back_ramps_upper_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_back_ramps_upper_vertices.bin").to_vec());
+    let corner_ramps_lower: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_ramps_lower_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_ramps_lower_vertices.bin").to_vec());
+    let corner_ramps_upper: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_ramps_upper_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_ramps_upper_vertices.bin").to_vec());
+    let corner_wall_0: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_wall_0_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_wall_0_vertices.bin").to_vec());
+    let corner_wall_1: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_wall_1_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_wall_1_vertices.bin").to_vec());
+    let corner_wall_2: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_wall_2_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_wall_2_vertices.bin").to_vec());
+    let goal: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_goal_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_goal_vertices.bin").to_vec());
+    let side_ramps_lower: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_side_ramps_lower_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_side_ramps_lower_vertices.bin").to_vec());
+    let side_ramps_upper: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_side_ramps_upper_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_side_ramps_upper_vertices.bin").to_vec());
 
-//     let field = Field::initialize_throwback(&back_ramps_lower, &back_ramps_upper, &corner_ramps_lower, &corner_ramps_upper, &corner_wall_0, &corner_wall_1, &corner_wall_2, &goal, &side_ramps_lower, &side_ramps_upper);
+    let field = Field::initialize_throwback(&back_ramps_lower, &back_ramps_upper, &corner_ramps_lower, &corner_ramps_upper, &corner_wall_0, &corner_wall_1, &corner_wall_2, &goal, &side_ramps_lower, &side_ramps_upper);
 
-//     let ball = Ball::initialize_soccar();
+    let ball = Ball::initialize_soccar();
 
-//     let gravity = Vec3 {
-//         x: 0.,
-//         y: 0.,
-//         z: -650.,
-//     };
+    let gravity = Vec3 {
+        x: 0.,
+        y: 0.,
+        z: -650.,
+    };
 
-//     Game {
-//         gravity,
-//         field,
-//         ball,
-//     }
-// }
+    Game {
+        gravity,
+        field,
+        ball,
+    }
+}
