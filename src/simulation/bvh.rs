@@ -82,7 +82,7 @@ impl Bvh {
 
         let mut morton_codes: Vec<(usize, u64)> = Vec::with_capacity(num_leaves);
         for (i, box_) in boxes.iter().enumerate() {
-            morton_codes.push((i, morton.get_code(box_, i as u64)));
+            morton_codes.push((i, morton.get_code(box_)));
         }
         morton_codes.sort();
 
