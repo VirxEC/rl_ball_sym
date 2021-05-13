@@ -1,6 +1,6 @@
 # rl_ball_sym
 
-A rust implementation of the ball path prediction for Rocket League written in C++ by Chip called [RLUtilities](https://github.com/samuelpmish/RLUtilities).
+Rust implementation of ball path prediction for Rocket League; Inspired by Samuel (Chip) P. Mish's C++ utils called [RLUtilities](https://github.com/samuelpmish/RLUtilities).
 
 ## Running
 
