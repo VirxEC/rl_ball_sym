@@ -114,6 +114,8 @@ pub fn load_dropshot() -> Game {
 }
 
 pub fn load_soccar_throwback() -> Game {
+    println!("WARNING: THIS MAP IS KNOWN TO CAUSE EXTREME LAG WHEN GENERATING THE BALL PREDICTION STRUCT.");
+    
     let back_ramps_lower: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_back_ramps_lower_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_back_ramps_lower_vertices.bin").to_vec());
     let back_ramps_upper: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_back_ramps_upper_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_back_ramps_upper_vertices.bin").to_vec());
     let corner_ramps_lower: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_corner_ramps_lower_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_corner_ramps_lower_vertices.bin").to_vec());

@@ -8,4 +8,14 @@ Make sure you have Rust/Cargo installed, then just run `cargo test --release` in
 
 ## Example implementations
 
-Coming soon! For now, see `tests/tests.rs` for some examples.
+Check out the examples folder! If you want to run them and don't know how:
+
+```bat
+cargo run --package rl_ball_sym --example example_name
+```
+
+For example, to run the example `basic.rs`:
+
+```bat
+cargo run --package rl_ball_sym --example basic
+```

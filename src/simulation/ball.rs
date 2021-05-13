@@ -142,7 +142,7 @@ impl Ball {
         self.time += dt;
     }
 
-    pub fn get_ball_prediction_struct_for_time(&self, game: &Game, time: f32) -> BallPrediction {
+    pub fn get_ball_prediction_struct_for_time(&self, game: &Game, time: &f32) -> BallPrediction {
         let num_slices = (time / Ball::SIMULATION_DT).round() as usize;
 
         let mut slices = Vec::with_capacity(num_slices);

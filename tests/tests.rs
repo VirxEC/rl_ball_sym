@@ -258,7 +258,7 @@ fn basic_predict() {
 
     let start = Instant::now();
     let time = 60.; // 1 minute, lol
-    let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, time);
+    let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, &time);
     println!("Ran ball prediction in {}", start.elapsed().as_secs_f32());
     let last_slice = &ball_prediction.slices[ball_prediction.num_slices - 1];
 
