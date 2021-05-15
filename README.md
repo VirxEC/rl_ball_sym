@@ -11,11 +11,11 @@ Make sure you have Rust/Cargo installed, then just run `cargo test --release` in
 Check out the examples folder! If you want to run them and don't know how:
 
 ```bat
-cargo run --package rl_ball_sym --example example_name
+cargo run --example example_name
 ```
 
 For example, to run the example `basic.rs`:
 
 ```bat
-cargo run --package rl_ball_sym --example basic
+cargo run --example basic
 ```
