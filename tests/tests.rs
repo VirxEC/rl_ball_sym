@@ -150,6 +150,34 @@ fn gamemode_soccar_throwback() {
 }
 
 #[test]
+fn fast_init() {
+    let runs = 1200;
+    let mut times = Vec::new();
+    unsafe {
+        GAME = Some(load_soccar());
+    }
+
+    for _ in 0..runs {
+        let mut game: &mut Game;
+
+        let start = Instant::now();
+        unsafe {
+            game = GAME.as_mut().unwrap();
+        }
+
+        game.ball.location.z = 1900.;
+        game.ball.get_ball_prediction_struct(&game);
+
+        times.push(start.elapsed().as_secs_f32());
+    }
+
+    let elapsed: f32 = times.iter().sum::<f32>() / (runs as f32);
+    let elapsed_ms = elapsed * 1000.;
+    println!("Ran test ticks in an average of {} seconds ({}ms)", elapsed, &elapsed_ms);
+    assert!(elapsed_ms < 1.);
+}
+
+#[test]
 fn fast_start_soccar() {
     let runs = 200;
     let mut times = Vec::with_capacity(runs);
