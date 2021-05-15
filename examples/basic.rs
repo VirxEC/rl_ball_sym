@@ -36,16 +36,16 @@ pub fn main() {
 }
 
 fn get_output(ball_location: Vec3, ball_velocity: Vec3, ball_angular_velocity: Vec3, time: f32) {
-    let mut game: Game;
+    let mut game: &mut Game;
 
     unsafe {
-        // if game is unintialized, initialize soccar
+        // if game is uninitialized, initialize soccar
         if GAME.is_none() {
             GAME = Some(load_soccar());
         }
 
-        // clone and unwrap GAME
-        game = GAME.clone().unwrap();
+        // get mutable reference to GAME and unwrap
+        game = GAME.as_mut().unwrap();
     }
 
     // set the ball information in game
