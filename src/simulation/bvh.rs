@@ -97,9 +97,7 @@ impl Bvh {
 
         sorted_leaves.sort_unstable_by_key(|leaf| leaf.morton);
 
-        let sorted_morton_codes = sorted_leaves.iter().map(|f| f.morton.unwrap()).collect();
-
-        let root = Bvh::generate_hierarchy(&sorted_morton_codes, &sorted_leaves, 0, num_leaves - 1);
+        let root = Bvh::generate_hierarchy(&sorted_leaves, 0, num_leaves - 1);
 
         Self {
             global_box,
@@ -108,7 +106,7 @@ impl Bvh {
         }
     }
 
-    fn generate_hierarchy(sorted_morton_codes: &Vec<u64>, sorted_leaves: &Vec<Box<BvhNode>>, first: usize, last: usize) -> Box<BvhNode> {
+    fn generate_hierarchy(sorted_leaves: &Vec<Box<BvhNode>>, first: usize, last: usize) -> Box<BvhNode> {
         // If we're dealing with a single object, return the leaf node
         if first == last {
             return sorted_leaves[first].clone();
@@ -116,53 +114,14 @@ impl Bvh {
 
         // Determine where to split the range
 
-        let split = Bvh::find_split(sorted_morton_codes, first, last);
+        let split = first + ((last - first) / 2);
 
         // Process the resulting sub-ranges recursively
 
-        let right = Bvh::generate_hierarchy(sorted_morton_codes, sorted_leaves, first, split);
-        let left = Bvh::generate_hierarchy(sorted_morton_codes, sorted_leaves, split + 1, last);
+        let right = Bvh::generate_hierarchy(sorted_leaves, first, split);
+        let left = Bvh::generate_hierarchy(sorted_leaves, split + 1, last);
 
         BvhNode::branch(right, left)
-    }
-
-    fn find_split(sorted_morton_codes: &Vec<u64>, first: usize, last: usize) -> usize {
-        // If the first and last codes are the same, split the range in the middle
-
-        let first_code = sorted_morton_codes[first];
-        let last_code = sorted_morton_codes[last];
-
-        if first_code == last_code {
-            return (first + last) >> 1;
-        }
-
-        // Calculate the number of highest bits that are the same for all objects by counting the leading zeros
-        let common_prefix = (first_code ^ last_code).leading_zeros();
-
-        // We don't need last_code now, just first_code
-        drop(last_code);
-
-        let mut split = first;
-        let mut step = last - first;
-
-        loop {
-            step = (step + 1) >> 1; // exponential decrease
-            let new_split = split + step; // proposed new position
-
-            if new_split < last {
-                let split_code = sorted_morton_codes[new_split];
-                let split_prefix = (first_code ^ split_code).leading_zeros();
-                if split_prefix > common_prefix {
-                    split = new_split; // accept proposal
-                }
-            }
-
-            if step >= 1 {
-                break;
-            }
-        }
-
-        split
     }
 
     pub fn intersect(&self, query_object: &Sphere) -> Vec<Tri> {

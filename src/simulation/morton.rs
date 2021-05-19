@@ -8,10 +8,11 @@ pub struct Morton {
 
 impl Morton {
     // 2 ^ 21 - 1 = 2097151
+    // 2 ^ 20 - 1 = 1048575
 
     pub fn from(global_box: &Aabb) -> Morton {
         let offset = global_box.min;
-        let scale = 1. / (global_box.max - offset);
+        let scale = 1048575. / (global_box.max - offset);
 
         Morton {
             offset,
@@ -19,19 +20,19 @@ impl Morton {
         }
     }
 
-    fn expand3(a: u32) -> u64 {
+    pub fn expand3(a: u32) -> u64 {
         let mut x = (a as u64) & 0x1fffff; // we only look at the first 21 bits
 
-        x = (x | x << 16) & 0x0000ffff0000ffff;
-        x = (x | x << 8) & 0x00ff00ff00ff00ff;
-        x = (x | x << 4) & 0x0f0f0f0f0f0f0f0f;
-        x = (x | x << 2) & 0x3333333333333333;
-        x = (x | x << 1) & 0x5555555555555555;
+        x = (x | x << 32) & 0x1f00000000ffff;
+        x = (x | x << 16) & 0x1f0000ff0000ff;
+        x = (x | x << 8) & 0x100f00f00f00f00f;
+        x = (x | x << 4) & 0x10c30c30c30c30c3;
+        x = (x | x << 2) & 0x1249249249249249;
 
         x
     }
 
-    fn encode(u: Vec3) -> u64 {
+    pub fn encode(u: Vec3) -> u64 {
         // These should actually be 21 bits, but there's no u21 type
         let x = u.x as u32;
         let y = u.y as u32;

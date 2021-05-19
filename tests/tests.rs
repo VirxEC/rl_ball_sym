@@ -2,25 +2,89 @@ use rl_ball_sym::linear_algebra::vector::Vec3;
 use rl_ball_sym::simulation::ball::Ball;
 use rl_ball_sym::simulation::game::Game;
 use rl_ball_sym::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
+use rl_ball_sym::simulation::morton::Morton;
+use rl_ball_sym::simulation::geometry::Aabb;
 use std::fs;
 use std::time::Instant;
 
 #[macro_use]
 extern crate json;
 
-static mut GAME: Option<Game> = None;
+static mut GAME_0: Option<Game> = None;
+static mut GAME_1: Option<Game> = None;
 
 #[test]
 fn init() {
     let mut game: &mut Game;
     unsafe {
-        GAME = Some(load_soccar());
-        game = GAME.as_mut().unwrap();
+        GAME_0 = Some(load_soccar());
+        game = GAME_0.as_mut().unwrap();
     }
 
     game.ball.location.z = 1900.;
     let ball_prediction_struct = game.ball.get_ball_prediction_struct(&game);
     dbg!(ball_prediction_struct.num_slices);
+}
+
+#[test]
+fn morton() {
+    let global_box = Aabb {
+        min: Vec3 {
+            x: -4096.,
+            y: -5120.,
+            z: 0.
+        },
+        max: Vec3 {
+            x: 4096.,
+            y: 5120.,
+            z: 2044.
+        }
+    };
+
+    let morton = Morton::from(&global_box);
+
+    let box_ = Aabb {
+        min: Vec3 {
+            x: -4095.,
+            y: -5119.,
+            z: 1.,
+        },
+        max: Vec3 {
+            x: -4094.,
+            y: -5118.,
+            z: 2.
+        }
+    };
+
+    // let code = morton.get_code(&box_);
+    let c = (box_.min + box_.max) / 2.;
+
+    let u = (c - morton.offset) * morton.scale;
+    dbg!(&u);
+
+    let code_x = Morton::expand3(u.x as u32);
+    dbg!(code_x);
+    dbg!(format!("{:b}", u.x as u32));
+    dbg!(format!("{:b}", code_x));
+    assert_eq!(format!("{:b}", code_x), "1000001001001001001001"); // 001000001001001001001001
+
+    let code_y = Morton::expand3(u.y as u32) << 1;
+    dbg!(code_y);
+    dbg!(format!("{:b}", u.y as u32));
+    dbg!(format!("{:b}", code_y));
+    assert_eq!(format!("{:b}", code_y), "10000000010010000000010"); // 010000000010010000000010
+
+    let code_z = Morton::expand3(u.z as u32) << 2;
+    dbg!(code_z);
+    dbg!(format!("{:b}", u.z as u32));
+    dbg!(format!("{:b}", code_z));
+    assert_eq!(format!("{:b}", code_z), "100100000000000000000000000100");
+
+    let code = code_z | code_y | code_x;
+    dbg!(&code); // 610317903
+    assert_eq!(format!("{:b}", code as u32), "100100011000001011011001001111");
+
+    // assert!(false);
 }
 
 #[test]
@@ -151,18 +215,19 @@ fn gamemode_soccar_throwback() {
 
 #[test]
 fn fast_init() {
-    let runs = 1200;
+    let runs = 200;
     let mut times = Vec::new();
-    unsafe {
-        GAME = Some(load_soccar());
-    }
 
     for _ in 0..runs {
         let mut game: &mut Game;
 
         let start = Instant::now();
         unsafe {
-            game = GAME.as_mut().unwrap();
+            if GAME_1.is_none() {
+                GAME_1 = Some(load_soccar());
+            }
+            
+            game = GAME_1.as_mut().unwrap();
         }
 
         game.ball.location.z = 1900.;
@@ -191,7 +256,7 @@ fn fast_start_soccar() {
     let elapsed: f32 = times.iter().sum::<f32>() / (runs as f32);
     let elapsed_ms = elapsed * 1000.;
     println!("Loaded soccar gamemode in an average of {} seconds ({}ms)", elapsed, &elapsed_ms);
-    assert!(elapsed_ms < 6.);
+    assert!(elapsed_ms < 4.);
 }
 
 #[test]
@@ -208,7 +273,7 @@ fn fast_start_hoops() {
     let elapsed: f32 = times.iter().sum::<f32>() / (runs as f32);
     let elapsed_ms = elapsed * 1000.;
     println!("Loaded hoops gamemode in an average of {} seconds ({}ms)", elapsed, &elapsed_ms);
-    assert!(elapsed_ms < 11.);
+    assert!(elapsed_ms < 10.);
 }
 
 #[test]
@@ -225,11 +290,11 @@ fn fast_start_dropshot() {
     let elapsed: f32 = times.iter().sum::<f32>() / (runs as f32);
     let elapsed_ms = elapsed * 1000.;
     println!("Loaded dropshot gamemode in an average of {} seconds ({}ms)", elapsed, &elapsed_ms);
-    assert!(elapsed_ms < 4.);
+    assert!(elapsed_ms < 3.);
 }
 
 #[test]
-fn fast_start_soccar_throwback() {
+fn fast_start_throwback_soccar() {
     let runs = 200;
     let mut times = Vec::with_capacity(runs);
 
@@ -242,7 +307,7 @@ fn fast_start_soccar_throwback() {
     let elapsed: f32 = times.iter().sum::<f32>() / (runs as f32);
     let elapsed_ms = elapsed * 1000.;
     println!("Loaded soccar gamemode (throwback stadium) in an average of {} seconds ({}ms)", elapsed, &elapsed_ms);
-    assert!(elapsed_ms < 4.);
+    assert!(elapsed_ms < 3.);
 }
 
 #[test]
@@ -387,7 +452,7 @@ fn fast_predict_dropshot() {
 }
 
 #[test]
-fn fast_predict_soccar_throwback() {
+fn fast_predict_throwback_soccar() {
     let game = load_soccar_throwback();
     let runs = 50;
     let mut times: Vec<f32> = Vec::with_capacity(runs);
