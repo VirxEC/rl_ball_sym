@@ -1,7 +1,7 @@
-use rl_ball_sym::load_soccar;
-use rl_ball_sym::simulation::game::Game;
-use rl_ball_sym::simulation::ball::BallPrediction;
 use rl_ball_sym::linear_algebra::vector::Vec3;
+use rl_ball_sym::load_soccar;
+use rl_ball_sym::simulation::ball::BallPrediction;
+use rl_ball_sym::simulation::game::Game;
 
 use rand::Rng;
 
@@ -17,19 +17,19 @@ pub fn main() {
             Vec3 {
                 x: rng.gen_range(-4000.0..4000.),
                 y: rng.gen_range(-5020.0..5020.),
-                z: rng.gen_range(0.0..1944.)
+                z: rng.gen_range(0.0..1944.),
             },
             Vec3 {
                 x: rng.gen_range(-2000.0..2000.),
                 y: rng.gen_range(-2000.0..2000.),
-                z: rng.gen_range(-2000.0..2000.)
+                z: rng.gen_range(-2000.0..2000.),
             },
             Vec3 {
                 x: rng.gen_range(-3.0..3.),
                 y: rng.gen_range(-3.0..3.),
-                z: rng.gen_range(-3.0..3.)
+                z: rng.gen_range(-3.0..3.),
             },
-            time
+            time,
         );
         time += 1. / 120.;
     }

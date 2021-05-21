@@ -17,7 +17,7 @@ impl Default for Field {
         Self {
             field_mesh: Mesh::default(),
             triangles: Vec::new(),
-            collision_mesh: Bvh::default()
+            collision_mesh: Bvh::default(),
         }
     }
 }

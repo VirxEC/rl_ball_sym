@@ -14,7 +14,7 @@ impl Default for Game {
         Self {
             gravity: Vec3::default(),
             field: Field::default(),
-            ball: Ball::default()
+            ball: Ball::default(),
         }
     }
 }

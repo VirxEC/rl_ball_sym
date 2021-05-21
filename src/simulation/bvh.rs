@@ -72,7 +72,7 @@ impl Default for Bvh {
         Self {
             global_box: Aabb::default(),
             num_leaves: 0,
-            root: Box::new(BvhNode::default())
+            root: Box::new(BvhNode::default()),
         }
     }
 }

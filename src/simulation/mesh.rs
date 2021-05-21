@@ -13,7 +13,7 @@ impl Default for Mesh {
     fn default() -> Self {
         Self {
             ids: Vec::new(),
-            vertices: Vec::new()
+            vertices: Vec::new(),
         }
     }
 }
