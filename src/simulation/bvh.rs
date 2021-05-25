@@ -96,6 +96,13 @@ impl Bvh {
         }
 
         sorted_leaves.sort_unstable_by_key(|leaf| leaf.morton);
+        // remove duplicate leaves
+        // let num_leaves_1 = num_leaves;
+        // sorted_leaves.dedup_by_key(|leaf| leaf.morton);
+        // let num_leaves = sorted_leaves.len();
+        // if num_leaves_1 != num_leaves {
+        //     println!("Removed {} duplicate leaves!", num_leaves_1 - num_leaves)
+        // }
 
         let root = Bvh::generate_hierarchy(&sorted_leaves, 0, num_leaves - 1);
 

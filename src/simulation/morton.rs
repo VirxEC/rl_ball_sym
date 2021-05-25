@@ -33,7 +33,7 @@ impl Morton {
     }
 
     pub fn encode(u: Vec3) -> u64 {
-        // These should actually be 21 bits, but there's no u21 type
+        // These should actually be 21 bits, but there's no u21 type and the final type is u64 (21 bits * 3 = 63 bits)
         let x = u.x as u32;
         let y = u.y as u32;
         let z = u.z as u32;

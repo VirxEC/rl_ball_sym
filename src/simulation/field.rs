@@ -520,9 +520,9 @@ impl Field {
         let throwback_corner_ramps_upper_y_flip = corner_ramps_upper.transform(&FLIP_Y);
         let throwback_corner_wall_0 = corner_wall_0.transform(&s);
         let throwback_corner_wall_0_y_flip = corner_wall_0.transform(&FLIP_Y);
-        let throwback_corner_wall_1 = corner_wall_0.transform(&s);
+        let throwback_corner_wall_1 = corner_wall_1.transform(&s);
         let throwback_corner_wall_1_y_flip = corner_wall_1.transform(&FLIP_Y);
-        let throwback_corner_wall_2 = corner_wall_0.transform(&s);
+        let throwback_corner_wall_2 = corner_wall_2.transform(&s);
         let throwback_corner_wall_2_y_flip = corner_wall_2.transform(&FLIP_Y);
 
         let field_mesh = Mesh::from(vec![
@@ -576,7 +576,6 @@ impl Field {
 
     pub fn collide(&self, s: &Sphere) -> Option<Ray> {
         let mut contact_point = Ray::default();
-
         let mut count = 0;
 
         let tris_hit = self.collision_mesh.intersect(&s);
@@ -595,7 +594,7 @@ impl Field {
 
         if count > 0 {
             contact_point.start /= count as f32;
-            contact_point.direction = contact_point.direction.normalize();
+            contact_point.direction.normalized();
         }
 
         if count == 0 {

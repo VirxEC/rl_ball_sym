@@ -26,6 +26,13 @@ impl Vec3 {
         *self / size
     }
 
+    pub fn normalized(&mut self) {
+        let size = self.magnitude();
+        if size != 0. {
+            *self /= size;
+        }
+    }
+
     pub fn scale(&self, value: f32) -> Self {
         self.normalize() * value
     }

@@ -17,7 +17,7 @@ pub fn main() {
             Vec3 {
                 x: rng.gen_range(-4000.0..4000.),
                 y: rng.gen_range(-5020.0..5020.),
-                z: rng.gen_range(0.0..1944.),
+                z: rng.gen_range(100.0..1944.),
             },
             Vec3 {
                 x: rng.gen_range(-2000.0..2000.),

@@ -1,9 +1,11 @@
 use rl_ball_sym::linear_algebra::vector::Vec3;
 use rl_ball_sym::simulation::ball::Ball;
+use rl_ball_sym::simulation::bvh::BvhNode;
 use rl_ball_sym::simulation::game::Game;
 use rl_ball_sym::simulation::geometry::Aabb;
 use rl_ball_sym::simulation::morton::Morton;
 use rl_ball_sym::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
+use rand::Rng;
 use std::fs;
 use std::time::Instant;
 
@@ -181,7 +183,7 @@ fn gamemode_dropshot() {
 }
 
 #[test]
-fn gamemode_soccar_throwback() {
+fn gamemode_throwback_soccar() {
     let game = load_soccar_throwback();
 
     // test all the default values to make sure they're proper
@@ -193,9 +195,9 @@ fn gamemode_soccar_throwback() {
     assert_eq!(game.gravity.y as i64, 0);
     assert_eq!(game.gravity.z as i64, -650);
 
-    dbg!(game.field.collision_mesh.root.box_);
-    dbg!(game.field.collision_mesh.root.left.unwrap().box_);
-    dbg!(game.field.collision_mesh.root.right.unwrap().box_);
+    dbg!(&game.field.collision_mesh.root.box_);
+    dbg!(&game.field.collision_mesh.root.left.as_deref().unwrap().box_);
+    dbg!(&game.field.collision_mesh.root.right.as_deref().unwrap().box_);
 
     assert_eq!(game.field.collision_mesh.num_leaves, 9348);
 
@@ -211,6 +213,87 @@ fn gamemode_soccar_throwback() {
     assert_eq!(game.ball.angular_velocity.z as i64, 0);
     assert_eq!(game.ball.radius as i64, 91);
     assert_eq!(game.ball.collision_radius as i64, 93);
+
+    let mut collision_leaves = Vec::with_capacity(game.field.collision_mesh.num_leaves as usize);
+
+    // Allocate traversal stack from thread-local memory,
+    // and push NULL to indicate that there are no postponed nodes.
+    let bvh_default = BvhNode::default();
+    let mut stack: Vec<&BvhNode> = vec![&bvh_default; 32];
+    let mut stack_ptr = 1;
+
+    // Traverse nodes starting from the root.
+    let mut node = &*game.field.collision_mesh.root;
+    loop {
+        // Check each child node for overlap.
+        let left = node.left.as_deref();
+        let right = node.right.as_deref();
+        let mut traverse_left = false;
+        let mut traverse_right = false;
+
+        if left.is_some() {
+            let left = left.unwrap();
+            if left.is_terminal {
+                collision_leaves.push(left);
+            } else {
+                // traverse when a query overlaps with an internal node
+                traverse_left = true;
+            }
+        }
+
+        if right.is_some() {
+            let right = right.unwrap();
+            if right.is_terminal {
+                collision_leaves.push(right);
+            } else {
+                // traverse when a query overlaps with an internal node
+                traverse_right = true;
+            }
+        }
+
+        if !(traverse_left || traverse_right) {
+            // pop
+            stack_ptr -= 1;
+
+            node = &stack[stack_ptr];
+        } else if traverse_left {
+            node = left.unwrap();
+
+            if traverse_right {
+                // push
+                stack[stack_ptr] = right.unwrap();
+                stack_ptr += 1;
+            }
+        } else {
+            node = right.unwrap();
+        }
+
+        if stack_ptr == 0 {
+            break;
+        }
+    }
+
+    let mut json_obj = json::JsonValue::new_array();
+    for leaf in &collision_leaves {
+        json_obj
+            .push(object! {
+                morton: leaf.morton,
+                box_: object! {
+                    min: object! {
+                        x: leaf.box_.min.x,
+                        y: leaf.box_.min.y,
+                        z: leaf.box_.min.z
+                    },
+                    max: object! {
+                        x: leaf.box_.max.x,
+                        y: leaf.box_.max.y,
+                        z: leaf.box_.max.z
+                    },
+                },
+            })
+            .unwrap();
+    }
+    fs::write("throwback_leaves.json", json_obj.dump()).expect("Unable to write file");
 }
 
 #[test]
@@ -353,11 +436,7 @@ fn basic_predict() {
     let time = 60.; // 1 minute, lol
     let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, &time);
     println!("Ran ball prediction in {}", start.elapsed().as_secs_f32());
-    let last_slice = &ball_prediction.slices[ball_prediction.num_slices - 1];
-
     assert_eq!(ball_prediction.num_slices, time as usize * 120);
-    println!("{:?}", last_slice);
-    assert!(last_slice.location.z > 0.);
 
     let mut json_obj = json::JsonValue::new_array();
     for ball in ball_prediction.slices {
@@ -383,6 +462,66 @@ fn basic_predict() {
             .unwrap();
     }
     fs::write("ball_prediction.json", json_obj.dump()).expect("Unable to write file");
+
+    let iters = 2000;
+    let time = 10.; // 10 seconds
+    let num_slices = time as usize * 120 * iters;
+    let mut rng = rand::thread_rng();
+
+    let mut x_locs = Vec::with_capacity(num_slices);
+    let mut y_locs = Vec::with_capacity(num_slices);
+    let mut z_locs = Vec::with_capacity(num_slices);
+
+    dbg!(game.field.collision_mesh.global_box);
+
+    for _ in 0..iters {
+        let ball = Ball {
+            time: 0.,
+            location: Vec3 {
+                x: rng.gen_range(-3900.0..3900.),
+                y: rng.gen_range(-5000.0..5000.),
+                z: rng.gen_range(100.0..1900.),
+            },
+            velocity: Vec3 {
+                x: rng.gen_range(-2000.0..2000.),
+                y: rng.gen_range(-2000.0..2000.),
+                z: rng.gen_range(-2000.0..2000.),
+            },
+            angular_velocity: Vec3 {
+                x: rng.gen_range(-3.0..3.),
+                y: rng.gen_range(-3.0..3.),
+                z: rng.gen_range(-3.0..3.),
+            },
+            radius: game.ball.radius,
+            collision_radius: game.ball.collision_radius,
+            moi: game.ball.moi,
+        };
+
+        let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, &time);
+        for slice in ball_prediction.slices {
+            x_locs.push(slice.location.x as isize);
+            y_locs.push(slice.location.y as isize);
+            z_locs.push(slice.location.z as isize);
+        }
+    }
+
+    dbg!(*x_locs.iter().min().unwrap());
+    dbg!(*x_locs.iter().max().unwrap());
+
+    dbg!(*y_locs.iter().min().unwrap());
+    dbg!(*y_locs.iter().max().unwrap());
+
+    dbg!(*z_locs.iter().min().unwrap());
+    dbg!(*z_locs.iter().max().unwrap());
+
+    assert!(*z_locs.iter().min().unwrap() > game.field.collision_mesh.global_box.min.z as isize);
+    assert!(*z_locs.iter().max().unwrap() < game.field.collision_mesh.global_box.max.z as isize);
+
+    assert!(*y_locs.iter().min().unwrap() > game.field.collision_mesh.global_box.min.y as isize);
+    assert!(*y_locs.iter().max().unwrap() < game.field.collision_mesh.global_box.max.y as isize);
+
+    assert!(*x_locs.iter().min().unwrap() > game.field.collision_mesh.global_box.min.x as isize);
+    assert!(*x_locs.iter().max().unwrap() < game.field.collision_mesh.global_box.max.x as isize);
 }
 
 #[test]
