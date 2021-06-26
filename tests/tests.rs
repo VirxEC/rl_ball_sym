@@ -1,3 +1,4 @@
+use rand::Rng;
 use rl_ball_sym::linear_algebra::vector::Vec3;
 use rl_ball_sym::simulation::ball::Ball;
 use rl_ball_sym::simulation::bvh::BvhNode;
@@ -5,7 +6,6 @@ use rl_ball_sym::simulation::game::Game;
 use rl_ball_sym::simulation::geometry::Aabb;
 use rl_ball_sym::simulation::morton::Morton;
 use rl_ball_sym::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
-use rand::Rng;
 use std::fs;
 use std::time::Instant;
 
@@ -15,7 +15,7 @@ extern crate json;
 static mut GAME_0: Option<Game> = None;
 static mut GAME_1: Option<Game> = None;
 
-#[test]
+#[test]    
 fn init() {
     let mut game: &mut Game;
     unsafe {
