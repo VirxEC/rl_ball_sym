@@ -83,8 +83,12 @@ impl Ball {
         ball
     }
 
-    fn initialize(&mut self) {
+    pub fn initialize(&mut self) {
         self.location.z = 1.1 * self.collision_radius;
+        self.calculate_moi();
+    }
+
+    pub fn calculate_moi(&mut self) {
         self.moi = 0.4 * Ball::M * self.radius * self.radius;
     }
 
