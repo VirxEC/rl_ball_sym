@@ -96,13 +96,6 @@ impl Bvh {
         }
 
         sorted_leaves.sort_unstable_by_key(|leaf| leaf.morton);
-        // remove duplicate leaves
-        // let num_leaves_1 = num_leaves;
-        // sorted_leaves.dedup_by_key(|leaf| leaf.morton);
-        // let num_leaves = sorted_leaves.len();
-        // if num_leaves_1 != num_leaves {
-        //     println!("Removed {} duplicate leaves!", num_leaves_1 - num_leaves)
-        // }
 
         let root = Bvh::generate_hierarchy(&sorted_leaves, 0, num_leaves - 1);
 
@@ -138,9 +131,10 @@ impl Bvh {
 
         // Allocate traversal stack from thread-local memory,
         // and push NULL to indicate that there are no postponed nodes.
-        let bvh_default = BvhNode::default();
-        let mut stack: Vec<&BvhNode> = vec![&bvh_default; 32];
-        let mut stack_ptr = 1;
+        // let bvh_default = BvhNode::default();
+        // let mut stack: Vec<&BvhNode> = vec![&bvh_default; 32];
+        let mut stack: Vec<&BvhNode> = Vec::with_capacity(32);
+        // let mut stack_ptr = 1;
 
         // Traverse nodes starting from the root.
         let mut node = &*self.root;
@@ -151,55 +145,54 @@ impl Bvh {
             let mut traverse_left = false;
             let mut traverse_right = false;
 
-            if left.is_some() {
-                let left = left.as_deref().unwrap();
-                if left.box_.intersect_self(&query_box) {
-                    if left.is_terminal {
-                        let left_tri = left.primitive.unwrap();
-                        if left_tri.intersect_sphere(&query_object) {
-                            hits.push(left_tri);
+            match left {
+                Some(left) => {
+                    if left.box_.intersect_self(&query_box) {
+                        match left.primitive {
+                            Some(left_tri) => {
+                                if left_tri.intersect_sphere(&query_object) {
+                                    hits.push(left_tri);
+                                }
+                            },
+                            None => {
+                                traverse_left = true;
+                                node = left;
+                            }
                         }
-                    } else {
-                        // traverse when a query overlaps with an internal node
-                        traverse_left = true;
                     }
-                }
+                },
+                None => ()
             }
 
-            if right.is_some() {
-                let right = right.as_deref().unwrap();
-                if right.box_.intersect_self(&query_box) {
-                    if right.is_terminal {
-                        let right_tri = right.primitive.unwrap();
-                        if right_tri.intersect_sphere(&query_object) {
-                            hits.push(right_tri);
+            match right {
+                Some(right) => {
+                    if right.box_.intersect_self(&query_box) {
+                        match right.primitive {
+                            Some(right_tri) => {
+                                if right_tri.intersect_sphere(&query_object) {
+                                    hits.push(right_tri);
+                                }
+                            },
+                            None => {
+                                traverse_right = true;
+
+                                if traverse_left {
+                                    stack.push(right);
+                                } else {
+                                    node = right;
+                                }
+                            }
                         }
-                    } else {
-                        // traverse when a query overlaps with an internal node
-                        traverse_right = true;
                     }
-                }
+                },
+                None => ()
             }
 
             if !(traverse_left || traverse_right) {
-                // pop
-                stack_ptr -= 1;
-
-                node = &stack[stack_ptr];
-            } else if traverse_left {
-                node = left.unwrap();
-
-                if traverse_right {
-                    // push
-                    stack[stack_ptr] = right.unwrap();
-                    stack_ptr += 1;
+                match stack.pop() {
+                    Some(n) => node = n,
+                    None => break
                 }
-            } else {
-                node = right.unwrap();
-            }
-
-            if stack_ptr == 0 {
-                break;
             }
         }
 

@@ -1,6 +1,6 @@
 use crate::linear_algebra::vector::Vec3;
 use crate::simulation::game::Game;
-use crate::simulation::geometry::{Ray, Sphere};
+use crate::simulation::geometry::Sphere;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Ball {
@@ -107,38 +107,38 @@ impl Ball {
     }
 
     pub fn step(&mut self, game: &Game, dt: f32) {
-        let contact: Option<Ray> = game.field.collide(&self.hitbox());
-
-        if contact.is_some() {
-            let contact = contact.unwrap();
-            let p = contact.start;
-            let n = contact.direction;
-
-            let loc = p - self.location;
-
-            let m_reduced = 1. / (Ball::INV_M + loc.dot(&loc) / self.moi);
-
-            let v_perp = n * self.velocity.dot(&n).min(0.);
-            let v_para = self.velocity - v_perp - loc.cross(&self.angular_velocity);
-
-            let ratio = v_perp.magnitude() / v_para.magnitude().max(0.0001);
-
-            let j_perp = v_perp * Ball::RESTITUTION_M;
-            let j_para = -(Ball::MU * ratio).min(1.) * m_reduced * v_para;
-
-            let j = j_perp + j_para;
-
-            self.angular_velocity += loc.cross(&j) / self.moi;
-            self.velocity += (j / Ball::M) + self.velocity * (Ball::DRAG * dt);
-            self.location += self.velocity * dt;
-
-            let penetration = self.collision_radius - (self.location - p).dot(&n);
-            if penetration > 0. {
-                self.location += n * (1.001 * penetration);
+        match game.field.collide(&self.hitbox()) {
+            Some(contact) => {
+                let p = contact.start;
+                let n = contact.direction;
+    
+                let loc = p - self.location;
+    
+                let m_reduced = 1. / (Ball::INV_M + loc.dot(&loc) / self.moi);
+    
+                let v_perp = n * self.velocity.dot(&n).min(0.);
+                let v_para = self.velocity - v_perp - loc.cross(&self.angular_velocity);
+    
+                let ratio = v_perp.magnitude() / v_para.magnitude().max(0.0001);
+    
+                let j_perp = v_perp * Ball::RESTITUTION_M;
+                let j_para = -(Ball::MU * ratio).min(1.) * m_reduced * v_para;
+    
+                let j = j_perp + j_para;
+    
+                self.angular_velocity += loc.cross(&j) / self.moi;
+                self.velocity += (j / Ball::M) + self.velocity * (Ball::DRAG * dt);
+                self.location += self.velocity * dt;
+    
+                let penetration = self.collision_radius - (self.location - p).dot(&n);
+                if penetration > 0. {
+                    self.location += n * (1.001 * penetration);
+                }
+            },
+            None => {
+                self.velocity += (self.velocity * Ball::DRAG + game.gravity) * dt;
+                self.location += self.velocity * dt;
             }
-        } else {
-            self.velocity += (self.velocity * Ball::DRAG + game.gravity) * dt;
-            self.location += self.velocity * dt;
         }
 
         self.angular_velocity *= (Ball::W_MAX / self.angular_velocity.magnitude()).min(1.);

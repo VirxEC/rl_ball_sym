@@ -527,7 +527,7 @@ fn basic_predict() {
 #[test]
 fn fast_predict_soccar() {
     let game = load_soccar();
-    let runs = 200;
+    let runs = 120000;
     let mut times: Vec<f32> = Vec::with_capacity(runs);
     println!("Testing for average ball prediction struct generation time - running function {} times.", &runs);
 
