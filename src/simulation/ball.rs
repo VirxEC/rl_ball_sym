@@ -106,55 +106,53 @@ impl Ball {
         }
     }
 
-    pub fn step(&mut self, game: &Game, dt: f32) {
-        match game.field.collide(&self.hitbox()) {
+    pub fn step(game: &mut Game, dt: f32) {
+        match game.field.collide(&game.ball.hitbox()) {
             Some(contact) => {
                 let p = contact.start;
                 let n = contact.direction;
-    
-                let loc = p - self.location;
-    
-                let m_reduced = 1. / (Ball::INV_M + loc.dot(&loc) / self.moi);
-    
-                let v_perp = n * self.velocity.dot(&n).min(0.);
-                let v_para = self.velocity - v_perp - loc.cross(&self.angular_velocity);
-    
+
+                let loc = p - game.ball.location;
+
+                let m_reduced = 1. / (Ball::INV_M + loc.dot(&loc) / game.ball.moi);
+
+                let v_perp = n * game.ball.velocity.dot(&n).min(0.);
+                let v_para = game.ball.velocity - v_perp - loc.cross(&game.ball.angular_velocity);
+
                 let ratio = v_perp.magnitude() / v_para.magnitude().max(0.0001);
-    
+
                 let j_perp = v_perp * Ball::RESTITUTION_M;
                 let j_para = -(Ball::MU * ratio).min(1.) * m_reduced * v_para;
-    
+
                 let j = j_perp + j_para;
-    
-                self.angular_velocity += loc.cross(&j) / self.moi;
-                self.velocity += (j / Ball::M) + self.velocity * (Ball::DRAG * dt);
-                self.location += self.velocity * dt;
-    
-                let penetration = self.collision_radius - (self.location - p).dot(&n);
+
+                game.ball.angular_velocity += loc.cross(&j) / game.ball.moi;
+                game.ball.velocity += (j / Ball::M) + game.ball.velocity * (Ball::DRAG * dt);
+                game.ball.location += game.ball.velocity * dt;
+
+                let penetration = game.ball.collision_radius - (game.ball.location - p).dot(&n);
                 if penetration > 0. {
-                    self.location += n * (1.001 * penetration);
+                    game.ball.location += n * (1.001 * penetration);
                 }
-            },
+            }
             None => {
-                self.velocity += (self.velocity * Ball::DRAG + game.gravity) * dt;
-                self.location += self.velocity * dt;
+                game.ball.velocity += (game.ball.velocity * Ball::DRAG + game.gravity) * dt;
+                game.ball.location += game.ball.velocity * dt;
             }
         }
 
-        self.angular_velocity *= (Ball::W_MAX / self.angular_velocity.magnitude()).min(1.);
-        self.velocity *= (Ball::V_MAX / self.velocity.magnitude()).min(1.);
-        self.time += dt;
+        game.ball.angular_velocity *= (Ball::W_MAX / game.ball.angular_velocity.magnitude()).min(1.);
+        game.ball.velocity *= (Ball::V_MAX / game.ball.velocity.magnitude()).min(1.);
+        game.ball.time += dt;
     }
 
-    pub fn get_ball_prediction_struct_for_time(&self, game: &Game, time: &f32) -> BallPrediction {
+    pub fn get_ball_prediction_struct_for_time(game: &mut Game, time: &f32) -> BallPrediction {
         let num_slices = (time / Ball::SIMULATION_DT).round() as usize;
-
         let mut slices = Vec::with_capacity(num_slices);
-        let mut ball = self.clone();
 
         for _ in 0..num_slices {
-            ball.step(&game, Ball::SIMULATION_DT);
-            slices.push(Box::new(ball));
+            Ball::step(game, Ball::SIMULATION_DT);
+            slices.push(Box::new(game.ball));
         }
 
         BallPrediction {
@@ -163,14 +161,13 @@ impl Ball {
         }
     }
 
-    pub fn get_ball_prediction_struct(&self, game: &Game) -> BallPrediction {
+    pub fn get_ball_prediction_struct(game: &mut Game) -> BallPrediction {
         let num_slices = Ball::STANDARD_NUM_SLICES;
         let mut slices = Vec::with_capacity(num_slices);
-        let mut ball = self.clone();
 
         for _ in 0..Ball::STANDARD_NUM_SLICES {
-            ball.step(&game, Ball::SIMULATION_DT);
-            slices.push(Box::new(ball));
+            Ball::step(game, Ball::SIMULATION_DT);
+            slices.push(Box::new(game.ball));
         }
 
         BallPrediction {

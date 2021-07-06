@@ -131,10 +131,7 @@ impl Bvh {
 
         // Allocate traversal stack from thread-local memory,
         // and push NULL to indicate that there are no postponed nodes.
-        // let bvh_default = BvhNode::default();
-        // let mut stack: Vec<&BvhNode> = vec![&bvh_default; 32];
         let mut stack: Vec<&BvhNode> = Vec::with_capacity(32);
-        // let mut stack_ptr = 1;
 
         // Traverse nodes starting from the root.
         let mut node = &*self.root;
@@ -153,15 +150,15 @@ impl Bvh {
                                 if left_tri.intersect_sphere(&query_object) {
                                     hits.push(left_tri);
                                 }
-                            },
+                            }
                             None => {
                                 traverse_left = true;
                                 node = left;
                             }
                         }
                     }
-                },
-                None => ()
+                }
+                None => (),
             }
 
             match right {
@@ -172,7 +169,7 @@ impl Bvh {
                                 if right_tri.intersect_sphere(&query_object) {
                                     hits.push(right_tri);
                                 }
-                            },
+                            }
                             None => {
                                 traverse_right = true;
 
@@ -184,14 +181,14 @@ impl Bvh {
                             }
                         }
                     }
-                },
-                None => ()
+                }
+                None => (),
             }
 
             if !(traverse_left || traverse_right) {
                 match stack.pop() {
                     Some(n) => node = n,
-                    None => break
+                    None => break,
                 }
             }
         }

@@ -148,12 +148,10 @@ impl Mesh {
         for i in 0..n {
             triangles.push(Tri::default());
             for j in 0..3 {
-                let id = self.ids[i * 3 + j] as usize;
-                triangles[i].p[j] = Vec3 {
-                    x: self.vertices[id * 3 + 0] as f32,
-                    y: self.vertices[id * 3 + 1] as f32,
-                    z: self.vertices[id * 3 + 2] as f32,
-                };
+                let id = (self.ids[i * 3 + j] * 3) as usize;
+                triangles[i].p[j].x = self.vertices[id + 0] as f32;
+                triangles[i].p[j].y = self.vertices[id + 1] as f32;
+                triangles[i].p[j].z = self.vertices[id + 2] as f32;
             }
         }
 

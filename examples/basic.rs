@@ -1,6 +1,6 @@
 use rl_ball_sym::linear_algebra::vector::Vec3;
 use rl_ball_sym::load_soccar;
-use rl_ball_sym::simulation::ball::BallPrediction;
+use rl_ball_sym::simulation::ball::{Ball, BallPrediction};
 use rl_ball_sym::simulation::game::Game;
 
 use rand::Rng;
@@ -36,7 +36,7 @@ pub fn main() {
 }
 
 fn get_output(ball_location: Vec3, ball_velocity: Vec3, ball_angular_velocity: Vec3, time: f32) {
-    let mut game: &mut Game;
+    let game: &mut Game;
 
     unsafe {
         // if game is uninitialized, initialize soccar
@@ -48,16 +48,12 @@ fn get_output(ball_location: Vec3, ball_velocity: Vec3, ball_angular_velocity: V
         game = GAME.as_mut().unwrap();
     }
 
-    // set the ball information in game
-    game.ball.time = time;
-    game.ball.location = ball_location;
-    game.ball.velocity = ball_velocity;
-    game.ball.angular_velocity = ball_angular_velocity;
+    game.ball.update(time, ball_location, ball_velocity, ball_angular_velocity);
 
     // generate the ball prediction struct
     // this is a list of 720 slices
     // it goes 6 seconds into the future with 120 slices per second
-    let ball_prediction: BallPrediction = game.ball.get_ball_prediction_struct(&game);
+    let ball_prediction: BallPrediction = Ball::get_ball_prediction_struct(game);
     assert_eq!(ball_prediction.num_slices, 720);
-    assert_eq!(ball_prediction.slices[ball_prediction.num_slices - 1].time.round() as i32, (game.ball.time.round() + 6.) as i32);
+    assert_eq!(ball_prediction.slices[ball_prediction.num_slices - 1].time.round() as i32, game.ball.time.round() as i32);
 }
