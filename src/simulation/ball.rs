@@ -33,6 +33,15 @@ pub struct BallPrediction {
     pub slices: Vec<Box<Ball>>,
 }
 
+impl Default for BallPrediction {
+    fn default() -> Self {
+        Self {
+            num_slices: 0,
+            slices: Vec::new(),
+        }
+    }
+}
+
 impl Ball {
     const RESTITUTION: f32 = 0.6;
     const DRAG: f32 = -0.0305;
