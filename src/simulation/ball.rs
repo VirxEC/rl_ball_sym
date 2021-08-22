@@ -116,7 +116,7 @@ impl Ball {
     }
 
     pub fn step(game: &mut Game, dt: f32) {
-        match game.field.collide(&game.ball.hitbox()) {
+        match game.collision_mesh.collide(&game.ball.hitbox()) {
             Some(contact) => {
                 let p = contact.start;
                 let n = contact.direction;

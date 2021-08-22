@@ -1,4 +1,4 @@
-use crate::linear_algebra::mat::Mat3;
+use super::mat::Mat3;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
 
 #[derive(Clone, Copy, Debug)]

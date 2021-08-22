@@ -1,7 +1,7 @@
 use crate::linear_algebra::mat::Mat3;
 use crate::linear_algebra::math::dot;
 use crate::linear_algebra::vector::Vec3;
-use crate::simulation::geometry::Tri;
+use super::geometry::Tri;
 
 #[derive(Clone)]
 pub struct Mesh {

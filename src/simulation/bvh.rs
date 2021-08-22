@@ -1,6 +1,6 @@
-use crate::simulation::geometry::Sphere;
-use crate::simulation::geometry::{Aabb, Tri};
-use crate::simulation::morton::Morton;
+use super::geometry::{Ray, Sphere};
+use super::geometry::{Aabb, Tri};
+use super::morton::Morton;
 use std::boxed::Box;
 
 #[derive(Clone)]
@@ -194,5 +194,35 @@ impl Bvh {
         }
 
         hits
+    }
+
+    pub fn collide(&self, s: &Sphere) -> Option<Ray> {
+        let mut contact_point = Ray::default();
+        let mut count = 0;
+
+        let tris_hit = self.intersect(&s);
+
+        for tri in tris_hit {
+            let p = tri.center();
+            let n = tri.unit_normal();
+
+            let separation = (s.center - p).dot(&n);
+            if separation <= s.radius {
+                count += 1;
+                contact_point.start += s.center - n * separation;
+                contact_point.direction += n * (s.radius - separation);
+            }
+        }
+
+        if count > 0 {
+            contact_point.start /= count as f32;
+            contact_point.direction.normalized();
+        }
+
+        if count == 0 {
+            None
+        } else {
+            Some(contact_point)
+        }
     }
 }

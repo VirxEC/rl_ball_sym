@@ -1,11 +1,11 @@
 use crate::linear_algebra::vector::Vec3;
-use crate::simulation::ball::Ball;
-use crate::simulation::field::Field;
+use super::ball::Ball;
+use super::bvh::Bvh;
 
 #[derive(Clone)]
 pub struct Game {
     pub gravity: Vec3,
-    pub field: Field,
+    pub collision_mesh: Bvh,
     pub ball: Ball,
 }
 
@@ -13,7 +13,7 @@ impl Default for Game {
     fn default() -> Self {
         Self {
             gravity: Vec3::default(),
-            field: Field::default(),
+            collision_mesh: Bvh::default(),
             ball: Ball::default(),
         }
     }

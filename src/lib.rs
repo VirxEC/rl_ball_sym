@@ -6,7 +6,7 @@ pub mod simulation;
 
 use linear_algebra::vector::Vec3;
 use simulation::ball::Ball;
-use simulation::field::Field;
+use simulation::field::{initialize_soccar, initialize_dropshot, initialize_hoops, initialize_throwback};
 use simulation::game::Game;
 use simulation::mesh::Mesh;
 
@@ -52,7 +52,7 @@ pub fn load_soccar() -> Game {
     let soccar_ramps_0: Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_ramps_0_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_ramps_0_vertices.bin").to_vec());
     let soccar_ramps_1: Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_ramps_1_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_ramps_1_vertices.bin").to_vec());
 
-    let field = Field::initialize_soccar(&soccar_corner, &soccar_goal, &soccar_ramps_0, &soccar_ramps_1);
+    let collision_mesh = initialize_soccar(&soccar_corner, &soccar_goal, &soccar_ramps_0, &soccar_ramps_1);
 
     let ball = Ball::initialize_soccar();
 
@@ -64,7 +64,7 @@ pub fn load_soccar() -> Game {
 
     Game {
         gravity,
-        field,
+        collision_mesh,
         ball,
     }
 }
@@ -76,7 +76,7 @@ pub fn load_hoops() -> Game {
     let hoops_ramps_0: Mesh = read_mesh(include_bytes!("../assets/hoops/hoops_ramps_0_ids.bin").to_vec(), include_bytes!("../assets/hoops/hoops_ramps_0_vertices.bin").to_vec());
     let hoops_ramps_1: Mesh = read_mesh(include_bytes!("../assets/hoops/hoops_ramps_1_ids.bin").to_vec(), include_bytes!("../assets/hoops/hoops_ramps_1_vertices.bin").to_vec());
 
-    let field = Field::initialize_hoops(&hoops_corner, &hoops_net, &hoops_rim, &hoops_ramps_0, &hoops_ramps_1);
+    let collision_mesh = initialize_hoops(&hoops_corner, &hoops_net, &hoops_rim, &hoops_ramps_0, &hoops_ramps_1);
 
     let ball = Ball::initialize_hoops();
 
@@ -88,7 +88,7 @@ pub fn load_hoops() -> Game {
 
     Game {
         gravity,
-        field,
+        collision_mesh,
         ball,
     }
 }
@@ -96,7 +96,7 @@ pub fn load_hoops() -> Game {
 pub fn load_dropshot() -> Game {
     let dropshot: Mesh = read_mesh(include_bytes!("../assets/dropshot/dropshot_ids.bin").to_vec(), include_bytes!("../assets/dropshot/dropshot_vertices.bin").to_vec());
 
-    let field = Field::initialize_dropshot(&dropshot);
+    let collision_mesh = initialize_dropshot(&dropshot);
 
     let ball = Ball::initialize_dropshot();
 
@@ -108,7 +108,7 @@ pub fn load_dropshot() -> Game {
 
     Game {
         gravity,
-        field,
+        collision_mesh,
         ball,
     }
 }
@@ -127,7 +127,7 @@ pub fn load_soccar_throwback() -> Game {
     let side_ramps_lower: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_side_ramps_lower_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_side_ramps_lower_vertices.bin").to_vec());
     let side_ramps_upper: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_side_ramps_upper_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_side_ramps_upper_vertices.bin").to_vec());
 
-    let field = Field::initialize_throwback(&back_ramps_lower, &back_ramps_upper, &corner_ramps_lower, &corner_ramps_upper, &corner_wall_0, &corner_wall_1, &corner_wall_2, &goal, &side_ramps_lower, &side_ramps_upper);
+    let collision_mesh = initialize_throwback(&back_ramps_lower, &back_ramps_upper, &corner_ramps_lower, &corner_ramps_upper, &corner_wall_0, &corner_wall_1, &corner_wall_2, &goal, &side_ramps_lower, &side_ramps_upper);
 
     let ball = Ball::initialize_soccar();
 
@@ -139,7 +139,7 @@ pub fn load_soccar_throwback() -> Game {
 
     Game {
         gravity,
-        field,
+        collision_mesh,
         ball,
     }
 }

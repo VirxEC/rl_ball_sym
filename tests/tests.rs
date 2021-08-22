@@ -90,16 +90,13 @@ fn gamemode_soccar() {
 
     // test all the default values to make sure they're proper
 
-    assert_eq!(game.field.field_mesh.ids.len(), 24084);
-    assert_eq!(game.field.field_mesh.vertices.len(), 13152);
-
     assert_eq!(game.gravity.x as i64, 0);
     assert_eq!(game.gravity.y as i64, 0);
     assert_eq!(game.gravity.z as i64, -650);
 
-    dbg!(game.field.collision_mesh.root.box_);
+    dbg!(game.collision_mesh.root.box_);
 
-    assert_eq!(game.field.collision_mesh.num_leaves, 8028 as u64);
+    assert_eq!(game.collision_mesh.num_leaves, 8028 as u64);
 
     assert_eq!(game.ball.time as i64, 0);
     assert_eq!(game.ball.location.x as i64, 0);
@@ -121,16 +118,13 @@ fn gamemode_hoops() {
 
     // test all the default values to make sure they're proper
 
-    assert_eq!(game.field.field_mesh.ids.len(), 47196);
-    assert_eq!(game.field.field_mesh.vertices.len(), 25224);
-
     assert_eq!(game.gravity.x as i64, 0);
     assert_eq!(game.gravity.y as i64, 0);
     assert_eq!(game.gravity.z as i64, -650);
 
-    dbg!(game.field.collision_mesh.root.box_);
+    dbg!(game.collision_mesh.root.box_);
 
-    assert_eq!(game.field.collision_mesh.num_leaves, 15732 as u64);
+    assert_eq!(game.collision_mesh.num_leaves, 15732 as u64);
 
     assert_eq!(game.ball.time as i64, 0);
     assert_eq!(game.ball.location.x as i64, 0);
@@ -152,16 +146,13 @@ fn gamemode_dropshot() {
 
     // test all the default values to make sure they're proper
 
-    assert_eq!(game.field.field_mesh.ids.len(), 10848);
-    assert_eq!(game.field.field_mesh.vertices.len(), 5766);
-
     assert_eq!(game.gravity.x as i64, 0);
     assert_eq!(game.gravity.y as i64, 0);
     assert_eq!(game.gravity.z as i64, -650);
 
-    dbg!(game.field.collision_mesh.root.box_);
+    dbg!(game.collision_mesh.root.box_);
 
-    assert_eq!(game.field.collision_mesh.num_leaves, 3616 as u64);
+    assert_eq!(game.collision_mesh.num_leaves, 3616 as u64);
 
     assert_eq!(game.ball.time as i64, 0);
     assert_eq!(game.ball.location.x as i64, 0);
@@ -183,18 +174,16 @@ fn gamemode_throwback_soccar() {
 
     // test all the default values to make sure they're proper
 
-    assert_eq!(game.field.field_mesh.ids.len(), 27816);
-    assert_eq!(game.field.field_mesh.vertices.len(), 83412);
 
     assert_eq!(game.gravity.x as i64, 0);
     assert_eq!(game.gravity.y as i64, 0);
     assert_eq!(game.gravity.z as i64, -650);
 
-    dbg!(&game.field.collision_mesh.root.box_);
-    dbg!(&game.field.collision_mesh.root.left.as_deref().unwrap().box_);
-    dbg!(&game.field.collision_mesh.root.right.as_deref().unwrap().box_);
+    dbg!(&game.collision_mesh.root.box_);
+    dbg!(&game.collision_mesh.root.left.as_deref().unwrap().box_);
+    dbg!(&game.collision_mesh.root.right.as_deref().unwrap().box_);
 
-    assert_eq!(game.field.collision_mesh.num_leaves, 9272);
+    assert_eq!(game.collision_mesh.num_leaves, 9272);
 
     assert_eq!(game.ball.time as i64, 0);
     assert_eq!(game.ball.location.x as i64, 0);
@@ -358,7 +347,7 @@ fn basic_predict() {
     let mut y_locs = Vec::with_capacity(num_slices);
     let mut z_locs = Vec::with_capacity(num_slices);
 
-    dbg!(game.field.collision_mesh.global_box);
+    dbg!(game.collision_mesh.global_box);
 
     for _ in 0..iters {
         game.ball.update(
@@ -402,14 +391,14 @@ fn basic_predict() {
     dbg!(*z_locs.iter().min().unwrap());
     dbg!(*z_locs.iter().max().unwrap());
 
-    assert!(*z_locs.iter().min().unwrap() > game.field.collision_mesh.global_box.min.z as isize);
-    assert!(*z_locs.iter().max().unwrap() < game.field.collision_mesh.global_box.max.z as isize);
+    assert!(*z_locs.iter().min().unwrap() > game.collision_mesh.global_box.min.z as isize);
+    assert!(*z_locs.iter().max().unwrap() < game.collision_mesh.global_box.max.z as isize);
 
-    assert!(*y_locs.iter().min().unwrap() > game.field.collision_mesh.global_box.min.y as isize);
-    assert!(*y_locs.iter().max().unwrap() < game.field.collision_mesh.global_box.max.y as isize);
+    assert!(*y_locs.iter().min().unwrap() > game.collision_mesh.global_box.min.y as isize);
+    assert!(*y_locs.iter().max().unwrap() < game.collision_mesh.global_box.max.y as isize);
 
-    assert!(*x_locs.iter().min().unwrap() > game.field.collision_mesh.global_box.min.x as isize);
-    assert!(*x_locs.iter().max().unwrap() < game.field.collision_mesh.global_box.max.x as isize);
+    assert!(*x_locs.iter().min().unwrap() > game.collision_mesh.global_box.min.x as isize);
+    assert!(*x_locs.iter().max().unwrap() < game.collision_mesh.global_box.max.x as isize);
 }
 
 #[test]
