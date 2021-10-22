@@ -15,10 +15,10 @@ static FLIP_Y: Mat3 = Mat3 {
 fn quad(p: Vec3, e1: Vec3, e2: Vec3) -> Mesh {
     let vertices: [Vec3; 4] = [p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2];
 
-    return Mesh {
+    Mesh {
         ids: vec![0, 1, 3, 1, 2, 3],
         vertices: vec![vertices[0].x as f32, vertices[0].y as f32, vertices[0].z as f32, vertices[1].x as f32, vertices[1].y as f32, vertices[1].z as f32, vertices[2].x as f32, vertices[2].y as f32, vertices[2].z as f32, vertices[3].x as f32, vertices[3].y as f32, vertices[3].z as f32],
-    };
+    }
 }
 
 pub fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_0: &Mesh, soccar_ramps_1: &Mesh) -> Bvh {

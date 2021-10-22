@@ -40,10 +40,10 @@ fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> Mesh {
         });
     }
 
-    return Mesh {
+    Mesh {
         ids,
         vertices,
-    };
+    }
 }
 
 pub fn load_soccar() -> Game {
