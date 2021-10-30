@@ -1,5 +1,5 @@
-use super::geometry::{Ray, Sphere};
 use super::geometry::{Aabb, Tri};
+use super::geometry::{Ray, Sphere};
 use super::morton::Morton;
 use std::boxed::Box;
 
@@ -216,7 +216,7 @@ impl Bvh {
 
         if count > 0 {
             contact_point.start /= count as f32;
-            contact_point.direction.normalized();
+            contact_point.direction = contact_point.direction.normalize();
         }
 
         if count == 0 {

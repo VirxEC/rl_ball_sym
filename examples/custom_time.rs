@@ -1,7 +1,7 @@
-use rl_ball_sym::linear_algebra::vector::Vec3;
 use rl_ball_sym::load_soccar;
 use rl_ball_sym::simulation::ball::{Ball, BallPrediction};
 use rl_ball_sym::simulation::game::Game;
+use vvec3::Vec3;
 
 use rand::Rng;
 
@@ -13,24 +13,7 @@ pub fn main() {
 
     // simulate our get_output function being called for 2 seconds - you can pretty much just ignore this.
     for _ in 0..240 {
-        get_output(
-            Vec3 {
-                x: rng.gen_range(-4000.0..4000.),
-                y: rng.gen_range(-5020.0..5020.),
-                z: rng.gen_range(0.0..1944.),
-            },
-            Vec3 {
-                x: rng.gen_range(-2000.0..2000.),
-                y: rng.gen_range(-2000.0..2000.),
-                z: rng.gen_range(-2000.0..2000.),
-            },
-            Vec3 {
-                x: rng.gen_range(-3.0..3.),
-                y: rng.gen_range(-3.0..3.),
-                z: rng.gen_range(-3.0..3.),
-            },
-            time,
-        );
+        get_output(Vec3::new(rng.gen_range(-4000.0..4000.), rng.gen_range(-5020.0..5020.), rng.gen_range(0.0..1944.)), Vec3::new(rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.)), Vec3::new(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)), time);
         time += 1. / 120.;
     }
 }

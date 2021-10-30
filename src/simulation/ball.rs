@@ -1,6 +1,6 @@
-use crate::linear_algebra::vector::Vec3;
 use crate::simulation::game::Game;
 use crate::simulation::geometry::Sphere;
+use vvec3::Vec3;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Ball {

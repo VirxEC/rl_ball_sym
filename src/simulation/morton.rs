@@ -1,5 +1,5 @@
-use crate::linear_algebra::vector::Vec3;
 use super::geometry::Aabb;
+use vvec3::Vec3;
 
 pub struct Morton {
     pub offset: Vec3,

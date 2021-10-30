@@ -1,6 +1,6 @@
-use crate::linear_algebra::vector::Vec3;
 use super::ball::Ball;
 use super::bvh::Bvh;
+use vvec3::Vec3;
 
 #[derive(Clone)]
 pub struct Game {

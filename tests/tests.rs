@@ -1,11 +1,11 @@
 use rand::Rng;
-use rl_ball_sym::linear_algebra::vector::Vec3;
 use rl_ball_sym::simulation::ball::Ball;
 use rl_ball_sym::simulation::game::Game;
 use rl_ball_sym::simulation::geometry::Aabb;
 use rl_ball_sym::simulation::morton::Morton;
 use rl_ball_sym::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
 use std::time::Instant;
+use vvec3::Vec3;
 
 static mut GAME_0: Option<Game> = None;
 static mut GAME_1: Option<Game> = None;
@@ -26,31 +26,15 @@ fn init() {
 #[test]
 fn morton() {
     let global_box = Aabb {
-        min: Vec3 {
-            x: -4096.,
-            y: -5120.,
-            z: 0.,
-        },
-        max: Vec3 {
-            x: 4096.,
-            y: 5120.,
-            z: 2044.,
-        },
+        min: Vec3::new(-4096., -5120., 0.),
+        max: Vec3::new(4096., 5120., 2044.),
     };
 
     let morton = Morton::from(&global_box);
 
     let box_ = Aabb {
-        min: Vec3 {
-            x: -4095.,
-            y: -5119.,
-            z: 1.,
-        },
-        max: Vec3 {
-            x: -4094.,
-            y: -5118.,
-            z: 2.,
-        },
+        min: Vec3::new(-4095., -5119., 1.),
+        max: Vec3::new(-4094., -5118., 2.),
     };
 
     // let code = morton.get_code(&box_);
@@ -173,7 +157,6 @@ fn gamemode_throwback_soccar() {
     let game = load_soccar_throwback();
 
     // test all the default values to make sure they're proper
-
 
     assert_eq!(game.gravity.x as i64, 0);
     assert_eq!(game.gravity.y as i64, 0);
@@ -313,24 +296,7 @@ fn basic_predict() {
     assert_eq!(game.ball.radius as i64, 91);
     assert_eq!(game.ball.collision_radius as i64, 93);
 
-    game.ball.update(
-        0.098145,
-        Vec3 {
-            x: -2294.524658,
-            y: 1684.135986,
-            z: 317.176727,
-        },
-        Vec3 {
-            x: 1273.753662,
-            y: -39.792305,
-            z: 763.282715,
-        },
-        Vec3 {
-            x: 2.3894,
-            y: -0.8755,
-            z: 3.8078,
-        },
-    );
+    game.ball.update(0.098145, Vec3::new(-2294.524658, 1684.135986, 317.176727), Vec3::new(1273.753662, -39.792305, 763.282715), Vec3::new(2.3894, -0.8755, 3.8078));
 
     let start = Instant::now();
     let time = 60.; // 1 minute, lol
@@ -350,24 +316,7 @@ fn basic_predict() {
     dbg!(game.collision_mesh.global_box);
 
     for _ in 0..iters {
-        game.ball.update(
-            0.,
-            Vec3 {
-                x: rng.gen_range(-3900.0..3900.),
-                y: rng.gen_range(-5000.0..5000.),
-                z: rng.gen_range(100.0..1900.),
-            },
-            Vec3 {
-                x: rng.gen_range(-2000.0..2000.),
-                y: rng.gen_range(-2000.0..2000.),
-                z: rng.gen_range(-2000.0..2000.),
-            },
-            Vec3 {
-                x: rng.gen_range(-3.0..3.),
-                y: rng.gen_range(-3.0..3.),
-                z: rng.gen_range(-3.0..3.),
-            },
-        );
+        game.ball.update(0., Vec3::new(rng.gen_range(-3900.0..3900.), rng.gen_range(-5000.0..5000.), rng.gen_range(100.0..1900.)), Vec3::new(rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.)), Vec3::new(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)));
 
         let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
 

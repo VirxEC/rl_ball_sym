@@ -1,6 +1,6 @@
 use crate::linear_algebra::mat::Mat3;
 use crate::linear_algebra::math::dot;
-use crate::linear_algebra::vector::Vec3;
+use vvec3::Vec3;
 
 pub fn distance_between(start: &Vec3, dir: &Vec3, p: &Vec3) -> f32 {
     let u = ((*p - *start).dot(dir) / dir.dot(dir)).clamp(0., 1.);
@@ -86,17 +86,9 @@ impl Default for Aabb {
 
 impl Aabb {
     pub fn add(&self, b: &Aabb) -> Self {
-        let min = Vec3 {
-            x: self.min.x.min(b.min.x),
-            y: self.min.y.min(b.min.y),
-            z: self.min.z.min(b.min.z),
-        };
+        let min = Vec3::new(self.min.x.min(b.min.x), self.min.y.min(b.min.y), self.min.z.min(b.min.z));
 
-        let max = Vec3 {
-            x: self.max.x.max(b.max.x),
-            y: self.max.y.max(b.max.y),
-            z: self.max.z.max(b.max.z),
-        };
+        let max = Vec3::new(self.max.x.max(b.max.x), self.max.y.max(b.max.y), self.max.z.max(b.max.z));
 
         Self {
             min,
@@ -105,17 +97,9 @@ impl Aabb {
     }
 
     pub fn from_tri(t: &Tri) -> Self {
-        let min = Vec3 {
-            x: t.p[0].x.min(t.p[1].x.min(t.p[2].x)),
-            y: t.p[0].y.min(t.p[1].y.min(t.p[2].y)),
-            z: t.p[0].z.min(t.p[1].z.min(t.p[2].z)),
-        };
+        let min = Vec3::new(t.p[0].x.min(t.p[1].x.min(t.p[2].x)), t.p[0].y.min(t.p[1].y.min(t.p[2].y)), t.p[0].z.min(t.p[1].z.min(t.p[2].z)));
 
-        let max = Vec3 {
-            x: t.p[0].x.max(t.p[1].x.max(t.p[2].x)),
-            y: t.p[0].y.max(t.p[1].y.max(t.p[2].y)),
-            z: t.p[0].z.max(t.p[1].z.max(t.p[2].z)),
-        };
+        let max = Vec3::new(t.p[0].x.max(t.p[1].x.max(t.p[2].x)), t.p[0].y.max(t.p[1].y.max(t.p[2].y)), t.p[0].z.max(t.p[1].z.max(t.p[2].z)));
 
         Self {
             min,
@@ -124,17 +108,9 @@ impl Aabb {
     }
 
     pub fn from_sphere(s: &Sphere) -> Self {
-        let min = Vec3 {
-            x: s.center.x - s.radius,
-            y: s.center.y - s.radius,
-            z: s.center.z - s.radius,
-        };
+        let min = Vec3::new(s.center.x - s.radius, s.center.y - s.radius, s.center.z - s.radius);
 
-        let max = Vec3 {
-            x: s.center.x + s.radius,
-            y: s.center.y + s.radius,
-            z: s.center.z + s.radius,
-        };
+        let max = Vec3::new(s.center.x + s.radius, s.center.y + s.radius, s.center.z + s.radius);
 
         Self {
             min,
@@ -147,11 +123,7 @@ impl Aabb {
     }
 
     pub fn intersect_sphere(&self, b: &Sphere) -> bool {
-        let nearest = Vec3 {
-            x: b.center.x.clamp(self.min.x, self.max.x),
-            y: b.center.y.clamp(self.min.y, self.max.y),
-            z: b.center.z.clamp(self.min.z, self.max.z),
-        };
+        let nearest = Vec3::new(b.center.x.clamp(self.min.x, self.max.x), b.center.y.clamp(self.min.y, self.max.y), b.center.z.clamp(self.min.z, self.max.z));
 
         (b.center - nearest).magnitude() <= b.radius
     }

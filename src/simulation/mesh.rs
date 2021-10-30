@@ -1,7 +1,7 @@
+use super::geometry::Tri;
 use crate::linear_algebra::mat::Mat3;
 use crate::linear_algebra::math::dot;
-use crate::linear_algebra::vector::Vec3;
-use super::geometry::Tri;
+use vvec3::Vec3;
 
 #[derive(Clone)]
 pub struct Mesh {
@@ -93,14 +93,7 @@ impl Mesh {
         let n = self.vertices.len() / 3;
 
         for i in 0..n {
-            let v = dot(
-                &a,
-                &Vec3 {
-                    x: self.vertices[i * 3 + 0] as f32,
-                    y: self.vertices[i * 3 + 1] as f32,
-                    z: self.vertices[i * 3 + 2] as f32,
-                },
-            );
+            let v = dot(&a, &Vec3::new(self.vertices[i * 3 + 0] as f32, self.vertices[i * 3 + 1] as f32, self.vertices[i * 3 + 2] as f32));
 
             vertices[i * 3 + 0] = v.x as f32;
             vertices[i * 3 + 1] = v.y as f32;
