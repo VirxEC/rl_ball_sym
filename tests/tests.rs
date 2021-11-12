@@ -351,6 +351,29 @@ fn basic_predict() {
 }
 
 #[test]
+fn fast_predict_custom_soccar() {
+    let mut game = load_soccar();
+    let runs = 2000;
+    let time = 8.;
+    let mut times: Vec<f32> = Vec::with_capacity(runs);
+    println!("Testing for average ball prediction struct generation time - running function {} times.", &runs);
+
+    for _ in 0..runs {
+        let start = Instant::now();
+        Ball::get_ball_prediction_struct_for_time(&mut game, &time);
+        times.push(start.elapsed().as_secs_f32());
+    }
+
+    let elapsed: f32 = times.iter().sum::<f32>() / (runs as f32);
+    let elapsed_ms = elapsed * 1000.;
+    println!("Ran ball prediction on soccar map in an average of {} seconds ({}ms)", &elapsed, elapsed_ms);
+
+    let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
+    assert_eq!(ball_prediction.num_slices, 720);
+    assert!(elapsed_ms < 1.);
+}
+
+#[test]
 fn fast_predict_soccar() {
     let mut game = load_soccar();
     let runs = 200;
