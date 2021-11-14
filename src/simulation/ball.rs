@@ -30,7 +30,7 @@ impl Default for Ball {
 #[derive(Clone)]
 pub struct BallPrediction {
     pub num_slices: usize,
-    pub slices: Vec<Box<Ball>>,
+    pub slices: Vec<Ball>,
 }
 
 impl Default for BallPrediction {
@@ -156,27 +156,19 @@ impl Ball {
     }
 
     pub fn get_ball_prediction_struct_for_time(game: &mut Game, time: &f32) -> BallPrediction {
-        let num_slices = (time / Ball::SIMULATION_DT).round() as usize;
-        let mut slices = Vec::with_capacity(num_slices);
-
-        for _ in 0..num_slices {
-            Ball::step(game, Ball::SIMULATION_DT);
-            slices.push(Box::new(game.ball));
-        }
-
-        BallPrediction {
-            slices,
-            num_slices,
-        }
+        Ball::get_ball_prediction_struct_for_slices(game, (time / Ball::SIMULATION_DT).round() as usize)
     }
 
     pub fn get_ball_prediction_struct(game: &mut Game) -> BallPrediction {
-        let num_slices = Ball::STANDARD_NUM_SLICES;
+        Ball::get_ball_prediction_struct_for_slices(game, Ball::STANDARD_NUM_SLICES)
+    }
+
+    pub fn get_ball_prediction_struct_for_slices(game: &mut Game, num_slices: usize) -> BallPrediction {
         let mut slices = Vec::with_capacity(num_slices);
 
         for _ in 0..Ball::STANDARD_NUM_SLICES {
             Ball::step(game, Ball::SIMULATION_DT);
-            slices.push(Box::new(game.ball));
+            slices.push(game.ball.clone());
         }
 
         BallPrediction {
