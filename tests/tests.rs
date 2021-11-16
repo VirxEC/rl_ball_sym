@@ -78,7 +78,7 @@ fn gamemode_soccar() {
 
     dbg!(game.collision_mesh.root.box_);
 
-    assert_eq!(game.collision_mesh.num_leaves, 8028 as u64);
+    assert_eq!(game.collision_mesh.num_leaves, 8028u64);
 
     assert_eq!(game.ball.time as i64, 0);
     assert_eq!(game.ball.location.x as i64, 0);
@@ -106,7 +106,7 @@ fn gamemode_hoops() {
 
     dbg!(game.collision_mesh.root.box_);
 
-    assert_eq!(game.collision_mesh.num_leaves, 15732 as u64);
+    assert_eq!(game.collision_mesh.num_leaves, 15732u64);
 
     assert_eq!(game.ball.time as i64, 0);
     assert_eq!(game.ball.location.x as i64, 0);
@@ -134,7 +134,7 @@ fn gamemode_dropshot() {
 
     dbg!(game.collision_mesh.root.box_);
 
-    assert_eq!(game.collision_mesh.num_leaves, 3616 as u64);
+    assert_eq!(game.collision_mesh.num_leaves, 3616u64);
 
     assert_eq!(game.ball.time as i64, 0);
     assert_eq!(game.ball.location.x as i64, 0);
@@ -197,7 +197,7 @@ fn basic_predict() {
     assert_eq!(game.ball.radius as i64, 91);
     assert_eq!(game.ball.collision_radius as i64, 93);
 
-    game.ball.update(0.098145, Vec3::new(-2294.524658, 1684.135986, 317.176727), Vec3::new(1273.753662, -39.792305, 763.282715), Vec3::new(2.3894, -0.8755, 3.8078));
+    game.ball.update(0.098145, Vec3::new(-2294.5247, 1684.136, 317.17673), Vec3::new(1273.7537, -39.792305, 763.2827), Vec3::new(2.3894, -0.8755, 3.8078));
 
     let time = 60.; // 1 minute, lol
     let ball_prediction = Ball::get_ball_prediction_struct_for_time(&mut game, &time);

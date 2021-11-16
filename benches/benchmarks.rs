@@ -24,21 +24,21 @@ fn init_benchmark(c: &mut Criterion) {
 }
 
 fn load_soccar_benchmark(c: &mut Criterion) {
-    c.bench_function("load_soccar", |b| b.iter(|| load_soccar()));
+    c.bench_function("load_soccar", |b| b.iter(load_soccar));
 }
 
 fn load_hoops_benchmark(c: &mut Criterion) {
-    c.bench_function("load_hoops", |b| b.iter(|| load_hoops()));
+    c.bench_function("load_hoops", |b| b.iter(load_hoops));
 }
 
 fn load_dropshot_benchmark(c: &mut Criterion) {
-    c.bench_function("load_dropshot", |b| b.iter(|| load_dropshot()));
+    c.bench_function("load_dropshot", |b| b.iter(load_dropshot));
 }
 
 // Disabled for now. This test spams the console with warnings and makes the benchmark output difficult to read
 #[allow(unused)]
 fn load_soccar_throwback_benchmark(c: &mut Criterion) {
-    c.bench_function("load_soccar_throwback", |b| b.iter(|| load_soccar_throwback()));
+    c.bench_function("load_soccar_throwback", |b| b.iter(load_soccar_throwback));
 }
 
 fn basic_predict_benchmark(c: &mut Criterion) {
@@ -47,8 +47,8 @@ fn basic_predict_benchmark(c: &mut Criterion) {
 
     game.ball.update(
         0.098145,
-        Vec3::new(-2294.524658, 1684.135986, 317.176727),
-        Vec3::new(1273.753662, -39.792305, 763.282715),
+        Vec3::new(-2294.5247, 1684.136, 317.17673),
+        Vec3::new(1273.7537, -39.792305, 763.2827),
         Vec3::new(2.3894, -0.8755, 3.8078),
     );
 

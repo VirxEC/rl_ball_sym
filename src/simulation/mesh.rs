@@ -86,6 +86,7 @@ impl Mesh {
         }
     }
 
+    #[rustfmt::skip]
     pub fn transform(&self, a: &Mat3) -> Self {
         let mut ids: Vec<i32> = self.ids.clone();
         let mut vertices: Vec<f32> = self.vertices.clone();
@@ -93,9 +94,9 @@ impl Mesh {
         let n = self.vertices.len() / 3;
 
         for i in 0..n {
-            let v = dot(&a, &Vec3::new(self.vertices[i * 3 + 0] as f32, self.vertices[i * 3 + 1] as f32, self.vertices[i * 3 + 2] as f32));
+            let v = dot(a, &Vec3::new(self.vertices[i * 3    ] as f32, self.vertices[i * 3 + 1] as f32, self.vertices[i * 3 + 2] as f32));
 
-            vertices[i * 3 + 0] = v.x as f32;
+            vertices[i * 3    ] = v.x as f32;
             vertices[i * 3 + 1] = v.y as f32;
             vertices[i * 3 + 2] = v.z as f32;
         }
@@ -105,8 +106,8 @@ impl Mesh {
         if a.det() < 0 as f32 {
             let n = ids.len() / 3;
             for i in 0..n {
-                ids[i * 3 + 0] = self.ids[i * 3 + 1];
-                ids[i * 3 + 1] = self.ids[i * 3 + 0];
+                ids[i * 3    ] = self.ids[i * 3 + 1];
+                ids[i * 3 + 1] = self.ids[i * 3    ];
                 ids[i * 3 + 2] = self.ids[i * 3 + 2];
             }
         }
@@ -117,13 +118,14 @@ impl Mesh {
         }
     }
 
+    #[rustfmt::skip]
     pub fn translate(&self, p: &Vec3) -> Self {
         let ids: Vec<i32> = self.ids.clone();
         let mut vertices: Vec<f32> = self.vertices.clone();
 
         let n = vertices.len() / 3;
         for i in 0..n {
-            vertices[i * 3 + 0] += p.x as f32;
+            vertices[i * 3    ] += p.x as f32;
             vertices[i * 3 + 1] += p.y as f32;
             vertices[i * 3 + 2] += p.z as f32;
         }
@@ -134,6 +136,7 @@ impl Mesh {
         }
     }
 
+    #[rustfmt::skip]
     pub fn to_triangles(&self) -> Vec<Tri> {
         let n = self.ids.len() / 3;
         let mut triangles: Vec<Tri> = Vec::with_capacity(n);
@@ -142,7 +145,7 @@ impl Mesh {
             triangles.push(Tri::default());
             for j in 0..3 {
                 let id = (self.ids[i * 3 + j] * 3) as usize;
-                triangles[i].p[j].x = self.vertices[id + 0] as f32;
+                triangles[i].p[j].x = self.vertices[id    ] as f32;
                 triangles[i].p[j].y = self.vertices[id + 1] as f32;
                 triangles[i].p[j].z = self.vertices[id + 2] as f32;
             }

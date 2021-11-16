@@ -66,27 +66,36 @@ impl Ball {
     const STANDARD_NUM_SLICES: usize = 720;
 
     pub fn initialize_soccar() -> Self {
-        let mut ball = Ball::default();
-        ball.radius = Ball::SOCCAR_RADIUS;
-        ball.collision_radius = Ball::SOCCAR_COLLISION_RADIUS;
+        let mut ball = Ball {
+            radius: Ball::SOCCAR_RADIUS,
+            collision_radius: Ball::SOCCAR_COLLISION_RADIUS,
+            ..Default::default()
+        };
+
         ball.initialize();
 
         ball
     }
 
     pub fn initialize_hoops() -> Self {
-        let mut ball = Ball::default();
-        ball.radius = Ball::HOOPS_RADIUS;
-        ball.collision_radius = Ball::HOOPS_COLLISION_RADIUS;
+        let mut ball = Ball {
+            radius: Ball::HOOPS_RADIUS,
+            collision_radius: Ball::HOOPS_COLLISION_RADIUS,
+            ..Default::default()
+        };
+
         ball.initialize();
 
         ball
     }
 
     pub fn initialize_dropshot() -> Self {
-        let mut ball = Ball::default();
-        ball.radius = Ball::DROPSHOT_RADIUS;
-        ball.collision_radius = Ball::DROPSHOT_COLLISION_RADIUS;
+        let mut ball = Ball {
+            radius: Ball::DROPSHOT_RADIUS,
+            collision_radius: Ball::DROPSHOT_COLLISION_RADIUS,
+            ..Default::default()
+        };
+
         ball.initialize();
 
         ball
@@ -110,8 +119,8 @@ impl Ball {
 
     fn hitbox(&self) -> Sphere {
         Sphere {
-            center: self.location.clone(),
-            radius: self.collision_radius.clone(),
+            center: self.location,
+            radius: self.collision_radius,
         }
     }
 
@@ -168,7 +177,7 @@ impl Ball {
 
         for _ in 0..Ball::STANDARD_NUM_SLICES {
             Ball::step(game, Ball::SIMULATION_DT);
-            slices.push(game.ball.clone());
+            slices.push(game.ball);
         }
 
         BallPrediction {

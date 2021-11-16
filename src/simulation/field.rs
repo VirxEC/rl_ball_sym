@@ -1,3 +1,5 @@
+use std::f32::consts::{FRAC_PI_3, FRAC_PI_6};
+
 use super::bvh::Bvh;
 use super::mesh::Mesh;
 use crate::linear_algebra::mat::Mat3;
@@ -46,9 +48,7 @@ pub fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_
     ]);
 
     let triangles = field_mesh.to_triangles();
-    let collision_mesh = Bvh::from(&triangles);
-
-    collision_mesh
+    Bvh::from(&triangles)
 }
 
 pub fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh, hoops_ramps_0: &Mesh, hoops_ramps_1: &Mesh) -> Bvh {
@@ -73,7 +73,7 @@ pub fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh,
     let back_walls = [quad(Vec3::new(0., 0., 1024.), Vec3::new(0., -5120., 0.), Vec3::new(0., 0., 1024.)), quad(Vec3::new(0., 0., 1024.), Vec3::new(0., 5120., 0.), Vec3::new(0., 0., 1024.))];
 
     let field_mesh = Mesh::from(vec![
-        &hoops_corner,
+        hoops_corner,
         &hoops_corner.transform(&FLIP_X),
         &hoops_corner.transform(&FLIP_Y),
         &hoops_corner.transform(&FLIP_X.dot(&FLIP_Y)),
@@ -81,9 +81,9 @@ pub fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh,
         &transformed_hoops_net.transform(&FLIP_Y),
         &transformed_hoops_rim,
         &transformed_hoops_rim.transform(&FLIP_Y),
-        &hoops_ramps_0,
+        hoops_ramps_0,
         &hoops_ramps_0.transform(&FLIP_X),
-        &hoops_ramps_1,
+        hoops_ramps_1,
         &hoops_ramps_1.transform(&FLIP_Y),
         &floor,
         &ceiling,
@@ -94,16 +94,16 @@ pub fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh,
     ]);
 
     let triangles = field_mesh.to_triangles();
-    let collision_mesh = Bvh::from(&triangles);
 
-    collision_mesh
+    Bvh::from(&triangles)
 }
 
+#[allow(clippy::many_single_char_names)]
 pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
     let scale = 0.393;
     let z_offset = -207.565;
 
-    let q = axis_to_rotation(Vec3::new(0., 0., 0.52359877559));
+    let q = axis_to_rotation(Vec3::new(0., 0., FRAC_PI_6));
 
     let s = Mat3 {
         m: [[scale, 0., 0.], [0., scale, 0.], [0., 0., scale]],
@@ -118,7 +118,7 @@ pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
     let mut p = Vec3::new(0., 11683.6 * scale, 2768.64 * scale - z_offset);
     let mut x = Vec3::new(5000., 0., 0.);
     let z = Vec3::new(0., 0., 1010.);
-    let r = axis_to_rotation(Vec3::new(0., 0., 1.047197551196598));
+    let r = axis_to_rotation(Vec3::new(0., 0., FRAC_PI_3));
 
     for _ in 0..6 {
         walls.push(quad(p, x, z));
@@ -129,12 +129,37 @@ pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
     let field_mesh = Mesh::from(vec![&dropshot.transform(&q.dot(&s)).translate(&dz), &floor, &ceiling, &walls[0], &walls[1], &walls[2], &walls[3], &walls[4], &walls[5]]);
 
     let triangles = field_mesh.to_triangles();
-    let collision_mesh = Bvh::from(&triangles);
 
-    collision_mesh
+    Bvh::from(&triangles)
 }
 
-pub fn initialize_throwback(back_ramps_lower: &Mesh, back_ramps_upper: &Mesh, corner_ramps_lower: &Mesh, corner_ramps_upper: &Mesh, corner_wall_0: &Mesh, corner_wall_1: &Mesh, corner_wall_2: &Mesh, goal: &Mesh, side_ramps_lower: &Mesh, side_ramps_upper: &Mesh) -> Bvh {
+pub struct InitializeThrowbackParams<'a> {
+    pub back_ramps_lower: &'a Mesh,
+    pub back_ramps_upper: &'a Mesh,
+    pub corner_ramps_lower: &'a Mesh,
+    pub corner_ramps_upper: &'a Mesh,
+    pub corner_wall_0: &'a Mesh,
+    pub corner_wall_1: &'a Mesh,
+    pub corner_wall_2: &'a Mesh,
+    pub goal: &'a Mesh,
+    pub side_ramps_lower: &'a Mesh,
+    pub side_ramps_upper: &'a Mesh,
+}
+
+pub fn initialize_throwback(
+    InitializeThrowbackParams {
+        back_ramps_lower,
+        back_ramps_upper,
+        corner_ramps_lower,
+        corner_ramps_upper,
+        corner_wall_0,
+        corner_wall_1,
+        corner_wall_2,
+        goal,
+        side_ramps_lower,
+        side_ramps_upper,
+    }: InitializeThrowbackParams<'_>,
+) -> Bvh {
     let scale = 100.;
 
     let s = Mat3 {
@@ -203,7 +228,6 @@ pub fn initialize_throwback(back_ramps_lower: &Mesh, back_ramps_upper: &Mesh, co
     ]);
 
     let triangles = field_mesh.to_triangles();
-    let collision_mesh = Bvh::from(&triangles);
 
-    collision_mesh
+    Bvh::from(&triangles)
 }
