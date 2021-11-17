@@ -9,7 +9,7 @@ repository = "https://github.com/VirxEC/rl_ball_sym"
 license = "GPL-3.0-only"
 keywords = ["rocket-league", "rlbot", "physics", "simulation"]
 categories = ["science", "simulation", "mathematics"]
-include = ["src/", "assets/"]
+include = ["src/", "assets/", "benches/"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
