@@ -21,6 +21,7 @@ impl Tri {
         (self.p[1] - self.p[0]).cross(&(self.p[2] - self.p[0])).normalize()
     }
 
+    #[allow(clippy::many_single_char_names)]
     pub fn intersect_sphere(&self, b: &Sphere) -> bool {
         let mut _dist = 0.;
 
@@ -46,7 +47,7 @@ impl Tri {
         // the out-of-plane distance
         // otherwise, check the distances to
         // the closest edge of the triangle
-        if 0. <= u && u <= 1. && 0. <= v && v <= 1. && 0. <= w && w <= 1. {
+        if (0. ..=1.).contains(&u) && (0. ..=1.).contains(&v) && (0. ..=1.).contains(&w) {
             _dist = z.abs();
         } else {
             _dist = b.radius + 1.;

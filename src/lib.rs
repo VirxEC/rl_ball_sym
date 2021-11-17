@@ -10,6 +10,8 @@ use simulation::game::Game;
 use simulation::mesh::Mesh;
 use vvec3::Vec3;
 
+use crate::simulation::field::InitializeThrowbackParams;
+
 fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> Mesh {
     let mut ids_dat = Cursor::new(ids_dat);
     let mut vertices_dat = Cursor::new(vertices_dat);
@@ -115,7 +117,19 @@ pub fn load_soccar_throwback() -> Game {
     let side_ramps_lower: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_side_ramps_lower_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_side_ramps_lower_vertices.bin").to_vec());
     let side_ramps_upper: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_side_ramps_upper_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_side_ramps_upper_vertices.bin").to_vec());
 
-    let collision_mesh = initialize_throwback(&back_ramps_lower, &back_ramps_upper, &corner_ramps_lower, &corner_ramps_upper, &corner_wall_0, &corner_wall_1, &corner_wall_2, &goal, &side_ramps_lower, &side_ramps_upper);
+    let params = InitializeThrowbackParams {
+        back_ramps_lower: &back_ramps_lower,
+        back_ramps_upper: &back_ramps_upper,
+        corner_ramps_lower: &corner_ramps_lower,
+        corner_ramps_upper: &corner_ramps_upper,
+        corner_wall_0: &corner_wall_0,
+        corner_wall_1: &corner_wall_1,
+        corner_wall_2: &corner_wall_2,
+        goal: &goal,
+        side_ramps_lower: &side_ramps_lower,
+        side_ramps_upper: &side_ramps_upper,
+    };
+    let collision_mesh = initialize_throwback(params);
 
     let ball = Ball::initialize_soccar();
 

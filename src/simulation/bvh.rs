@@ -58,10 +58,11 @@ pub struct Bvh {
     pub root: Box<BvhNode>,
 }
 
-fn global_aabb(boxes: &Vec<Aabb>) -> Aabb {
+fn global_aabb(boxes: &[Aabb]) -> Aabb {
     let mut global_box = boxes[0];
-    for i in 0..boxes.len() {
-        global_box = global_box.add(&boxes[i]);
+
+    for b in boxes {
+        global_box = global_box.add(b);
     }
 
     global_box
@@ -78,7 +79,7 @@ impl Default for Bvh {
 }
 
 impl Bvh {
-    pub fn from(primitives: &Vec<Tri>) -> Self {
+    pub fn from(primitives: &[Tri]) -> Self {
         let num_leaves = primitives.len();
 
         let mut boxes: Vec<Aabb> = Vec::with_capacity(num_leaves);
@@ -106,7 +107,7 @@ impl Bvh {
         }
     }
 
-    fn generate_hierarchy(sorted_leaves: &Vec<Box<BvhNode>>, first: usize, last: usize) -> Box<BvhNode> {
+    fn generate_hierarchy(sorted_leaves: &[Box<BvhNode>], first: usize, last: usize) -> Box<BvhNode> {
         // If we're dealing with a single object, return the leaf node
         if first == last {
             return sorted_leaves[first].clone();
@@ -125,7 +126,7 @@ impl Bvh {
     }
 
     pub fn intersect(&self, query_object: &Sphere) -> Vec<Tri> {
-        let query_box: Aabb = Aabb::from_sphere(&query_object);
+        let query_box: Aabb = Aabb::from_sphere(query_object);
 
         let mut hits = Vec::with_capacity(8);
 
@@ -142,47 +143,41 @@ impl Bvh {
             let mut traverse_left = false;
             let mut traverse_right = false;
 
-            match left {
-                Some(left) => {
-                    if left.box_.intersect_self(&query_box) {
-                        match left.primitive {
-                            Some(left_tri) => {
-                                if left_tri.intersect_sphere(&query_object) {
-                                    hits.push(left_tri);
-                                }
+            if let Some(left) = left {
+                if left.box_.intersect_self(&query_box) {
+                    match left.primitive {
+                        Some(left_tri) => {
+                            if left_tri.intersect_sphere(query_object) {
+                                hits.push(left_tri);
                             }
-                            None => {
-                                traverse_left = true;
-                                node = left;
-                            }
+                        }
+                        None => {
+                            traverse_left = true;
+                            node = left;
                         }
                     }
                 }
-                None => (),
             }
 
-            match right {
-                Some(right) => {
-                    if right.box_.intersect_self(&query_box) {
-                        match right.primitive {
-                            Some(right_tri) => {
-                                if right_tri.intersect_sphere(&query_object) {
-                                    hits.push(right_tri);
-                                }
+            if let Some(right) = right {
+                if right.box_.intersect_self(&query_box) {
+                    match right.primitive {
+                        Some(right_tri) => {
+                            if right_tri.intersect_sphere(query_object) {
+                                hits.push(right_tri);
                             }
-                            None => {
-                                traverse_right = true;
+                        }
+                        None => {
+                            traverse_right = true;
 
-                                if traverse_left {
-                                    stack.push(right);
-                                } else {
-                                    node = right;
-                                }
+                            if traverse_left {
+                                stack.push(right);
+                            } else {
+                                node = right;
                             }
                         }
                     }
                 }
-                None => (),
             }
 
             if !(traverse_left || traverse_right) {
@@ -200,7 +195,7 @@ impl Bvh {
         let mut contact_point = Ray::default();
         let mut count = 0;
 
-        let tris_hit = self.intersect(&s);
+        let tris_hit = self.intersect(s);
 
         for tri in tris_hit {
             let p = tri.center();
