@@ -175,14 +175,57 @@ impl Ball {
     pub fn get_ball_prediction_struct_for_slices(game: &mut Game, num_slices: usize) -> BallPrediction {
         let mut slices = Vec::with_capacity(num_slices);
 
-        for _ in 0..Ball::STANDARD_NUM_SLICES {
+        for _ in 0..num_slices {
             Ball::step(game, Ball::SIMULATION_DT);
             slices.push(game.ball);
         }
 
         BallPrediction {
+            num_slices: slices.len(),
             slices,
-            num_slices,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::load_soccar;
+
+    use super::*;
+
+    #[test]
+    fn check_standard_num_slices() {
+        let mut game = load_soccar();
+
+        let prediction = Ball::get_ball_prediction_struct(&mut game);
+
+        assert_eq!(prediction.num_slices, Ball::STANDARD_NUM_SLICES);
+        assert_eq!(prediction.slices.len(), Ball::STANDARD_NUM_SLICES);
+    }
+
+    #[test]
+    fn check_custom_num_slices() {
+        const REQUESTED_SLICES: usize = 200;
+
+        let mut game = load_soccar();
+
+        let prediction = Ball::get_ball_prediction_struct_for_slices(&mut game, REQUESTED_SLICES);
+
+        assert_eq!(prediction.num_slices, REQUESTED_SLICES);
+        assert_eq!(prediction.slices.len(), REQUESTED_SLICES);
+    }
+
+    #[test]
+    fn check_num_slices_for_time() {
+        const REQUESTED_TIME: f32 = 8.0;
+
+        let mut game = load_soccar();
+
+        let prediction = Ball::get_ball_prediction_struct_for_time(&mut game, &REQUESTED_TIME);
+
+        let predicted_slices = (REQUESTED_TIME / Ball::SIMULATION_DT).round() as usize;
+
+        assert_eq!(prediction.num_slices, predicted_slices);
+        assert_eq!(prediction.slices.len(), predicted_slices);
     }
 }
