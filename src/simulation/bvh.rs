@@ -221,3 +221,55 @@ impl Bvh {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use vvec3::Vec3;
+
+    use super::*;
+
+    #[test]
+    fn global_bounding_box() {
+        const MIN_X: f32 = -4107.33;
+        const MIN_Y: f32 = -6000.0;
+        const MIN_Z: f32 = -13.2678;
+        const MAX_X: f32 = 4107.33;
+        const MAX_Y: f32 = 6000.0;
+        const MAX_Z: f32 = 2075.45;
+        let bounding_boxes = vec![
+            Aabb {
+                min: Vec3::new(MIN_X, 0.0, 0.0),
+                max: Vec3::new(0.0, 0.0, 0.0),
+            },
+            Aabb {
+                min: Vec3::new(0.0, MIN_Y, 0.0),
+                max: Vec3::new(0.0, 0.0, 0.0),
+            },
+            Aabb {
+                min: Vec3::new(0.0, 0.0, MIN_Z),
+                max: Vec3::new(0.0, 0.0, 0.0),
+            },
+            Aabb {
+                min: Vec3::new(0.0, 0.0, 0.0),
+                max: Vec3::new(MAX_X, 0.0, 0.0),
+            },
+            Aabb {
+                min: Vec3::new(0.0, 0.0, 0.0),
+                max: Vec3::new(0.0, MAX_Y, 0.0),
+            },
+            Aabb {
+                min: Vec3::new(0.0, 0.0, 0.0),
+                max: Vec3::new(0.0, 0.0, MAX_Z),
+            },
+        ];
+
+        let global = global_aabb(&bounding_boxes);
+
+        assert!((global.min.x - MIN_X).abs() < f32::EPSILON);
+        assert!((global.min.y - MIN_Y).abs() < f32::EPSILON);
+        assert!((global.min.z - MIN_Z).abs() < f32::EPSILON);
+        assert!((global.max.x - MAX_X).abs() < f32::EPSILON);
+        assert!((global.max.y - MAX_Y).abs() < f32::EPSILON);
+        assert!((global.max.z - MAX_Z).abs() < f32::EPSILON);
+    }
+}
