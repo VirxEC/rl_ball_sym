@@ -224,6 +224,7 @@ impl Bvh {
 
 #[cfg(test)]
 mod test {
+    use criterion::black_box;
     use vvec3::Vec3;
 
     use super::*;
@@ -316,5 +317,179 @@ mod test {
         assert!((global.max.x - MAX_X).abs() < f32::EPSILON);
         assert!((global.max.y - MAX_Y).abs() < f32::EPSILON);
         assert!((global.max.z - MAX_Z).abs() < f32::EPSILON);
+    }
+
+    fn generate_tris() -> Vec<Tri> {
+        static VERT_MAP: &[[usize; 3]; 12] = &[[0, 1, 2], [3, 2, 1], [7, 5, 6], [4, 6, 5], [0, 2, 4], [6, 4, 2], [7, 3, 5], [1, 5, 3], [0, 4, 1], [5, 1, 4], [7, 6, 3], [2, 3, 6]];
+        let verts = &[Vec3::new(-5000.0, -5000.0, -5000.0), Vec3::new(-5000.0, -5000.0, 5000.0), Vec3::new(-5000.0, 5000.0, -5000.0), Vec3::new(-5000.0, 5000.0, 5000.0), Vec3::new(5000.0, -5000.0, -5000.0), Vec3::new(5000.0, -5000.0, 5000.0), Vec3::new(5000.0, 5000.0, -5000.0), Vec3::new(5000.0, 5000.0, 5000.0)];
+        VERT_MAP
+            .iter()
+            .map(|map| {
+                let p = [verts[map[0]], verts[map[1]], verts[map[2]]];
+                Tri {
+                    p,
+                }
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_bvh_build() {
+        let triangles = generate_tris();
+
+        let _ = black_box(Bvh::from(&triangles));
+    }
+
+    #[test]
+    fn test_bvh_intersect() {
+        let triangles = generate_tris();
+
+        let bvh = Bvh::from(&triangles);
+        {
+            // Sphere hits nothing
+            let sphere = Sphere {
+                center: Vec3::default(),
+                radius: 100.,
+            };
+            let hits = bvh.intersect(&sphere);
+            assert_eq!(hits.len(), 0);
+        }
+        {
+            // Sphere hits one Tri
+            let sphere = Sphere {
+                center: Vec3 {
+                    x: 4900.,
+                    y: 2500.,
+                    z: 2500.,
+                },
+                radius: 100.,
+            };
+            let hits = bvh.intersect(&sphere);
+
+            assert_eq!(hits.len(), 1);
+            let p0 = hits[0].p[0];
+            assert!((p0.x - 5000.).abs() < f32::EPSILON);
+            assert!((p0.y - 5000.).abs() < f32::EPSILON);
+            assert!((p0.z - 5000.).abs() < f32::EPSILON);
+            let p1 = hits[0].p[1];
+            assert!((p1.x - 5000.).abs() < f32::EPSILON);
+            assert!((p1.y - -5000.).abs() < f32::EPSILON);
+            assert!((p1.z - 5000.).abs() < f32::EPSILON);
+            let p2 = hits[0].p[2];
+            assert!((p2.x - 5000.).abs() < f32::EPSILON);
+            assert!((p2.y - 5000.).abs() < f32::EPSILON);
+            assert!((p2.z - -5000.).abs() < f32::EPSILON);
+        }
+        {
+            // Middle of two Tris
+            let sphere = Sphere {
+                center: Vec3 {
+                    x: 4900.,
+                    ..Default::default()
+                },
+                radius: 100.,
+            };
+            let hits = bvh.intersect(&sphere);
+
+            assert_eq!(hits.len(), 2);
+        }
+        {
+            // Sphere is in a corner
+            let sphere = Sphere {
+                center: Vec3 {
+                    x: 4900.,
+                    y: 4900.,
+                    z: -4900.,
+                },
+                radius: 100.,
+            };
+            let hits = bvh.intersect(&sphere);
+
+            assert_eq!(hits.len(), 5);
+        }
+    }
+
+    #[test]
+    fn test_bvh_collide() {
+        let triangles = generate_tris();
+
+        let bvh = Bvh::from(&triangles);
+
+        {
+            // Sphere hits nothing
+            let sphere = Sphere {
+                center: Vec3::default(),
+                radius: 100.,
+            };
+
+            let ray = bvh.collide(&sphere);
+
+            assert!(ray.is_none());
+        }
+        {
+            // Sphere hits one Tri
+            let sphere = Sphere {
+                center: Vec3 {
+                    x: 4900.,
+                    y: 2500.,
+                    z: 2500.,
+                },
+                radius: 100.,
+            };
+
+            let ray = bvh.collide(&sphere);
+
+            assert!(ray.is_some());
+            let ray = ray.unwrap();
+            assert!((ray.start.x - 5000.).abs() < f32::EPSILON);
+            assert!((ray.start.y - 2500.).abs() < f32::EPSILON);
+            assert!((ray.start.z - 2500.).abs() < f32::EPSILON);
+            assert!((ray.direction.x - 1.0).abs() < f32::EPSILON);
+            assert!((ray.direction.y - 0.0).abs() < f32::EPSILON);
+            assert!((ray.direction.z - 0.0).abs() < f32::EPSILON);
+        }
+        {
+            // Middle of two Tris
+            let sphere = Sphere {
+                center: Vec3 {
+                    x: 4900.,
+                    ..Default::default()
+                },
+                radius: 100.,
+            };
+
+            let ray = bvh.collide(&sphere);
+
+            assert!(ray.is_some());
+            let ray = ray.unwrap();
+            assert!((ray.start.x - 5000.).abs() < f32::EPSILON);
+            assert!((ray.start.y - 0.0).abs() < f32::EPSILON);
+            assert!((ray.start.z - 0.0).abs() < f32::EPSILON);
+            assert!((ray.direction.x - 1.0).abs() < f32::EPSILON);
+            assert!((ray.direction.y - 0.0).abs() < f32::EPSILON);
+            assert!((ray.direction.z - 0.0).abs() < f32::EPSILON);
+        }
+        {
+            // Sphere is in a corner
+            let sphere = Sphere {
+                center: Vec3 {
+                    x: 4900.,
+                    y: 4900.,
+                    z: -4900.,
+                },
+                radius: 100.,
+            };
+
+            let ray = bvh.collide(&sphere);
+
+            assert!(ray.is_some());
+            let ray = ray.unwrap();
+            assert!((ray.start.x - 4940.).abs() < f32::EPSILON);
+            assert!((ray.start.y - 4940.).abs() < f32::EPSILON);
+            assert!((ray.start.z - -4920.).abs() < f32::EPSILON);
+            assert!((ray.direction.x - 0.6666667).abs() < f32::EPSILON);
+            assert!((ray.direction.y - 0.6666667).abs() < f32::EPSILON);
+            assert!((ray.direction.z - -0.33333334).abs() < f32::EPSILON);
+        }
     }
 }
