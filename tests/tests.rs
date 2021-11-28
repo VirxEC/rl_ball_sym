@@ -62,8 +62,6 @@ fn morton() {
     let code = code_z | code_y | code_x;
     dbg!(&code); // 610317903
     assert_eq!(format!("{:b}", code as u32), "100100011000001011011001001111");
-
-    // assert!(false);
 }
 
 #[test]
@@ -250,7 +248,7 @@ fn basic_predict() {
 }
 
 #[test]
-fn fast_predict_custom_soccar() {
+fn predict_custom_soccar() {
     let mut game = load_soccar();
     let time = 8.;
 
@@ -259,7 +257,7 @@ fn fast_predict_custom_soccar() {
 }
 
 #[test]
-fn fast_predict_soccar() {
+fn predict_soccar() {
     let mut game = load_soccar();
 
     let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
@@ -267,7 +265,7 @@ fn fast_predict_soccar() {
 }
 
 #[test]
-fn fast_predict_hoops() {
+fn predict_hoops() {
     let mut game = load_hoops();
 
     let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
@@ -275,7 +273,7 @@ fn fast_predict_hoops() {
 }
 
 #[test]
-fn fast_predict_dropshot() {
+fn predict_dropshot() {
     let mut game = load_dropshot();
 
     let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
@@ -283,7 +281,7 @@ fn fast_predict_dropshot() {
 }
 
 #[test]
-fn fast_predict_throwback_soccar() {
+fn predict_throwback_soccar() {
     let mut game = load_soccar_throwback();
 
     let ball_prediction = Ball::get_ball_prediction_struct(&mut game);

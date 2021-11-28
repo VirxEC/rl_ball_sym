@@ -6,7 +6,6 @@ use rl_ball_sym::{
     load_dropshot, load_hoops, load_soccar, load_soccar_throwback,
     simulation::{ball::Ball, game::Game},
 };
-use vvec3::Vec3;
 
 lazy_static! {
     static ref GAME: Mutex<Game> = Mutex::new(load_soccar());
@@ -39,22 +38,6 @@ fn load_dropshot_benchmark(c: &mut Criterion) {
 #[allow(unused)]
 fn load_soccar_throwback_benchmark(c: &mut Criterion) {
     c.bench_function("load_soccar_throwback", |b| b.iter(load_soccar_throwback));
-}
-
-fn basic_predict_benchmark(c: &mut Criterion) {
-    let mut game = load_soccar();
-    let time = 60.;
-
-    game.ball.update(
-        0.098145,
-        Vec3::new(-2294.5247, 1684.136, 317.17673),
-        Vec3::new(1273.7537, -39.792305, 763.2827),
-        Vec3::new(2.3894, -0.8755, 3.8078),
-    );
-
-    c.bench_function("basic_predict", |b| {
-        b.iter(|| Ball::get_ball_prediction_struct_for_time(black_box(&mut game), black_box(&time)))
-    });
 }
 
 fn get_ball_prediction_struct_with_time_benchmark(c: &mut Criterion) {
@@ -109,7 +92,6 @@ criterion_group!(
 );
 criterion_group!(
     prediction,
-    basic_predict_benchmark,
     get_ball_prediction_struct_with_time_benchmark,
     get_ball_prediction_struct_benchmark,
     get_ball_prediction_struct_hoops_benchmark,
