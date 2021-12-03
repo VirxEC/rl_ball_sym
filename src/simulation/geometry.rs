@@ -23,8 +23,6 @@ impl Tri {
 
     #[allow(clippy::many_single_char_names)]
     pub fn intersect_sphere(&self, b: &Sphere) -> bool {
-        let mut _dist = 0.;
-
         let e1 = self.p[1] - self.p[0];
         let e2 = self.p[2] - self.p[1];
         let e3 = self.p[0] - self.p[2];
@@ -47,16 +45,19 @@ impl Tri {
         // the out-of-plane distance
         // otherwise, check the distances to
         // the closest edge of the triangle
-        if (0. ..=1.).contains(&u) && (0. ..=1.).contains(&v) && (0. ..=1.).contains(&w) {
-            _dist = z.abs();
+        let dist = if (0. ..=1.).contains(&u) && (0. ..=1.).contains(&v) && (0. ..=1.).contains(&w) {
+            z.abs()
         } else {
-            _dist = b.radius + 1.;
-            _dist = _dist.min(distance_between(&self.p[0], &e1, &b.center));
-            _dist = _dist.min(distance_between(&self.p[1], &e2, &b.center));
-            _dist = _dist.min(distance_between(&self.p[2], &e3, &b.center));
-        }
+            (b.radius + 1.).min(
+                distance_between(&self.p[0], &e1, &b.center)
+            ).min(
+                distance_between(&self.p[1], &e2, &b.center)
+            ).min(
+                distance_between(&self.p[2], &e3, &b.center)
+            )
+        };
 
-        _dist <= b.radius
+        dist <= b.radius
     }
 }
 
@@ -87,19 +88,14 @@ impl Default for Aabb {
 
 impl Aabb {
     pub fn add(&self, b: &Aabb) -> Self {
-        let min = Vec3::new(self.min.x.min(b.min.x), self.min.y.min(b.min.y), self.min.z.min(b.min.z));
-
-        let max = Vec3::new(self.max.x.max(b.max.x), self.max.y.max(b.max.y), self.max.z.max(b.max.z));
-
         Self {
-            min,
-            max,
+            min: self.min.min(&b.min),
+            max: self.max.max(&b.max),
         }
     }
 
     pub fn from_tri(t: &Tri) -> Self {
         let min = Vec3::new(t.p[0].x.min(t.p[1].x.min(t.p[2].x)), t.p[0].y.min(t.p[1].y.min(t.p[2].y)), t.p[0].z.min(t.p[1].z.min(t.p[2].z)));
-
         let max = Vec3::new(t.p[0].x.max(t.p[1].x.max(t.p[2].x)), t.p[0].y.max(t.p[1].y.max(t.p[2].y)), t.p[0].z.max(t.p[1].z.max(t.p[2].z)));
 
         Self {
@@ -109,13 +105,11 @@ impl Aabb {
     }
 
     pub fn from_sphere(s: &Sphere) -> Self {
-        let min = Vec3::new(s.center.x - s.radius, s.center.y - s.radius, s.center.z - s.radius);
-
-        let max = Vec3::new(s.center.x + s.radius, s.center.y + s.radius, s.center.z + s.radius);
+        let radius = Vec3::new(s.radius, s.radius, s.radius);
 
         Self {
-            min,
-            max,
+            min: s.center - radius,
+            max: s.center + radius,
         }
     }
 

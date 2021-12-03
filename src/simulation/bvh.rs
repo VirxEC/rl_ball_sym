@@ -128,7 +128,7 @@ impl Bvh {
     pub fn intersect(&self, query_object: &Sphere) -> Vec<Tri> {
         let query_box: Aabb = Aabb::from_sphere(query_object);
 
-        let mut hits = Vec::with_capacity(8);
+        let mut hits = Vec::with_capacity(16);
 
         // Allocate traversal stack from thread-local memory,
         // and push NULL to indicate that there are no postponed nodes.
@@ -136,14 +136,14 @@ impl Bvh {
 
         // Traverse nodes starting from the root.
         let mut node = &*self.root;
+        // Check each child node for overlap.
         loop {
-            // Check each child node for overlap.
-            let left = node.left.as_deref();
-            let right = node.right.as_deref();
+            // We must save the right node to a variable
+            // There's the potential for node to be overwritten
+            let right_og = node.right.as_deref();
+            
             let mut traverse_left = false;
-            let mut traverse_right = false;
-
-            if let Some(left) = left {
+            if let Some(left) = node.left.as_deref() {
                 if left.box_.intersect_self(&query_box) {
                     match left.primitive {
                         Some(left_tri) => {
@@ -159,7 +159,8 @@ impl Bvh {
                 }
             }
 
-            if let Some(right) = right {
+            let mut traverse_right = false;
+            if let Some(right) = right_og {
                 if right.box_.intersect_self(&query_box) {
                     match right.primitive {
                         Some(right_tri) => {
@@ -209,16 +210,14 @@ impl Bvh {
             }
         }
 
-        if count > 0 {
-            contact_point.start /= count as f32;
-            contact_point.direction = contact_point.direction.normalize();
+        if count == 0 {
+            return None;
         }
 
-        if count == 0 {
-            None
-        } else {
-            Some(contact_point)
-        }
+        contact_point.start /= count as f32;
+        contact_point.direction = contact_point.direction.normalize();
+
+        Some(contact_point)
     }
 }
 
