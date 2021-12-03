@@ -44,42 +44,30 @@ fn get_ball_prediction_struct_with_time_benchmark(c: &mut Criterion) {
     let mut game = load_soccar();
     let time = 8.;
 
-    c.bench_with_input(
-        BenchmarkId::new("get_ball_prediction_struct_for_time", time),
-        &time,
-        |b, time| b.iter(|| Ball::get_ball_prediction_struct_for_time(black_box(&mut game), time)),
-    );
+    c.bench_with_input(BenchmarkId::new("get_ball_prediction_struct_for_time", time), &time, |b, time| b.iter(|| Ball::get_ball_prediction_struct_for_time(black_box(&mut game), time)));
 }
 
 fn get_ball_prediction_struct_benchmark(c: &mut Criterion) {
     let mut game = load_soccar();
-    c.bench_function("get_ball_prediction/soccar", |b| {
-        b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game)))
-    });
+    c.bench_function("get_ball_prediction/soccar", |b| b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game))));
 }
 
 fn get_ball_prediction_struct_hoops_benchmark(c: &mut Criterion) {
     let mut game = load_hoops();
 
-    c.bench_function("get_ball_prediction/hoops", |b| {
-        b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game)))
-    });
+    c.bench_function("get_ball_prediction/hoops", |b| b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game))));
 }
 
 fn get_ball_prediction_struct_dropshot(c: &mut Criterion) {
     let mut game = load_dropshot();
 
-    c.bench_function("get_ball_prediction/dropshot", |b| {
-        b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game)))
-    });
+    c.bench_function("get_ball_prediction/dropshot", |b| b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game))));
 }
 
 fn get_ball_prediction_struct_throwback(c: &mut Criterion) {
     let mut game = load_soccar_throwback();
 
-    c.bench_function("get_ball_prediction/throwback", |b| {
-        b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game)))
-    });
+    c.bench_function("get_ball_prediction/throwback", |b| b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game))));
 }
 
 criterion_group!(
@@ -90,12 +78,5 @@ criterion_group!(
     load_dropshot_benchmark,
     /* load_soccar_throwback_benchmark, */
 );
-criterion_group!(
-    prediction,
-    get_ball_prediction_struct_with_time_benchmark,
-    get_ball_prediction_struct_benchmark,
-    get_ball_prediction_struct_hoops_benchmark,
-    get_ball_prediction_struct_dropshot,
-    get_ball_prediction_struct_throwback
-);
+criterion_group!(prediction, get_ball_prediction_struct_with_time_benchmark, get_ball_prediction_struct_benchmark, get_ball_prediction_struct_hoops_benchmark, get_ball_prediction_struct_dropshot, get_ball_prediction_struct_throwback);
 criterion_main!(init, prediction);

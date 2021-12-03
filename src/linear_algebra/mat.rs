@@ -1,3 +1,4 @@
+#[derive(Clone, Copy, Debug)]
 pub struct Mat3 {
     pub m: [[f32; 3]; 3],
 }
@@ -17,11 +18,11 @@ impl Mat3 {
         }
     }
 
-    pub fn det(&self) -> f32 {
+    pub fn det(self) -> f32 {
         self.m[0][0] * self.m[1][1] * self.m[2][2] + self.m[0][1] * self.m[1][2] * self.m[2][0] + self.m[0][2] * self.m[1][0] * self.m[2][1] - self.m[0][0] * self.m[1][2] * self.m[2][1] - self.m[0][1] * self.m[1][0] * self.m[2][2] - self.m[0][2] * self.m[1][1] * self.m[2][0]
     }
 
-    pub fn dot(&self, b: &Mat3) -> Mat3 {
+    pub fn dot(self, b: Mat3) -> Mat3 {
         let mut c: Mat3 = Mat3::default();
 
         for i in 0..3 {
@@ -36,7 +37,7 @@ impl Mat3 {
         c
     }
 
-    pub fn inv(&self) -> Mat3 {
+    pub fn inv(self) -> Mat3 {
         let inv_det_a = 1. / self.det();
 
         Self {

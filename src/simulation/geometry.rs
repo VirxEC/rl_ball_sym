@@ -32,7 +32,7 @@ impl Tri {
             m: [[e1.x, -e3.x, n.x], [e1.y, -e3.y, n.y], [e1.z, -e3.z, n.z]],
         };
 
-        let x = dot(&a.inv(), &(b.center - self.p[0]));
+        let x = dot(a.inv(), b.center - self.p[0]);
 
         let u = x.x;
         let v = x.y;
@@ -48,13 +48,7 @@ impl Tri {
         let dist = if (0. ..=1.).contains(&u) && (0. ..=1.).contains(&v) && (0. ..=1.).contains(&w) {
             z.abs()
         } else {
-            (b.radius + 1.).min(
-                distance_between(&self.p[0], &e1, &b.center)
-            ).min(
-                distance_between(&self.p[1], &e2, &b.center)
-            ).min(
-                distance_between(&self.p[2], &e3, &b.center)
-            )
+            (b.radius + 1.).min(distance_between(&self.p[0], &e1, &b.center)).min(distance_between(&self.p[1], &e2, &b.center)).min(distance_between(&self.p[2], &e3, &b.center))
         };
 
         dist <= b.radius

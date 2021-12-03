@@ -3,7 +3,7 @@ use crate::linear_algebra::mat::Mat3;
 use crate::linear_algebra::math::dot;
 use vvec3::Vec3;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Mesh {
     pub ids: Vec<i32>,
     pub vertices: Vec<f32>,
@@ -87,14 +87,14 @@ impl Mesh {
     }
 
     #[rustfmt::skip]
-    pub fn transform(&self, a: &Mat3) -> Self {
+    pub fn transform(&self, a: Mat3) -> Self {
         let mut ids: Vec<i32> = self.ids.clone();
         let mut vertices: Vec<f32> = self.vertices.clone();
 
         let n = self.vertices.len() / 3;
 
         for i in 0..n {
-            let v = dot(a, &Vec3::new(self.vertices[i * 3    ] as f32, self.vertices[i * 3 + 1] as f32, self.vertices[i * 3 + 2] as f32));
+            let v = dot(a, Vec3::new(self.vertices[i * 3    ] as f32, self.vertices[i * 3 + 1] as f32, self.vertices[i * 3 + 2] as f32));
 
             vertices[i * 3    ] = v.x as f32;
             vertices[i * 3 + 1] = v.y as f32;
@@ -119,7 +119,7 @@ impl Mesh {
     }
 
     #[rustfmt::skip]
-    pub fn translate(&self, p: &Vec3) -> Self {
+    pub fn translate(&self, p: Vec3) -> Self {
         let ids: Vec<i32> = self.ids.clone();
         let mut vertices: Vec<f32> = self.vertices.clone();
 

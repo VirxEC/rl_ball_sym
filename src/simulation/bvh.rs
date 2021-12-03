@@ -141,7 +141,7 @@ impl Bvh {
             // We must save the right node to a variable
             // There's the potential for node to be overwritten
             let right_og = node.right.as_deref();
-            
+
             let mut traverse_left = false;
             if let Some(left) = node.left.as_deref() {
                 if left.box_.intersect_self(&query_box) {
