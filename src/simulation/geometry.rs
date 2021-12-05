@@ -154,3 +154,157 @@ pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn generate_tri() -> Tri {
+        Tri {
+            p: [Vec3::new(-1.0, 5.0, 0.0), Vec3::new(2.0, 2.0, -3.0), Vec3::new(5.0, 5.0, 0.0)],
+        }
+    }
+
+    fn generate_sphere() -> Sphere {
+        Sphere {
+            center: Vec3::new(1.0, 0.0, 1.0),
+            radius: 2.0,
+        }
+    }
+
+    fn generate_bounding_boxes() -> Vec<Aabb> {
+        vec![
+            Aabb {
+                min: Vec3::new(-0.5, -2.0, -0.5),
+                max: Vec3::new(0.5, 2.0, 0.5),
+            },
+            Aabb {
+                min: Vec3::new(-1.0, -1.0, -1.0),
+                max: Vec3::new(1.0, 1.0, 1.0),
+            },
+            Aabb {
+                min: Vec3::new(1.0, 1.0, 1.0),
+                max: Vec3::new(3.0, 3.0, 3.0),
+            },
+            Aabb {
+                min: Vec3::new(-4.0, -4.0, -4.0),
+                max: Vec3::new(-3.0, -3.0, -3.0),
+            },
+        ]
+    }
+
+    #[test]
+    fn tri_sphere_intersect() {
+        let tri = generate_tri();
+        {
+            let sphere = Sphere {
+                center: Vec3::new(2.0, 4.0, -1.0),
+                radius: 0.5,
+            };
+
+            assert!(tri.intersect_sphere(&sphere));
+        }
+        {
+            let sphere = Sphere {
+                center: Vec3::new(-1.0, 5.0, 0.0),
+                radius: 0.5,
+            };
+
+            assert!(tri.intersect_sphere(&sphere));
+        }
+    }
+
+    #[test]
+    fn tri_sphere_not_intersect() {
+        let tri = generate_tri();
+        {
+            let sphere = Sphere {
+                center: Vec3::new(2.0, 2.0, 2.0),
+                radius: 1.0,
+            };
+
+            assert!(!tri.intersect_sphere(&sphere));
+        }
+        {
+            let sphere = Sphere {
+                center: Vec3::new(-2.0, -2.0, -2.0),
+                radius: 1.0,
+            };
+
+            assert!(!tri.intersect_sphere(&sphere));
+        }
+    }
+
+    #[test]
+    fn aabb_sphere_intersect() {
+        let sphere = generate_sphere();
+
+        {
+            let aabb = Aabb {
+                min: Vec3::new(2.0, 1.0, 2.0),
+                max: Vec3::new(4.0, 3.0, 4.0),
+            };
+
+            assert!(aabb.intersect_sphere(&sphere));
+        }
+        {
+            let aabb = Aabb {
+                min: Vec3::new(0.0, -1.0, 0.0),
+                max: Vec3::new(1.0, 0.0, 1.0),
+            };
+
+            assert!(aabb.intersect_sphere(&sphere));
+        }
+        {
+            let aabb = Aabb {
+                min: Vec3::new(-5.0, -5.0, -5.0),
+                max: Vec3::new(5.0, 5.0, 5.0),
+            };
+
+            assert!(aabb.intersect_sphere(&sphere));
+        }
+    }
+
+    #[test]
+    fn aabb_sphere_not_intersect() {
+        let sphere = generate_sphere();
+
+        let aabb = Aabb {
+            min: Vec3::new(-2.0, -2.0, -2.0),
+            max: Vec3::new(-1.0, -1.0, -1.0),
+        };
+
+        assert!(!aabb.intersect_sphere(&sphere));
+    }
+
+    #[test]
+    fn aabb_aabb_intersect() {
+        let bounding_boxes = generate_bounding_boxes();
+
+        // Test for intersection with itself
+        assert!(bounding_boxes[0].intersect_self(&bounding_boxes[0]));
+        assert!(bounding_boxes[1].intersect_self(&bounding_boxes[1]));
+        assert!(bounding_boxes[2].intersect_self(&bounding_boxes[2]));
+        assert!(bounding_boxes[3].intersect_self(&bounding_boxes[3]));
+
+        // Test for intersection with other bounding boxes
+        assert!(bounding_boxes[0].intersect_self(&bounding_boxes[1]));
+        assert!(bounding_boxes[1].intersect_self(&bounding_boxes[0]));
+        assert!(bounding_boxes[1].intersect_self(&bounding_boxes[2]));
+        assert!(bounding_boxes[2].intersect_self(&bounding_boxes[1]));
+    }
+
+    #[test]
+    fn aabb_aabb_not_intersect() {
+        let bounding_boxes = generate_bounding_boxes();
+
+        assert!(!bounding_boxes[0].intersect_self(&bounding_boxes[2]));
+        assert!(!bounding_boxes[0].intersect_self(&bounding_boxes[3]));
+        assert!(!bounding_boxes[1].intersect_self(&bounding_boxes[3]));
+        assert!(!bounding_boxes[2].intersect_self(&bounding_boxes[0]));
+        assert!(!bounding_boxes[2].intersect_self(&bounding_boxes[3]));
+        assert!(!bounding_boxes[3].intersect_self(&bounding_boxes[0]));
+        assert!(!bounding_boxes[3].intersect_self(&bounding_boxes[1]));
+        assert!(!bounding_boxes[3].intersect_self(&bounding_boxes[2]));
+    }
+}
