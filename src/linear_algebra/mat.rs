@@ -1,51 +1,31 @@
-#[derive(Clone, Copy, Debug)]
-pub struct Mat3 {
-    pub m: [[f32; 3]; 3],
+use glam::Mat3A;
+
+pub(crate) trait MatrixExt {
+    fn dot(&self, other: Self) -> Self;
 }
 
-impl Default for Mat3 {
-    fn default() -> Self {
-        Self {
-            m: [[0.; 3]; 3],
-        }
+impl MatrixExt for Mat3A {
+    fn dot(&self, other: Self) -> Self {
+        // For some reason, glam does matrix multiplication in column order. So,
+        // we have to transpose both matrices prior to multiplying them. Then,
+        // transpose the final result.
+        (self.transpose() * other.transpose()).transpose()
     }
 }
 
-impl Mat3 {
-    pub fn eye() -> Mat3 {
-        Mat3 {
-            m: [[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]],
-        }
-    }
+#[cfg(test)]
+mod test {
 
-    pub fn det(self) -> f32 {
-        self.m[0][0] * self.m[1][1] * self.m[2][2] + self.m[0][1] * self.m[1][2] * self.m[2][0] + self.m[0][2] * self.m[1][0] * self.m[2][1] - self.m[0][0] * self.m[1][2] * self.m[2][1] - self.m[0][1] * self.m[1][0] * self.m[2][2] - self.m[0][2] * self.m[1][1] * self.m[2][0]
-    }
+    use glam::{const_mat3a, Mat3A};
 
-    pub fn dot(self, b: Mat3) -> Mat3 {
-        let mut c: Mat3 = Mat3::default();
+    use crate::linear_algebra::mat::MatrixExt;
 
-        for i in 0..3 {
-            for j in 0..3 {
-                c.m[i][j] = 0.;
-                for k in 0..3 {
-                    c.m[i][j] += self.m[i][k] * b.m[k][j];
-                }
-            }
-        }
+    const A: Mat3A = const_mat3a!([-1., 2., 3.], [4., 5., 6.], [7., 8., 9.]);
+    const B: Mat3A = const_mat3a!([9., 8., 7.], [6., -5., 4.], [3., 2., 1.]);
+    const C: Mat3A = const_mat3a!([12.0, -12.0, 4.0], [84.0, 19.0, 54.0], [138.0, 34.0, 90.0]);
 
-        c
-    }
-
-    pub fn inv(self) -> Mat3 {
-        let inv_det_a = 1. / self.det();
-
-        Self {
-            m: [
-                [(self.m[1][1] * self.m[2][2] - self.m[1][2] * self.m[2][1]) * inv_det_a, (self.m[0][2] * self.m[2][1] - self.m[0][1] * self.m[2][2]) * inv_det_a, (self.m[0][1] * self.m[1][2] - self.m[0][2] * self.m[1][1]) * inv_det_a],
-                [(self.m[1][2] * self.m[2][0] - self.m[1][0] * self.m[2][2]) * inv_det_a, (self.m[0][0] * self.m[2][2] - self.m[0][2] * self.m[2][0]) * inv_det_a, (self.m[0][2] * self.m[1][0] - self.m[0][0] * self.m[1][2]) * inv_det_a],
-                [(self.m[1][0] * self.m[2][1] - self.m[1][1] * self.m[2][0]) * inv_det_a, (self.m[0][1] * self.m[2][0] - self.m[0][0] * self.m[2][1]) * inv_det_a, (self.m[0][0] * self.m[1][1] - self.m[0][1] * self.m[1][0]) * inv_det_a],
-            ],
-        }
+    #[test]
+    fn mat3_dot() {
+        assert_eq!(A.dot(B), C);
     }
 }

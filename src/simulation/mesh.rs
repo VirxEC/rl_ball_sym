@@ -1,7 +1,8 @@
+use glam::{Mat3A, Vec3A};
+
 use super::geometry::Tri;
-use crate::linear_algebra::mat::Mat3;
+
 use crate::linear_algebra::math::dot;
-use vvec3::Vec3;
 
 #[derive(Clone, Debug)]
 pub struct Mesh {
@@ -86,31 +87,26 @@ impl Mesh {
         }
     }
 
-    #[rustfmt::skip]
-    pub fn transform(&self, a: Mat3) -> Self {
-        let mut ids: Vec<i32> = self.ids.clone();
-        let mut vertices: Vec<f32> = self.vertices.clone();
+    pub fn transform(&self, a: Mat3A) -> Self {
+        debug_assert_eq!(self.vertices.len() % 3, 0);
+        debug_assert_eq!(self.ids.len() % 3, 0);
 
-        let n = self.vertices.len() / 3;
-
-        for i in 0..n {
-            let v = dot(a, Vec3::new(self.vertices[i * 3    ] as f32, self.vertices[i * 3 + 1] as f32, self.vertices[i * 3 + 2] as f32));
-
-            vertices[i * 3    ] = v.x as f32;
-            vertices[i * 3 + 1] = v.y as f32;
-            vertices[i * 3 + 2] = v.z as f32;
-        }
+        let vertices = self
+            .vertices
+            .chunks(3)
+            .flat_map(|vertex| {
+                let v = dot(a, Vec3A::from_slice(vertex));
+                v.to_array()
+            })
+            .collect();
 
         // for transformations that flip things
         // inside-out, change triangle winding
-        if a.det() < 0 as f32 {
-            let n = ids.len() / 3;
-            for i in 0..n {
-                ids[i * 3    ] = self.ids[i * 3 + 1];
-                ids[i * 3 + 1] = self.ids[i * 3    ];
-                ids[i * 3 + 2] = self.ids[i * 3 + 2];
-            }
-        }
+        let ids = if a.determinant() < 0. {
+            self.ids.chunks(3).flat_map(|ids| [ids[1], ids[0], ids[2]]).collect()
+        } else {
+            self.ids.clone()
+        };
 
         Mesh {
             ids,
@@ -118,20 +114,13 @@ impl Mesh {
         }
     }
 
-    #[rustfmt::skip]
-    pub fn translate(&self, p: Vec3) -> Self {
-        let ids: Vec<i32> = self.ids.clone();
-        let mut vertices: Vec<f32> = self.vertices.clone();
+    pub fn translate(&self, p: Vec3A) -> Self {
+        debug_assert_eq!(self.vertices.len() % 3, 0);
 
-        let n = vertices.len() / 3;
-        for i in 0..n {
-            vertices[i * 3    ] += p.x as f32;
-            vertices[i * 3 + 1] += p.y as f32;
-            vertices[i * 3 + 2] += p.z as f32;
-        }
+        let vertices = self.vertices.chunks(3).flat_map(|vertex| (Vec3A::from_slice(vertex) + p).to_array()).collect();
 
         Self {
-            ids,
+            ids: self.ids.clone(),
             vertices,
         }
     }

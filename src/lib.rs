@@ -4,11 +4,11 @@ use std::io::{Cursor, ErrorKind};
 pub mod linear_algebra;
 pub mod simulation;
 
+use glam::{vec3a};
 use simulation::ball::Ball;
 use simulation::field::{initialize_dropshot, initialize_hoops, initialize_soccar, initialize_throwback};
 use simulation::game::Game;
 use simulation::mesh::Mesh;
-use vvec3::Vec3;
 
 use crate::simulation::field::InitializeThrowbackParams;
 
@@ -58,7 +58,7 @@ pub fn load_soccar() -> Game {
 
     let ball = Ball::initialize_soccar();
 
-    let gravity = Vec3::new(0., 0., -650.);
+    let gravity = vec3a(0., 0., -650.);
 
     Game {
         gravity,
@@ -78,7 +78,7 @@ pub fn load_hoops() -> Game {
 
     let ball = Ball::initialize_hoops();
 
-    let gravity = Vec3::new(0., 0., -650.);
+    let gravity = vec3a(0., 0., -650.);
 
     Game {
         gravity,
@@ -94,7 +94,7 @@ pub fn load_dropshot() -> Game {
 
     let ball = Ball::initialize_dropshot();
 
-    let gravity = Vec3::new(0., 0., -650.);
+    let gravity = vec3a(0., 0., -650.);
 
     Game {
         gravity,
@@ -133,7 +133,7 @@ pub fn load_soccar_throwback() -> Game {
 
     let ball = Ball::initialize_soccar();
 
-    let gravity = Vec3::new(0., 0., -650.);
+    let gravity = vec3a(0., 0., -650.);
 
     Game {
         gravity,

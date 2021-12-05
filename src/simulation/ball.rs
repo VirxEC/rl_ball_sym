@@ -1,30 +1,16 @@
 use crate::simulation::game::Game;
 use crate::simulation::geometry::Sphere;
-use vvec3::Vec3;
+use glam::Vec3A;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Ball {
     pub time: f32,
-    pub location: Vec3,
-    pub velocity: Vec3,
-    pub angular_velocity: Vec3,
+    pub location: Vec3A,
+    pub velocity: Vec3A,
+    pub angular_velocity: Vec3A,
     pub radius: f32,
     pub collision_radius: f32,
     pub moi: f32,
-}
-
-impl Default for Ball {
-    fn default() -> Self {
-        Self {
-            time: 0.,
-            location: Vec3::default(),
-            velocity: Vec3::default(),
-            angular_velocity: Vec3::default(),
-            radius: 0.,
-            collision_radius: 0.,
-            moi: 0.,
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -110,7 +96,7 @@ impl Ball {
         self.moi = 0.4 * Ball::M * self.radius * self.radius;
     }
 
-    pub fn update(&mut self, time: f32, location: Vec3, velocity: Vec3, angular_velocity: Vec3) {
+    pub fn update(&mut self, time: f32, location: Vec3A, velocity: Vec3A, angular_velocity: Vec3A) {
         self.time = time;
         self.location = location;
         self.velocity = velocity;
@@ -132,23 +118,23 @@ impl Ball {
 
                 let loc = p - game.ball.location;
 
-                let m_reduced = 1. / (Ball::INV_M + loc.dot(&loc) / game.ball.moi);
+                let m_reduced = 1. / (Ball::INV_M + loc.length_squared() / game.ball.moi);
 
-                let v_perp = n * game.ball.velocity.dot(&n).min(0.);
-                let v_para = game.ball.velocity - v_perp - loc.cross(&game.ball.angular_velocity);
+                let v_perp = n * game.ball.velocity.dot(n).min(0.);
+                let v_para = game.ball.velocity - v_perp - loc.cross(game.ball.angular_velocity);
 
-                let ratio = v_perp.magnitude() / v_para.magnitude().max(0.0001);
+                let ratio = v_perp.length() / v_para.length().max(0.0001);
 
                 let j_perp = v_perp * Ball::RESTITUTION_M;
                 let j_para = -(Ball::MU * ratio).min(1.) * m_reduced * v_para;
 
                 let j = j_perp + j_para;
 
-                game.ball.angular_velocity += loc.cross(&j) / game.ball.moi;
+                game.ball.angular_velocity += loc.cross(j) / game.ball.moi;
                 game.ball.velocity += (j / Ball::M) + game.ball.velocity * (Ball::DRAG * dt);
                 game.ball.location += game.ball.velocity * dt;
 
-                let penetration = game.ball.collision_radius - (game.ball.location - p).dot(&n);
+                let penetration = game.ball.collision_radius - (game.ball.location - p).dot(n);
                 if penetration > 0. {
                     game.ball.location += n * (1.001 * penetration);
                 }
@@ -159,8 +145,8 @@ impl Ball {
             }
         }
 
-        game.ball.angular_velocity *= (Ball::W_MAX / game.ball.angular_velocity.magnitude()).min(1.);
-        game.ball.velocity *= (Ball::V_MAX / game.ball.velocity.magnitude()).min(1.);
+        game.ball.angular_velocity *= (Ball::W_MAX * game.ball.angular_velocity.length_recip()).min(1.);
+        game.ball.velocity *= (Ball::V_MAX * game.ball.velocity.length_recip()).min(1.);
         game.ball.time += dt;
     }
 
