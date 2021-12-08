@@ -287,3 +287,24 @@ fn predict_throwback_soccar() {
     let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
     assert_eq!(ball_prediction.num_slices, 720);
 }
+
+#[test]
+fn check_for_nans() {
+    let mut game = load_soccar();
+
+    game.ball.update(0., Vec3::new(0., 0., 100.), Vec3::default(), Vec3::default());
+
+    let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
+
+    for slice in ball_prediction.slices {
+        assert!(slice.location.x.is_finite());
+        assert!(slice.location.y.is_finite());
+        assert!(slice.location.z.is_finite());
+        assert!(slice.velocity.x.is_finite());
+        assert!(slice.velocity.y.is_finite());
+        assert!(slice.velocity.z.is_finite());
+        assert!(slice.angular_velocity.x.is_finite());
+        assert!(slice.angular_velocity.y.is_finite());
+        assert!(slice.angular_velocity.z.is_finite());
+    }
+}

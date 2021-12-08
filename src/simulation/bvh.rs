@@ -318,9 +318,10 @@ mod test {
         assert!((global.max.z - MAX_Z).abs() < f32::EPSILON);
     }
 
+    static VERT_MAP: &[[usize; 3]; 12] = &[[1, 0, 2], [3, 1, 2], [7, 5, 6], [4, 6, 5], [2, 0, 4], [6, 2, 4], [7, 3, 5], [1, 5, 3], [4, 0, 1], [5, 4, 1], [7, 6, 3], [2, 3, 6]];
+
     fn generate_tris() -> Vec<Tri> {
-        static VERT_MAP: &[[usize; 3]; 12] = &[[0, 1, 2], [3, 2, 1], [7, 5, 6], [4, 6, 5], [0, 2, 4], [6, 4, 2], [7, 3, 5], [1, 5, 3], [0, 4, 1], [5, 1, 4], [7, 6, 3], [2, 3, 6]];
-        let verts = &[Vec3::new(-5000.0, -5000.0, -5000.0), Vec3::new(-5000.0, -5000.0, 5000.0), Vec3::new(-5000.0, 5000.0, -5000.0), Vec3::new(-5000.0, 5000.0, 5000.0), Vec3::new(5000.0, -5000.0, -5000.0), Vec3::new(5000.0, -5000.0, 5000.0), Vec3::new(5000.0, 5000.0, -5000.0), Vec3::new(5000.0, 5000.0, 5000.0)];
+        let verts = &[Vec3::new(-4096.0, -5120.0, 0.0), Vec3::new(-4096.0, -5120.0, 2044.0), Vec3::new(-4096.0, 5120.0, 0.0), Vec3::new(-4096.0, 5120.0, 2044.0), Vec3::new(4096.0, -5120.0, 0.0), Vec3::new(4096.0, -5120.0, 2044.0), Vec3::new(4096.0, 5120.0, 0.0), Vec3::new(4096.0, 5120.0, 2044.0)];
         VERT_MAP
             .iter()
             .map(|map| {
@@ -347,7 +348,7 @@ mod test {
         {
             // Sphere hits nothing
             let sphere = Sphere {
-                center: Vec3::default(),
+                center: Vec3::new(0., 0., 1022.),
                 radius: 100.,
             };
             let hits = bvh.intersect(&sphere);
@@ -356,36 +357,29 @@ mod test {
         {
             // Sphere hits one Tri
             let sphere = Sphere {
-                center: Vec3 {
-                    x: 4900.,
-                    y: 2500.,
-                    z: 2500.,
-                },
+                center: Vec3::new(4096. / 2., 5120. / 2., 100.),
                 radius: 100.,
             };
             let hits = bvh.intersect(&sphere);
 
             assert_eq!(hits.len(), 1);
             let p0 = hits[0].p[0];
-            assert!((p0.x - 5000.).abs() < f32::EPSILON);
-            assert!((p0.y - 5000.).abs() < f32::EPSILON);
-            assert!((p0.z - 5000.).abs() < f32::EPSILON);
+            assert!((p0.x - 4096.).abs() < f32::EPSILON);
+            assert!((p0.y - 5120.).abs() < f32::EPSILON);
+            assert!((p0.z - 0.).abs() < f32::EPSILON);
             let p1 = hits[0].p[1];
-            assert!((p1.x - 5000.).abs() < f32::EPSILON);
-            assert!((p1.y - -5000.).abs() < f32::EPSILON);
-            assert!((p1.z - 5000.).abs() < f32::EPSILON);
+            assert!((p1.x - -4096.).abs() < f32::EPSILON);
+            assert!((p1.y - 5120.).abs() < f32::EPSILON);
+            assert!((p1.z - 0.).abs() < f32::EPSILON);
             let p2 = hits[0].p[2];
-            assert!((p2.x - 5000.).abs() < f32::EPSILON);
-            assert!((p2.y - 5000.).abs() < f32::EPSILON);
-            assert!((p2.z - -5000.).abs() < f32::EPSILON);
+            assert!((p2.x - 4096.).abs() < f32::EPSILON);
+            assert!((p2.y - -5120.).abs() < f32::EPSILON);
+            assert!((p2.z - 0.).abs() < f32::EPSILON);
         }
         {
             // Middle of two Tris
             let sphere = Sphere {
-                center: Vec3 {
-                    x: 4900.,
-                    ..Default::default()
-                },
+                center: Vec3::new(0., 0., 0.),
                 radius: 100.,
             };
             let hits = bvh.intersect(&sphere);
@@ -395,11 +389,7 @@ mod test {
         {
             // Sphere is in a corner
             let sphere = Sphere {
-                center: Vec3 {
-                    x: 4900.,
-                    y: 4900.,
-                    z: -4900.,
-                },
+                center: Vec3::new(4096., 5120., 0.),
                 radius: 100.,
             };
             let hits = bvh.intersect(&sphere);
@@ -417,7 +407,7 @@ mod test {
         {
             // Sphere hits nothing
             let sphere = Sphere {
-                center: Vec3::default(),
+                center: Vec3::new(0., 0., 1022.),
                 radius: 100.,
             };
 
@@ -428,11 +418,7 @@ mod test {
         {
             // Sphere hits one Tri
             let sphere = Sphere {
-                center: Vec3 {
-                    x: 4900.,
-                    y: 2500.,
-                    z: 2500.,
-                },
+                center: Vec3::new(4096. / 2., 5120. / 2., 99.),
                 radius: 100.,
             };
 
@@ -440,20 +426,17 @@ mod test {
 
             assert!(ray.is_some());
             let ray = ray.unwrap();
-            assert!((ray.start.x - 5000.).abs() < f32::EPSILON);
-            assert!((ray.start.y - 2500.).abs() < f32::EPSILON);
-            assert!((ray.start.z - 2500.).abs() < f32::EPSILON);
-            assert!((ray.direction.x - 1.0).abs() < f32::EPSILON);
+            assert!((ray.start.x - 2048.).abs() < f32::EPSILON);
+            assert!((ray.start.y - 2560.).abs() < f32::EPSILON);
+            assert!((ray.start.z - 0.).abs() < f32::EPSILON);
+            assert!((ray.direction.x - 0.0).abs() < f32::EPSILON);
             assert!((ray.direction.y - 0.0).abs() < f32::EPSILON);
-            assert!((ray.direction.z - 0.0).abs() < f32::EPSILON);
+            assert!((ray.direction.z - 1.0).abs() < f32::EPSILON);
         }
         {
             // Middle of two Tris
             let sphere = Sphere {
-                center: Vec3 {
-                    x: 4900.,
-                    ..Default::default()
-                },
+                center: Vec3::new(0., 0., 0.),
                 radius: 100.,
             };
 
@@ -461,21 +444,17 @@ mod test {
 
             assert!(ray.is_some());
             let ray = ray.unwrap();
-            assert!((ray.start.x - 5000.).abs() < f32::EPSILON);
+            assert!((ray.start.x - 0.0).abs() < f32::EPSILON);
             assert!((ray.start.y - 0.0).abs() < f32::EPSILON);
             assert!((ray.start.z - 0.0).abs() < f32::EPSILON);
-            assert!((ray.direction.x - 1.0).abs() < f32::EPSILON);
+            assert!((ray.direction.x - 0.0).abs() < f32::EPSILON);
             assert!((ray.direction.y - 0.0).abs() < f32::EPSILON);
-            assert!((ray.direction.z - 0.0).abs() < f32::EPSILON);
+            assert!((ray.direction.z - 1.0).abs() < f32::EPSILON);
         }
         {
             // Sphere is in a corner
             let sphere = Sphere {
-                center: Vec3 {
-                    x: 4900.,
-                    y: 4900.,
-                    z: -4900.,
-                },
+                center: Vec3::new(4096., 5120., 0.),
                 radius: 100.,
             };
 
@@ -483,12 +462,37 @@ mod test {
 
             assert!(ray.is_some());
             let ray = ray.unwrap();
-            assert!((ray.start.x - 4940.).abs() < f32::EPSILON);
-            assert!((ray.start.y - 4940.).abs() < f32::EPSILON);
-            assert!((ray.start.z - -4920.).abs() < f32::EPSILON);
+            assert!((ray.start.x - 4096.).abs() < f32::EPSILON);
+            assert!((ray.start.y - 5120.).abs() < f32::EPSILON);
+            assert!((ray.start.z - 0.0).abs() < f32::EPSILON);
             assert!((ray.direction.x - 0.6666667).abs() < f32::EPSILON);
             assert!((ray.direction.y - 0.6666667).abs() < f32::EPSILON);
-            assert!((ray.direction.z - -0.33333334).abs() < f32::EPSILON);
+            assert!((ray.direction.z - 0.33333334).abs() < f32::EPSILON);
+        }
+    }
+
+    #[test]
+    fn is_collision_ray_finite() {
+        let triangles = generate_tris();
+
+        let bvh = Bvh::from(&triangles);
+
+        {
+            let sphere = Sphere {
+                center: Vec3::new(0., 0., 93.15),
+                radius: 93.15,
+            };
+
+            let ray = bvh.collide(&sphere);
+
+            assert!(ray.is_some());
+            let ray = ray.unwrap();
+            assert!(ray.direction.x.is_finite());
+            assert!(ray.direction.y.is_finite());
+            assert!(ray.direction.z.is_finite());
+            assert!(ray.start.x.is_finite());
+            assert!(ray.start.y.is_finite());
+            assert!(ray.start.z.is_finite());
         }
     }
 }
