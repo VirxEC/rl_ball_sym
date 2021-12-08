@@ -215,7 +215,7 @@ impl Bvh {
         }
 
         contact_point.start /= count as f32;
-        contact_point.direction = contact_point.direction.normalize();
+        contact_point.direction = contact_point.direction.normalize_or_zero();
 
         Some(contact_point)
     }
