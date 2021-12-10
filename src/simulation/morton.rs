@@ -1,9 +1,10 @@
+use glam::Vec3A;
+
 use super::geometry::Aabb;
-use vvec3::Vec3;
 
 pub struct Morton {
-    pub offset: Vec3,
-    pub scale: Vec3,
+    pub offset: Vec3A,
+    pub scale: Vec3A,
 }
 
 impl Morton {
@@ -32,7 +33,7 @@ impl Morton {
         x
     }
 
-    pub fn encode(u: Vec3) -> u64 {
+    pub fn encode(u: Vec3A) -> u64 {
         // These should actually be 21 bits, but there's no u21 type and the final type is u64 (21 bits * 3 = 63 bits)
         let x = u.x as u32;
         let y = u.y as u32;

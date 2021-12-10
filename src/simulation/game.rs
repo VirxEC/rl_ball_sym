@@ -1,10 +1,11 @@
+use glam::Vec3A;
+
 use super::ball::Ball;
 use super::bvh::Bvh;
-use vvec3::Vec3;
 
 #[derive(Clone)]
 pub struct Game {
-    pub gravity: Vec3,
+    pub gravity: Vec3A,
     pub collision_mesh: Bvh,
     pub ball: Ball,
 }
@@ -12,7 +13,7 @@ pub struct Game {
 impl Default for Game {
     fn default() -> Self {
         Self {
-            gravity: Vec3::default(),
+            gravity: Vec3A::default(),
             collision_mesh: Bvh::default(),
             ball: Ball::default(),
         }
