@@ -1,6 +1,6 @@
 [package]
 name = "rl_ball_sym"
-version = "0.6.2"
+version = "0.7.0"
 authors = ["VirxEC"]
 edition = "2021"
 description = "Rust implementation of ball path prediction for Rocket League; Inspired by Samuel (Chip) P. Mish's C++ utils called RLUtilities"
