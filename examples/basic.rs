@@ -1,4 +1,4 @@
-use glam::{Vec3A, vec3a};
+use glam::{vec3a, Vec3A};
 use rl_ball_sym::load_soccar;
 use rl_ball_sym::simulation::ball::{Ball, BallPrediction};
 use rl_ball_sym::simulation::game::Game;

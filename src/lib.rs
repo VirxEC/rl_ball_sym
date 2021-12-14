@@ -4,7 +4,7 @@ use std::io::{Cursor, ErrorKind};
 pub mod linear_algebra;
 pub mod simulation;
 
-use glam::{vec3a};
+use glam::vec3a;
 use simulation::ball::Ball;
 use simulation::field::{initialize_dropshot, initialize_hoops, initialize_soccar, initialize_throwback};
 use simulation::game::Game;
