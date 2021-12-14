@@ -34,8 +34,6 @@ fn load_dropshot_benchmark(c: &mut Criterion) {
     c.bench_function("load_dropshot", |b| b.iter(load_dropshot));
 }
 
-// Disabled for now. This test spams the console with warnings and makes the benchmark output difficult to read
-#[allow(unused)]
 fn load_soccar_throwback_benchmark(c: &mut Criterion) {
     c.bench_function("load_soccar_throwback", |b| b.iter(load_soccar_throwback));
 }
@@ -70,13 +68,6 @@ fn get_ball_prediction_struct_throwback(c: &mut Criterion) {
     c.bench_function("get_ball_prediction/throwback", |b| b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game))));
 }
 
-criterion_group!(
-    init,
-    init_benchmark,
-    load_soccar_benchmark,
-    load_hoops_benchmark,
-    load_dropshot_benchmark,
-    /* load_soccar_throwback_benchmark, */
-);
+criterion_group!(init, init_benchmark, load_soccar_benchmark, load_hoops_benchmark, load_dropshot_benchmark, load_soccar_throwback_benchmark,);
 criterion_group!(prediction, get_ball_prediction_struct_with_time_benchmark, get_ball_prediction_struct_benchmark, get_ball_prediction_struct_hoops_benchmark, get_ball_prediction_struct_dropshot, get_ball_prediction_struct_throwback);
 criterion_main!(init, prediction);

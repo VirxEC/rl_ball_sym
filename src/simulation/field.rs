@@ -169,25 +169,20 @@ pub fn initialize_throwback(
     let throwback_back_ramps_lower = back_ramps_lower.transform(s);
     let throwback_back_ramps_upper = back_ramps_upper.transform(s);
     let throwback_corner_ramps_lower = corner_ramps_lower.transform(s);
-    let throwback_corner_ramps_lower_y_flip = corner_ramps_lower.transform(FLIP_Y);
     let throwback_corner_ramps_upper = corner_ramps_upper.transform(s);
-    let throwback_corner_ramps_upper_y_flip = corner_ramps_upper.transform(FLIP_Y);
     let throwback_corner_wall_0 = corner_wall_0.transform(s);
-    let throwback_corner_wall_0_y_flip = corner_wall_0.transform(FLIP_Y);
     let throwback_corner_wall_1 = corner_wall_1.transform(s);
-    let throwback_corner_wall_1_y_flip = corner_wall_1.transform(FLIP_Y);
     let throwback_corner_wall_2 = corner_wall_2.transform(s);
-    let throwback_corner_wall_2_y_flip = corner_wall_2.transform(FLIP_Y);
 
     let field_mesh = Mesh::from(vec![
         &throwback_corner_ramps_lower,
         &throwback_corner_ramps_lower.transform(FLIP_X),
-        &throwback_corner_ramps_lower_y_flip,
-        &throwback_corner_ramps_lower_y_flip.transform(FLIP_X),
+        &throwback_corner_ramps_lower.transform(FLIP_Y),
+        &throwback_corner_ramps_lower.transform(FLIP_Y).transform(FLIP_X),
         &throwback_corner_ramps_upper,
         &throwback_corner_ramps_upper.transform(FLIP_X),
-        &throwback_corner_ramps_upper_y_flip,
-        &throwback_corner_ramps_upper_y_flip.transform(FLIP_X),
+        &throwback_corner_ramps_upper.transform(FLIP_Y),
+        &throwback_corner_ramps_upper.transform(FLIP_Y).transform(FLIP_X),
         &throwback_goal,
         &throwback_goal.transform(FLIP_Y),
         &throwback_side_ramps_lower,
@@ -200,16 +195,16 @@ pub fn initialize_throwback(
         &throwback_back_ramps_upper.transform(FLIP_Y),
         &throwback_corner_wall_0,
         &throwback_corner_wall_0.transform(FLIP_X),
-        &throwback_corner_wall_0_y_flip,
-        &throwback_corner_wall_0_y_flip.transform(FLIP_X),
+        &throwback_corner_wall_0.transform(FLIP_Y),
+        &throwback_corner_wall_0.transform(FLIP_Y).transform(FLIP_X),
         &throwback_corner_wall_1,
         &throwback_corner_wall_1.transform(FLIP_X),
-        &throwback_corner_wall_1_y_flip,
-        &throwback_corner_wall_1_y_flip.transform(FLIP_X),
+        &throwback_corner_wall_1.transform(FLIP_Y),
+        &throwback_corner_wall_1.transform(FLIP_Y).transform(FLIP_X),
         &throwback_corner_wall_2,
         &throwback_corner_wall_2.transform(FLIP_X),
-        &throwback_corner_wall_2_y_flip,
-        &throwback_corner_wall_2_y_flip.transform(FLIP_X),
+        &throwback_corner_wall_2.transform(FLIP_Y),
+        &throwback_corner_wall_2.transform(FLIP_Y).transform(FLIP_X),
         &floor,
         &ceiling,
         &side_walls[0],

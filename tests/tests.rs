@@ -201,7 +201,76 @@ fn basic_predict() {
     let ball_prediction = Ball::get_ball_prediction_struct_for_time(&mut game, &time);
     assert_eq!(ball_prediction.num_slices, time as usize * 120);
 
-    let iters = 100;
+    let iters = 200;
+    let time = 10.; // 10 seconds
+    let num_slices = time as usize * 120 * iters;
+    let mut rng = rand::thread_rng();
+
+    let mut x_locs = Vec::with_capacity(num_slices);
+    let mut y_locs = Vec::with_capacity(num_slices);
+    let mut z_locs = Vec::with_capacity(num_slices);
+
+    dbg!(game.collision_mesh.global_box);
+
+    for _ in 0..iters {
+        game.ball.update(0., vec3a(rng.gen_range(-3900.0..3900.), rng.gen_range(-5000.0..5000.), rng.gen_range(100.0..1900.)), vec3a(rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.)), vec3a(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)));
+
+        let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
+
+        for slice in ball_prediction.slices {
+            if slice.location.y.abs() > 5120. + slice.radius {
+                break;
+            }
+
+            x_locs.push(slice.location.x as isize);
+            y_locs.push(slice.location.y as isize);
+            z_locs.push(slice.location.z as isize);
+        }
+    }
+
+    dbg!(*x_locs.iter().min().unwrap());
+    dbg!(*x_locs.iter().max().unwrap());
+
+    dbg!(*y_locs.iter().min().unwrap());
+    dbg!(*y_locs.iter().max().unwrap());
+
+    dbg!(*z_locs.iter().min().unwrap());
+    dbg!(*z_locs.iter().max().unwrap());
+
+    assert!(*z_locs.iter().min().unwrap() > game.collision_mesh.global_box.min.z as isize);
+    assert!(*z_locs.iter().max().unwrap() < game.collision_mesh.global_box.max.z as isize);
+
+    assert!(*y_locs.iter().min().unwrap() > game.collision_mesh.global_box.min.y as isize);
+    assert!(*y_locs.iter().max().unwrap() < game.collision_mesh.global_box.max.y as isize);
+
+    assert!(*x_locs.iter().min().unwrap() > game.collision_mesh.global_box.min.x as isize);
+    assert!(*x_locs.iter().max().unwrap() < game.collision_mesh.global_box.max.x as isize);
+}
+
+#[test]
+fn basic_predict_throwback() {
+    let mut game = load_soccar_throwback();
+
+    assert_eq!(game.ball.time as i64, 0);
+    assert_eq!(game.ball.location.x as i64, 0);
+    assert_eq!(game.ball.location.y as i64, 0);
+    assert_eq!(game.ball.location.z as i64, 102);
+    assert_eq!(game.ball.velocity.x as i64, 0);
+    assert_eq!(game.ball.velocity.y as i64, 0);
+    assert_eq!(game.ball.velocity.z as i64, 0);
+    assert_eq!(game.ball.angular_velocity.x as i64, 0);
+    assert_eq!(game.ball.angular_velocity.y as i64, 0);
+    assert_eq!(game.ball.angular_velocity.z as i64, 0);
+    assert_eq!(game.ball.radius as i64, 91);
+    assert_eq!(game.ball.collision_radius as i64, 93);
+
+    game.ball.update(0.098145, vec3a(-2294.5247, 1684.136, 317.17673), vec3a(1273.7537, -39.792305, 763.2827), vec3a(2.3894, -0.8755, 3.8078));
+
+    let time = 60.; // 1 minute, lol
+    let ball_prediction = Ball::get_ball_prediction_struct_for_time(&mut game, &time);
+    assert_eq!(ball_prediction.num_slices, time as usize * 120);
+
+    let iters = 200;
     let time = 10.; // 10 seconds
     let num_slices = time as usize * 120 * iters;
     let mut rng = rand::thread_rng();

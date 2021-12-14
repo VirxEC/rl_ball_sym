@@ -136,6 +136,7 @@ impl Bvh {
 
         // Traverse nodes starting from the root.
         let mut node = &*self.root;
+
         // Check each child node for overlap.
         loop {
             // We must save the right node to a variable
