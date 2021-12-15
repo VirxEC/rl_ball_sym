@@ -13,19 +13,10 @@ pub struct Ball {
     pub moi: f32,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct BallPrediction {
     pub num_slices: usize,
     pub slices: Vec<Ball>,
-}
-
-impl Default for BallPrediction {
-    fn default() -> Self {
-        Self {
-            num_slices: 0,
-            slices: Vec::new(),
-        }
-    }
 }
 
 impl Ball {

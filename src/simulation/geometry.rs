@@ -53,19 +53,10 @@ impl Tri {
 
 // AABB stands for "Axis-Aligned Bounding Boxes"
 // Learn more here: https://developer.nvidia.com/blog/thinking-parallel-part-i-collision-detection-gpu/
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Aabb {
     pub min: Vec3A,
     pub max: Vec3A,
-}
-
-impl Default for Aabb {
-    fn default() -> Self {
-        Self {
-            min: Vec3A::default(),
-            max: Vec3A::default(),
-        }
-    }
 }
 
 impl Aabb {
@@ -117,19 +108,10 @@ impl From<&'_ Sphere> for Aabb {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Int2 {
     pub x: i32,
     pub y: i32,
-}
-
-impl Default for Int2 {
-    fn default() -> Self {
-        Self {
-            x: 0,
-            y: 0,
-        }
-    }
 }
 
 // endpoint is start + direction

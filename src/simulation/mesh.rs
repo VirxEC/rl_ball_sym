@@ -4,19 +4,10 @@ use super::geometry::Tri;
 
 use crate::linear_algebra::math::dot;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Mesh {
     pub ids: Vec<i32>,
     pub vertices: Vec<f32>,
-}
-
-impl Default for Mesh {
-    fn default() -> Self {
-        Self {
-            ids: Vec::new(),
-            vertices: Vec::new(),
-        }
-    }
 }
 
 impl Mesh {
