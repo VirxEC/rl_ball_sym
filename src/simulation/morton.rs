@@ -2,6 +2,7 @@ use glam::Vec3A;
 
 use super::geometry::Aabb;
 
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Morton {
     pub offset: Vec3A,
     pub scale: Vec3A,

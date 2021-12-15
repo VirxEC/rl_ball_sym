@@ -10,14 +10,14 @@ static mut GAME_0: Option<Game> = None;
 
 #[test]
 fn init() {
-    let mut game: &mut Game;
+    let game: &mut Game;
     unsafe {
         GAME_0 = Some(load_soccar());
         game = GAME_0.as_mut().unwrap();
     }
 
     game.ball.location.z = 1900.;
-    let ball_prediction_struct = Ball::get_ball_prediction_struct(&mut game);
+    let ball_prediction_struct = Ball::get_ball_prediction_struct(game);
     dbg!(ball_prediction_struct.num_slices);
 }
 

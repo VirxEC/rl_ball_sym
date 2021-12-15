@@ -108,12 +108,6 @@ impl From<&'_ Sphere> for Aabb {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default)]
-pub struct Int2 {
-    pub x: i32,
-    pub y: i32,
-}
-
 // endpoint is start + direction
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Ray {
@@ -121,7 +115,7 @@ pub struct Ray {
     pub direction: Vec3A,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Sphere {
     pub center: Vec3A,
     pub radius: f32,

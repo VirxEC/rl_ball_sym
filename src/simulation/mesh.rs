@@ -37,41 +37,6 @@ impl Mesh {
             id_offset += (m.vertices.len() / 3) as i32;
         }
 
-        // remove duplicate vertices and their ids
-        // let mut i = 0;
-        // let mut dups = 0;
-
-        // loop {
-        //     let id = (ids[i] * 3) as usize;
-        //     match vertices[..id].iter().position(|&x| x == vertices[id + 0]) {
-        //         Some(j) => {
-        //             if vertices[j + 1] == vertices[id + 1] && vertices[j + 2] == vertices[id + 2] {
-        //                 // dups += 1;
-        //                 n_ids -= 3;
-
-        //                 vertices.remove(id + 0);
-        //                 vertices.remove(id + 1);
-        //                 vertices.remove(id + 2);
-
-        //                 ids.remove(i + 0);
-        //                 ids.remove(i + 1);
-        //                 ids.remove(i + 2);
-
-        //                 for l in i..n_ids {
-        //                     ids[l] -= 3;
-        //                 }
-        //             }
-        //         }
-        //         None => {}
-        //     };
-
-        //     i += 3;
-        //     if i >= n_ids {
-        //         break;
-        //     }
-        // }
-        // println!("Removed {} duplicate vertices!", dups);
-
         Self {
             ids,
             vertices,

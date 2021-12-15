@@ -13,7 +13,7 @@ pub struct Ball {
     pub moi: f32,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct BallPrediction {
     pub num_slices: usize,
     pub slices: Vec<Ball>,
@@ -94,7 +94,7 @@ impl Ball {
         self.angular_velocity = angular_velocity;
     }
 
-    fn hitbox(&self) -> Sphere {
+    const fn hitbox(&self) -> Sphere {
         Sphere {
             center: self.location,
             radius: self.collision_radius,

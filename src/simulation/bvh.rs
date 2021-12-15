@@ -3,7 +3,7 @@ use super::geometry::{Ray, Sphere};
 use super::morton::Morton;
 use std::boxed::Box;
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct BvhNode {
     pub is_terminal: bool,
     pub box_: Aabb,
@@ -38,7 +38,7 @@ impl BvhNode {
 }
 
 // BVH stands for "Bounding Volume Hierarchy"
-#[derive(Clone)]
+#[derive(Clone, Debug, Default)]
 pub struct Bvh {
     pub global_box: Aabb,
     pub num_leaves: u64,
@@ -53,16 +53,6 @@ fn global_aabb(boxes: &[Aabb]) -> Aabb {
     }
 
     global_box
-}
-
-impl Default for Bvh {
-    fn default() -> Self {
-        Self {
-            global_box: Aabb::default(),
-            num_leaves: 0,
-            root: Box::new(BvhNode::default()),
-        }
-    }
 }
 
 impl Bvh {
