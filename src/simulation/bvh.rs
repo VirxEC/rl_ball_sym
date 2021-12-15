@@ -3,7 +3,7 @@ use super::geometry::{Ray, Sphere};
 use super::morton::Morton;
 use std::boxed::Box;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct BvhNode {
     pub is_terminal: bool,
     pub box_: Aabb,
@@ -11,19 +11,6 @@ pub struct BvhNode {
     pub left: Option<Box<BvhNode>>,
     pub primitive: Option<Tri>,
     pub morton: Option<u64>,
-}
-
-impl Default for BvhNode {
-    fn default() -> Self {
-        Self {
-            is_terminal: false,
-            box_: Aabb::default(),
-            right: None,
-            left: None,
-            primitive: None,
-            morton: None,
-        }
-    }
 }
 
 impl BvhNode {
