@@ -1,5 +1,5 @@
-use crate::linear_algebra::math::dot;
-use glam::{Mat3A, Vec3A};
+use crate::linear_algebra::math::{dot, local};
+use glam::{Mat3A, Vec3A, const_mat3a};
 
 pub fn distance_between(start: Vec3A, dir: Vec3A, p: Vec3A) -> f32 {
     let u = ((p - start).dot(dir) / dir.length_squared()).clamp(0., 1.);
@@ -119,6 +119,67 @@ pub struct Ray {
 pub struct Sphere {
     pub center: Vec3A,
     pub radius: f32,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Obb {
+    pub center: Vec3A,
+    pub half_width: Vec3A,
+    pub orientation: Mat3A,
+}
+
+impl Obb {
+    /// Orientation is [[car_forward], [car_right], [car_up]]
+    /// Hitbox dimensions is just the (length, width, height) of the hitbox
+    /// Hitbox offset is the same
+    pub fn new(location: Vec3A, orientation: Mat3A, dimensions: Vec3A, offset: Vec3A) -> Self {
+        Self {
+            orientation,
+            half_width: dimensions / 2.,
+            center: dot(orientation, offset) + location,
+        }
+    }
+
+    pub fn closest_point_on_obb(&self, v: Vec3A) -> Vec3A {
+        let mut v_local = local(v - self.center, self.orientation);
+
+        v_local[0] = v_local[0].clamp(-self.half_width[0], self.half_width[0]);
+        v_local[1] = v_local[1].clamp(-self.half_width[1], self.half_width[1]);
+        v_local[2] = v_local[2].clamp(-self.half_width[2], self.half_width[2]);
+
+        dot(self.orientation, v_local) + self.center
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Car {
+    pub hitbox: Obb,
+    pub location: Vec3A,
+    pub velocity: Vec3A,
+    pub angular_velocity: Vec3A,
+    pub orientation: Mat3A,
+    pub i: Mat3A,
+    pub inv_i: Mat3A,
+}
+
+impl Car {
+    pub const m: f32 = 180.;
+    pub const pre_i: Mat3A = const_mat3a!([751., 0., 0.], [0., 1334., 0.], [0., 0., 1836.]);
+    
+    pub fn new(location: Vec3A, velocity: Vec3A, angular_velocity: Vec3A, forward: Vec3A, right: Vec3A, up: Vec3A, hitbox_dimensions: Vec3A, hitbox_offset: Vec3A) -> Self {
+        let i = Car::m * Car:: pre_i;
+        let orientation = Mat3A::from_cols(forward, right, up);
+
+        Self {
+            location,
+            velocity,
+            angular_velocity,
+            orientation,
+            i,
+            inv_i: i.inverse(),
+            hitbox: Obb::new(location, orientation, hitbox_dimensions, hitbox_offset),
+        }
+    }
 }
 
 #[cfg(test)]

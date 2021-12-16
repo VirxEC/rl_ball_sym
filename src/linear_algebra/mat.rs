@@ -1,4 +1,6 @@
-use glam::Mat3A;
+use glam::{Mat3A, const_mat3a};
+
+pub const eye: Mat3A = const_mat3a!([1., 0., 0.], [0., 1., 0.], [0., 0., 1.]);
 
 pub(crate) trait MatrixExt {
     fn dot(&self, other: Self) -> Self;
