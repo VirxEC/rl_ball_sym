@@ -1,9 +1,10 @@
-use glam::{Mat3A, const_mat3a};
+use glam::{const_mat3a, Mat3A};
 
-pub const eye: Mat3A = const_mat3a!([1., 0., 0.], [0., 1., 0.], [0., 0., 1.]);
+pub const EYE: Mat3A = const_mat3a!([1., 0., 0.], [0., 1., 0.], [0., 0., 1.]);
 
 pub(crate) trait MatrixExt {
     fn dot(&self, other: Self) -> Self;
+    fn denom(&self, other: f32) -> Self;
 }
 
 impl MatrixExt for Mat3A {
@@ -12,6 +13,10 @@ impl MatrixExt for Mat3A {
         // we have to transpose both matrices prior to multiplying them. Then,
         // transpose the final result.
         (self.transpose() * other.transpose()).transpose()
+    }
+
+    fn denom(&self, other: f32) -> Self {
+        Self::from_cols(self.x_axis / other, self.y_axis / other, self.z_axis / other)
     }
 }
 

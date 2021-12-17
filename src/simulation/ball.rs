@@ -1,10 +1,25 @@
-use crate::linear_algebra::mat::{MatrixExt, eye};
-use crate::linear_algebra::math::{antisym, dot};
+use crate::linear_algebra::mat::{MatrixExt, EYE};
+use crate::linear_algebra::math::{antisym, dot, lerp};
 use crate::simulation::game::Game;
 use crate::simulation::geometry::Sphere;
 use glam::Vec3A;
 
-use super::geometry::{Obb, Car};
+use super::geometry::{Car, CarLike};
+
+fn scale(dv: f32) -> f32 {
+    let values = [[0., 0.65], [500., 0.65], [2300., 0.55], [4600., 0.30], [0., 0.], [0., 0.]];
+
+    let input = dv.clamp(0., 4600.);
+
+    for i in 0..5 {
+        if values[i][0] <= input && input < values[i + 1][0] {
+            let u = (input - values[i][0]) / (values[i + 1][0] - values[i][0]);
+            return lerp(values[i][1], values[i + 1][1], u);
+        }
+    }
+
+    -1.
+}
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Ball {
@@ -167,54 +182,75 @@ impl Ball {
         }
     }
 
-    // pub fn step_car(game: &mut Game, car: Car, dt: f32) {
-    //     let p = car.hitbox.closest_point_on_obb(game.ball.location);
-    
-    //     if (p - game.ball.location).length() < game.ball.collision_radius {
-    
-    //         let cx = car.location;
-    //         let cv = car.velocity;
-    //         let cw = car.angular_velocity;
-    //         let co = car.orientation;
-    
-    //         let n1 = (p - game.ball.location).normalize_or_zero();
-    
-    //         let L_b = antisym(p - game.ball.location);
-    //         let L_c = antisym(p - car.location);
-    
-    //         let invI_c = co.dot(car.invI.dot(co.transpose()));
-    
-    //         let M = (((1. / Car::m) + (1. / Car::m)) * eye - (L_b.dot(L_b) / game.ball.moi) - L_c.dot(invI_c.dot(L_c))).inverse();
-    
-    //         let delta_V = (cv - dot(L_c, cw)) - (game.ball.velocity - dot(L_b, game.ball.angular_velocity));
-    
-    //         // compute the impulse that is consistent with an inelastic collision 
-    //         let mut j1 = dot(M, delta_V);
-    
-    //         let j1_perp = j1.dot(n1).min(-1.) * n1;
-    //         let j1_para = j1 - j1_perp;
-    
-    //         let ratio = j1_perp.length() / j1_para.length().max(0.001);
-    
-    //         // scale the parallel component of J1 such that the
-    //         // Coulomb friction model is satisfied
-    //         j1 = j1_perp + 1_f32.min(Ball::MU * ratio) * j1_para;
-    
-    
-    //         let f = car.orientation.x_axis;
-    //         let n2 = game.ball.location - cx;
-    //         n2[2] *= 0.35;
-    //         n2 = (n2 - 0.35 * n2.dot(f) * f).normalize_or_zero();
-    
-    //         let dv = (game.ball.velocity - cv).length().min(4600.);
-    //         let j2 = Ball::M * dv * scale(dv) * n2;
-    
-    //         game.ball.angular_velocity += dot(L_b, j1) / game.ball.moi;
-    //         game.ball.velocity += (j1 + j2) / Ball::M;
-    //     }
-    
-    //     Ball::step(game, dt);
-    // }
+    pub fn step_car<T: CarLike>(game: &mut Game, car: T, dt: f32) {
+        let p = car.get_hitbox().closest_point_on_obb(game.ball.location);
+
+        if (p - game.ball.location).length() < game.ball.collision_radius {
+            let cx = car.get_location();
+            let cv = car.get_velocity();
+            let cw = car.get_angular_velocity();
+            let co = car.get_orientation();
+            let ci = car.get_inv_i();
+
+            let n1 = (p - game.ball.location).normalize_or_zero();
+
+            let l_b = antisym(p - game.ball.location);
+            let l_c = antisym(p - cx);
+
+            let inv_i_c = co.dot(ci.dot(co.transpose()));
+
+            let m = (((1. / Ball::M) + (1. / Car::M)) * EYE - (l_b.dot(l_b).denom(game.ball.moi)) - l_c.dot(inv_i_c.dot(l_c))).inverse();
+
+            let delta_v = (cv - dot(l_c, cw)) - (game.ball.velocity - dot(l_b, game.ball.angular_velocity));
+
+            // compute the impulse that is consistent with an inelastic collision
+            let mut j1 = dot(m, delta_v);
+
+            let j1_perp = j1.dot(n1).min(-1.) * n1;
+            let j1_para = j1 - j1_perp;
+
+            let ratio = j1_perp.length() / j1_para.length().max(0.001);
+
+            // scale the parallel component of J1 such that the
+            // Coulomb friction model is satisfied
+            j1 = j1_perp + 1_f32.min(Ball::MU * ratio) * j1_para;
+
+            let f = co.x_axis;
+            let mut n2 = game.ball.location - cx;
+            n2[2] *= 0.35;
+            n2 = (n2 - 0.35 * n2.dot(f) * f).normalize_or_zero();
+
+            let dv = (game.ball.velocity - cv).length().min(4600.);
+            let j2 = Ball::M * dv * scale(dv) * n2;
+
+            game.ball.angular_velocity += dot(l_b, j1) / game.ball.moi;
+            game.ball.velocity += (j1 + j2) / Ball::M;
+        }
+
+        Ball::step(game, dt);
+    }
+
+    pub fn get_ball_car_prediction_struct_for_time<T: Copy + CarLike>(game: &mut Game, car: T, time: &f32) -> BallPrediction {
+        Ball::get_ball_car_prediction_struct_for_slices(game, car, (time / Ball::SIMULATION_DT).round() as usize)
+    }
+
+    pub fn get_ball_car_prediction_struct<T: Copy + CarLike>(game: &mut Game, car: T) -> BallPrediction {
+        Ball::get_ball_car_prediction_struct_for_slices(game, car, Ball::STANDARD_NUM_SLICES)
+    }
+
+    pub fn get_ball_car_prediction_struct_for_slices<T: Copy + CarLike>(game: &mut Game, car: T, num_slices: usize) -> BallPrediction {
+        let mut slices = Vec::with_capacity(num_slices);
+
+        for _ in 0..num_slices {
+            Ball::step_car(game, car, Ball::SIMULATION_DT);
+            slices.push(game.ball);
+        }
+
+        BallPrediction {
+            num_slices: slices.len(),
+            slices,
+        }
+    }
 }
 
 #[cfg(test)]
