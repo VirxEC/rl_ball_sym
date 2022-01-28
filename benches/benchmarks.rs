@@ -1,11 +1,10 @@
 use std::sync::Mutex;
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use glam::Vec3A;
 use lazy_static::lazy_static;
 use rl_ball_sym::{
     load_dropshot, load_hoops, load_soccar, load_soccar_throwback,
-    simulation::{ball::Ball, game::Game, geometry::Car},
+    simulation::{ball::Ball, game::Game},
 };
 
 lazy_static! {
@@ -69,20 +68,6 @@ fn get_ball_prediction_struct_throwback(c: &mut Criterion) {
     c.bench_function("get_ball_prediction/throwback", |b| b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game))));
 }
 
-fn get_ball_car_prediction_struct_benchmark(c: &mut Criterion) {
-    let mut game = load_soccar();
-
-    let location = Vec3A::new(0., 0., 17.01);
-    let orientation = Car::new_orientation(Vec3A::new(1., 0., 0.), Vec3A::new(0., 1., 0.), Vec3A::new(0., 0., 1.));
-    let hitbox = Car::new_hitbox(location, orientation, Vec3A::new(118., 84.2, 36.16), Vec3A::new(13.86, 0., 20.75));
-
-    let mut car = Car::new(hitbox);
-    car.update(location, Vec3A::default(), Vec3A::default(), orientation);
-
-    c.bench_function("get_ball_car_prediction/soccar", |b| b.iter(|| Ball::get_ball_car_prediction_struct(black_box(&mut game), black_box(car))));
-}
-
 criterion_group!(init, init_benchmark, load_soccar_benchmark, load_hoops_benchmark, load_dropshot_benchmark, load_soccar_throwback_benchmark,);
 criterion_group!(ball_prediction, get_ball_prediction_struct_with_time_benchmark, get_ball_prediction_struct_benchmark, get_ball_prediction_struct_hoops_benchmark, get_ball_prediction_struct_dropshot, get_ball_prediction_struct_throwback);
-criterion_group!(ball_car_prediction, get_ball_car_prediction_struct_benchmark);
-criterion_main!(init, ball_prediction, ball_car_prediction);
+criterion_main!(init, ball_prediction);

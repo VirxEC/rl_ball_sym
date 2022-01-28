@@ -1,5 +1,5 @@
 use crate::linear_algebra::math::{dot, local};
-use glam::{const_mat3a, Mat3A, Vec3A};
+use glam::{Mat3A, Vec3A};
 
 pub fn distance_between(start: Vec3A, dir: Vec3A, p: Vec3A) -> f32 {
     let u = ((p - start).dot(dir) / dir.length_squared()).clamp(0., 1.);
@@ -145,86 +145,6 @@ impl Obb {
         v_local[2] = v_local[2].clamp(-self.half_width[2], self.half_width[2]);
 
         dot(self.orientation, v_local) + self.center
-    }
-}
-
-pub trait CarLike {
-    fn get_location(&self) -> Vec3A;
-    fn get_velocity(&self) -> Vec3A;
-    fn get_angular_velocity(&self) -> Vec3A;
-    fn get_orientation(&self) -> Mat3A;
-    fn get_hitbox(&self) -> Obb;
-    fn get_inv_i(&self) -> Mat3A;
-}
-
-#[derive(Clone, Copy, Debug, Default)]
-pub struct Car {
-    location: Vec3A,
-    velocity: Vec3A,
-    angular_velocity: Vec3A,
-    orientation: Mat3A,
-    hitbox: Obb,
-    inv_i: Mat3A,
-}
-
-impl Car {
-    pub const M: f32 = 180.;
-    pub const PRE_I: Mat3A = const_mat3a!([751., 0., 0.], [0., 1334., 0.], [0., 0., 1836.]);
-
-    pub fn new(hitbox: Obb) -> Self {
-        Self {
-            inv_i: Self::new_inv_i(),
-            hitbox,
-            ..Default::default()
-        }
-    }
-
-    pub fn new_inv_i() -> Mat3A {
-        (Car::M * Car::PRE_I).inverse()
-    }
-
-    pub fn new_orientation(forward: Vec3A, right: Vec3A, up: Vec3A) -> Mat3A {
-        Mat3A::from_cols(forward, right, up)
-    }
-
-    /// Use new_orientation to get the Mat3A
-    /// Hitbox dimensions is just the (length, width, height) of the hitbox
-    /// Hitbox offset is the same
-    pub fn new_hitbox(location: Vec3A, orientation: Mat3A, hitbox_dimensions: Vec3A, hitbox_offset: Vec3A) -> Obb {
-        Obb::new(location, orientation, hitbox_dimensions, hitbox_offset)
-    }
-
-    pub fn update(&mut self, location: Vec3A, velocity: Vec3A, angular_velocity: Vec3A, orientation: Mat3A) {
-        self.location = location;
-        self.velocity = velocity;
-        self.angular_velocity = angular_velocity;
-        self.orientation = orientation;
-    }
-}
-
-impl CarLike for Car {
-    fn get_location(&self) -> Vec3A {
-        self.location
-    }
-
-    fn get_velocity(&self) -> Vec3A {
-        self.velocity
-    }
-
-    fn get_angular_velocity(&self) -> Vec3A {
-        self.angular_velocity
-    }
-
-    fn get_orientation(&self) -> Mat3A {
-        self.orientation
-    }
-
-    fn get_hitbox(&self) -> Obb {
-        self.hitbox
-    }
-
-    fn get_inv_i(&self) -> Mat3A {
-        self.inv_i
     }
 }
 
