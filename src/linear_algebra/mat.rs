@@ -1,5 +1,6 @@
 use glam::{const_mat3a, Mat3A};
 
+/// Default orientation matrix.
 pub const EYE: Mat3A = const_mat3a!([1., 0., 0.], [0., 1., 0.], [0., 0., 1.]);
 
 pub(crate) trait MatrixExt {

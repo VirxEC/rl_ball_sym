@@ -18,7 +18,7 @@ fn init() {
 
     game.ball.location.z = 1900.;
     let ball_prediction_struct = Ball::get_ball_prediction_struct(game);
-    dbg!(ball_prediction_struct.num_slices);
+    dbg!(ball_prediction_struct.len());
 }
 
 #[test]
@@ -199,7 +199,7 @@ fn basic_predict() {
 
     let time = 60.; // 1 minute, lol
     let ball_prediction = Ball::get_ball_prediction_struct_for_time(&mut game, &time);
-    assert_eq!(ball_prediction.num_slices, time as usize * 120);
+    assert_eq!(ball_prediction.len(), time as usize * 120);
 
     let iters = 200;
     let time = 10.; // 10 seconds
@@ -217,7 +217,7 @@ fn basic_predict() {
 
         let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
 
-        for slice in ball_prediction.slices {
+        for slice in ball_prediction {
             if slice.location.y.abs() > 5120. + slice.radius {
                 break;
             }
@@ -268,7 +268,7 @@ fn basic_predict_throwback() {
 
     let time = 60.; // 1 minute, lol
     let ball_prediction = Ball::get_ball_prediction_struct_for_time(&mut game, &time);
-    assert_eq!(ball_prediction.num_slices, time as usize * 120);
+    assert_eq!(ball_prediction.len(), time as usize * 120);
 
     let iters = 200;
     let time = 10.; // 10 seconds
@@ -286,7 +286,7 @@ fn basic_predict_throwback() {
 
         let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
 
-        for slice in ball_prediction.slices {
+        for slice in ball_prediction {
             if slice.location.y.abs() > 5120. + slice.radius {
                 break;
             }
@@ -322,7 +322,7 @@ fn predict_custom_soccar() {
     let time = 8.;
 
     let ball_prediction = Ball::get_ball_prediction_struct_for_time(&mut game, &time);
-    assert_eq!(ball_prediction.num_slices, 960);
+    assert_eq!(ball_prediction.len(), 960);
 }
 
 #[test]
@@ -330,7 +330,7 @@ fn predict_soccar() {
     let mut game = load_soccar();
 
     let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
-    assert_eq!(ball_prediction.num_slices, 720);
+    assert_eq!(ball_prediction.len(), 720);
 }
 
 #[test]
@@ -338,7 +338,7 @@ fn predict_hoops() {
     let mut game = load_hoops();
 
     let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
-    assert_eq!(ball_prediction.num_slices, 720);
+    assert_eq!(ball_prediction.len(), 720);
 }
 
 #[test]
@@ -346,7 +346,7 @@ fn predict_dropshot() {
     let mut game = load_dropshot();
 
     let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
-    assert_eq!(ball_prediction.num_slices, 720);
+    assert_eq!(ball_prediction.len(), 720);
 }
 
 #[test]
@@ -354,7 +354,7 @@ fn predict_throwback_soccar() {
     let mut game = load_soccar_throwback();
 
     let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
-    assert_eq!(ball_prediction.num_slices, 720);
+    assert_eq!(ball_prediction.len(), 720);
 }
 
 #[test]
@@ -365,7 +365,7 @@ fn check_for_nans() {
 
     let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
 
-    for slice in ball_prediction.slices {
+    for slice in ball_prediction {
         assert!(slice.location.is_finite());
         assert!(slice.velocity.is_finite());
         assert!(slice.angular_velocity.is_finite());
@@ -380,7 +380,7 @@ fn check_for_nans_ball() {
 
     let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
 
-    for slice in ball_prediction.slices {
+    for slice in ball_prediction {
         assert!(slice.location.is_finite());
         assert!(slice.velocity.is_finite());
         assert!(slice.angular_velocity.is_finite());

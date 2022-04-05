@@ -32,15 +32,14 @@ fn get_output(ball_location: Vec3A, ball_velocity: Vec3A, ball_angular_velocity:
     }
 
     // set the ball information in game
-    game.ball.time = time;
-    game.ball.location = ball_location;
-    game.ball.velocity = ball_velocity;
-    game.ball.angular_velocity = ball_angular_velocity;
+    game.ball.update(time, ball_location, ball_velocity, ball_angular_velocity);
 
     // generate the ball prediction struct for 12 seconds into the future
     // it generates 120 slices per second
     let prediction_time = 12.;
     let ball_prediction: BallPrediction = Ball::get_ball_prediction_struct_for_time(game, &prediction_time);
-    assert_eq!(ball_prediction.num_slices, (120. * prediction_time).round() as usize);
-    assert_eq!(ball_prediction.slices[ball_prediction.num_slices - 1].time.round() as i32, game.ball.time.round() as i32);
+    assert_eq!(ball_prediction.len(), (120. * prediction_time).round() as usize);
+
+    // game.ball is modified, it doesn't stay the same!
+    assert_eq!((ball_prediction[ball_prediction.len() - 1].time * 1000.).round() as i32, (game.ball.time * 1000.).round() as i32);
 }

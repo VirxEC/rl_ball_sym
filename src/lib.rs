@@ -48,6 +48,7 @@ fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> Mesh {
     }
 }
 
+/// Returns a Game object with a standard soccar field and soccar ball.
 pub fn load_soccar() -> Game {
     let soccar_corner: Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_corner_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_corner_vertices.bin").to_vec());
     let soccar_goal: Mesh = read_mesh(include_bytes!("../assets/soccar/soccar_goal_ids.bin").to_vec(), include_bytes!("../assets/soccar/soccar_goal_vertices.bin").to_vec());
@@ -67,6 +68,12 @@ pub fn load_soccar() -> Game {
     }
 }
 
+/// Returns a Game object with a standard soccer field and soccer ball.
+pub fn load_soccer() -> Game {
+    load_soccar()
+}
+
+/// Returns a Game object with a standard hoops field and hoops ball.
 pub fn load_hoops() -> Game {
     let hoops_corner: Mesh = read_mesh(include_bytes!("../assets/hoops/hoops_corner_ids.bin").to_vec(), include_bytes!("../assets/hoops/hoops_corner_vertices.bin").to_vec());
     let hoops_net: Mesh = read_mesh(include_bytes!("../assets/hoops/hoops_net_ids.bin").to_vec(), include_bytes!("../assets/hoops/hoops_net_vertices.bin").to_vec());
@@ -87,6 +94,7 @@ pub fn load_hoops() -> Game {
     }
 }
 
+/// Returns a Game object with a standard dropshot field and dropshot ball.
 pub fn load_dropshot() -> Game {
     let dropshot: Mesh = read_mesh(include_bytes!("../assets/dropshot/dropshot_ids.bin").to_vec(), include_bytes!("../assets/dropshot/dropshot_vertices.bin").to_vec());
 
@@ -103,6 +111,7 @@ pub fn load_dropshot() -> Game {
     }
 }
 
+/// Returns a Game object with throwback stadium and a standard soccar ball.
 pub fn load_soccar_throwback() -> Game {
     let back_ramps_lower: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_back_ramps_lower_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_back_ramps_lower_vertices.bin").to_vec());
     let back_ramps_upper: Mesh = read_mesh(include_bytes!("../assets/throwback/throwback_back_ramps_upper_ids.bin").to_vec(), include_bytes!("../assets/throwback/throwback_back_ramps_upper_vertices.bin").to_vec());
@@ -138,4 +147,9 @@ pub fn load_soccar_throwback() -> Game {
         collision_mesh,
         ball,
     }
+}
+
+/// Returns a Game object with throwback stadium and a standard soccer ball.
+pub fn load_soccer_throwback() -> Game {
+    load_soccar_throwback()
 }

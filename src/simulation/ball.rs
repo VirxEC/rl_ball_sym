@@ -2,22 +2,27 @@ use crate::simulation::game::Game;
 use crate::simulation::geometry::Sphere;
 use glam::Vec3A;
 
+/// Represents the game's ball
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Ball {
+    /// Game time of the ball
     pub time: f32,
+    /// Position of the ball
     pub location: Vec3A,
+    /// Linear velocity of the ball
     pub velocity: Vec3A,
+    /// Rotational velocity of the ball
     pub angular_velocity: Vec3A,
+    /// Size of the ball
     pub radius: f32,
+    /// Size of the ball for collisions
     pub collision_radius: f32,
+    /// Momemnt of inertia of the ball
     pub moi: f32,
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct BallPrediction {
-    pub num_slices: usize,
-    pub slices: Vec<Ball>,
-}
+/// Collection of Balls representing future predictions based on field geometry
+pub type BallPrediction = Vec<Ball>;
 
 impl Ball {
     const RESTITUTION: f32 = 0.6;
@@ -42,6 +47,7 @@ impl Ball {
     const SIMULATION_DT: f32 = 1. / 120.;
     const STANDARD_NUM_SLICES: usize = 720;
 
+    /// Sets the default values for a soccar ball
     pub fn initialize_soccar() -> Self {
         let mut ball = Ball {
             radius: Ball::SOCCAR_RADIUS,
@@ -54,6 +60,12 @@ impl Ball {
         ball
     }
 
+    /// Sets the default values for a soccer ball
+    pub fn initialize_soccer() -> Self {
+        Self::initialize_soccar()
+    }
+
+    /// Sets the default values for a hoops ball
     pub fn initialize_hoops() -> Self {
         let mut ball = Ball {
             radius: Ball::HOOPS_RADIUS,
@@ -66,6 +78,7 @@ impl Ball {
         ball
     }
 
+    /// Sets the default values for a dropshot ball
     pub fn initialize_dropshot() -> Self {
         let mut ball = Ball {
             radius: Ball::DROPSHOT_RADIUS,
@@ -78,15 +91,18 @@ impl Ball {
         ball
     }
 
+    /// Sets a value location and calculates the moi
     pub fn initialize(&mut self) {
         self.location.z = 1.1 * self.collision_radius;
         self.calculate_moi();
     }
 
+    /// Calculates the moment of inertia of the ball
     pub fn calculate_moi(&mut self) {
         self.moi = 0.4 * Ball::M * self.radius * self.radius;
     }
 
+    /// Updates the ball with everything that changes from game tick to game tick
     pub fn update(&mut self, time: f32, location: Vec3A, velocity: Vec3A, angular_velocity: Vec3A) {
         self.time = time;
         self.location = location;
@@ -94,6 +110,7 @@ impl Ball {
         self.angular_velocity = angular_velocity;
     }
 
+    /// Converts the ball into a sphere
     pub const fn hitbox(&self) -> Sphere {
         Sphere {
             center: self.location,
@@ -101,6 +118,9 @@ impl Ball {
         }
     }
 
+    /// Simulate the ball for one game tick
+    /// 
+    /// dt is the delta time (game tick length)
     pub fn step(game: &mut Game, dt: f32) {
         match game.collision_mesh.collide(&game.ball.hitbox()) {
             Some(contact) => {
@@ -141,14 +161,17 @@ impl Ball {
         game.ball.time += dt;
     }
 
+    /// Simulate the ball for a given amount of time
     pub fn get_ball_prediction_struct_for_time(game: &mut Game, time: &f32) -> BallPrediction {
         Ball::get_ball_prediction_struct_for_slices(game, (time / Ball::SIMULATION_DT).round() as usize)
     }
 
+    /// Simulate the ball for the stand amount of time
     pub fn get_ball_prediction_struct(game: &mut Game) -> BallPrediction {
         Ball::get_ball_prediction_struct_for_slices(game, Ball::STANDARD_NUM_SLICES)
     }
 
+    /// Simulate the ball for a given amount of ticks
     pub fn get_ball_prediction_struct_for_slices(game: &mut Game, num_slices: usize) -> BallPrediction {
         let mut slices = Vec::with_capacity(num_slices);
 
@@ -157,10 +180,7 @@ impl Ball {
             slices.push(game.ball);
         }
 
-        BallPrediction {
-            num_slices: slices.len(),
-            slices,
-        }
+        slices
     }
 }
 
@@ -176,8 +196,7 @@ mod test {
 
         let prediction = Ball::get_ball_prediction_struct(&mut game);
 
-        assert_eq!(prediction.num_slices, Ball::STANDARD_NUM_SLICES);
-        assert_eq!(prediction.slices.len(), Ball::STANDARD_NUM_SLICES);
+        assert_eq!(prediction.len(), Ball::STANDARD_NUM_SLICES);
     }
 
     #[test]
@@ -188,8 +207,7 @@ mod test {
 
         let prediction = Ball::get_ball_prediction_struct_for_slices(&mut game, REQUESTED_SLICES);
 
-        assert_eq!(prediction.num_slices, REQUESTED_SLICES);
-        assert_eq!(prediction.slices.len(), REQUESTED_SLICES);
+        assert_eq!(prediction.len(), REQUESTED_SLICES);
     }
 
     #[test]
@@ -202,7 +220,6 @@ mod test {
 
         let predicted_slices = (REQUESTED_TIME / Ball::SIMULATION_DT).round() as usize;
 
-        assert_eq!(prediction.num_slices, predicted_slices);
-        assert_eq!(prediction.slices.len(), predicted_slices);
+        assert_eq!(prediction.len(), predicted_slices);
     }
 }

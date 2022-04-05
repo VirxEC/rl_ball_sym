@@ -37,6 +37,8 @@ fn get_output(ball_location: Vec3A, ball_velocity: Vec3A, ball_angular_velocity:
     // this is a list of 720 slices
     // it goes 6 seconds into the future with 120 slices per second
     let ball_prediction: BallPrediction = Ball::get_ball_prediction_struct(game);
-    assert_eq!(ball_prediction.num_slices, 720);
-    assert_eq!(ball_prediction.slices[ball_prediction.num_slices - 1].time.round() as i32, game.ball.time.round() as i32);
+    assert_eq!(ball_prediction.len(), 720);
+
+    // game.ball is modified, it doesn't stay the same!
+    assert_eq!((ball_prediction[ball_prediction.len() - 1].time * 1000.).round() as i32, (game.ball.time * 1000.).round() as i32);
 }

@@ -107,8 +107,7 @@ impl Bvh {
 
         let mut hits = Vec::with_capacity(16);
 
-        // Allocate traversal stack from thread-local memory,
-        // and push NULL to indicate that there are no postponed nodes.
+        // Allocate traversal stack from thread-local memory
         let mut stack: Vec<&BvhNode> = Vec::with_capacity(32);
 
         // Traverse nodes starting from the root.
