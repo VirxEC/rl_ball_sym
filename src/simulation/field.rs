@@ -20,6 +20,7 @@ fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
     }
 }
 
+/// Get a BVH generated from the given soccar field meshes.
 pub fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_0: &Mesh, soccar_ramps_1: &Mesh) -> Bvh {
     let floor = quad(Vec3A::default(), vec3a(4096., 0., 0.), vec3a(0., 5120., 0.));
 
@@ -48,6 +49,7 @@ pub fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_
     Bvh::from(&triangles)
 }
 
+/// Get a BVH generated from the given hoops field meshes.
 pub fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh, hoops_ramps_0: &Mesh, hoops_ramps_1: &Mesh) -> Bvh {
     let scale = 0.9;
     let y_offset = 431.664;
@@ -93,7 +95,7 @@ pub fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh,
     Bvh::from(&triangles)
 }
 
-#[allow(clippy::many_single_char_names)]
+/// Get a BVH generated from the given dropshot field meshes.
 pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
     let scale = 0.393;
     let z_offset = -207.565;
@@ -139,6 +141,7 @@ pub struct InitializeThrowbackParams<'a> {
     pub side_ramps_upper: &'a Mesh,
 }
 
+/// Get a BVH generated from the given throwback stadium meshes.
 pub fn initialize_throwback(
     InitializeThrowbackParams {
         back_ramps_lower,

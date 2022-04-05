@@ -3,17 +3,26 @@ use super::geometry::{Ray, Sphere};
 use super::morton::Morton;
 use std::boxed::Box;
 
+/// A node in the BVH.
 #[derive(Clone, Debug, Default)]
 pub struct BvhNode {
+    /// Whether this node is a leaf.
+    /// If it is, then the `left` and `right` fields are None and `primative` isn't.
     pub is_terminal: bool,
+    /// The bounding box of this node.
     pub box_: Aabb,
+    /// One-half of the bounding box. None if `is_terminal` is true.
     pub right: Option<Box<BvhNode>>,
+    /// One-half of the bounding box. None if `is_terminal` is true.
     pub left: Option<Box<BvhNode>>,
+    /// The primitive that this node represents. None if `is_terminal` is false.
     pub primitive: Option<Tri>,
+    /// The morton code of this node.
     pub morton: Option<u64>,
 }
 
 impl BvhNode {
+    /// Creates a new branch for the BVH given two children.
     pub fn branch(right: Box<BvhNode>, left: Box<BvhNode>) -> Box<Self> {
         Box::new(Self {
             is_terminal: false,
@@ -25,6 +34,7 @@ impl BvhNode {
         })
     }
 
+    /// Creates a new leaf for the BVH given a primitive, its bounding box, and its morton code.
     pub fn leaf(primitive: Tri, box_: Aabb, morton_code: u64) -> Box<Self> {
         Box::new(Self {
             is_terminal: true,
@@ -37,11 +47,14 @@ impl BvhNode {
     }
 }
 
-// BVH stands for "Bounding Volume Hierarchy"
+/// A bounding volume hierarchy.
 #[derive(Clone, Debug, Default)]
 pub struct Bvh {
+    /// The bounding box of the entire BVH.
     pub global_box: Aabb,
+    /// The number of leaves that the BVH has.
     pub num_leaves: u64,
+    /// The root of the BVH.
     pub root: Box<BvhNode>,
 }
 
@@ -56,6 +69,7 @@ fn global_aabb(boxes: &[Aabb]) -> Aabb {
 }
 
 impl Bvh {
+    /// Creates a new BVH from a list of primitives.
     pub fn from(primitives: &[Tri]) -> Self {
         let num_leaves = primitives.len();
 
@@ -102,6 +116,7 @@ impl Bvh {
         BvhNode::branch(right, left)
     }
 
+    /// Returns a Vec of the triangles intersecting with the `query_object`.
     pub fn intersect(&self, query_object: &Sphere) -> Vec<Tri> {
         let query_box: Aabb = query_object.into();
 
@@ -169,6 +184,8 @@ impl Bvh {
         hits
     }
 
+    /// Returns the calculated ray-intersection of the given Sphere and the BVH.
+    /// Returns None if no intersecting objects were found in the BVH.
     pub fn collide(&self, s: &Sphere) -> Option<Ray> {
         let mut contact_point = Ray::default();
         let mut count = 0;

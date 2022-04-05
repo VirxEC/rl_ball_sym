@@ -68,11 +68,6 @@ pub fn load_soccar() -> Game {
     }
 }
 
-/// Returns a Game object with a standard soccer field and soccer ball.
-pub fn load_soccer() -> Game {
-    load_soccar()
-}
-
 /// Returns a Game object with a standard hoops field and hoops ball.
 pub fn load_hoops() -> Game {
     let hoops_corner: Mesh = read_mesh(include_bytes!("../assets/hoops/hoops_corner_ids.bin").to_vec(), include_bytes!("../assets/hoops/hoops_corner_vertices.bin").to_vec());
@@ -147,9 +142,4 @@ pub fn load_soccar_throwback() -> Game {
         collision_mesh,
         ball,
     }
-}
-
-/// Returns a Game object with throwback stadium and a standard soccer ball.
-pub fn load_soccer_throwback() -> Game {
-    load_soccar_throwback()
 }

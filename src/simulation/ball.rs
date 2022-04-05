@@ -60,11 +60,6 @@ impl Ball {
         ball
     }
 
-    /// Sets the default values for a soccer ball
-    pub fn initialize_soccer() -> Self {
-        Self::initialize_soccar()
-    }
-
     /// Sets the default values for a hoops ball
     pub fn initialize_hoops() -> Self {
         let mut ball = Ball {
@@ -119,8 +114,8 @@ impl Ball {
     }
 
     /// Simulate the ball for one game tick
-    /// 
-    /// dt is the delta time (game tick length)
+    ///
+    /// `dt` - The delta time (game tick length)
     pub fn step(game: &mut Game, dt: f32) {
         match game.collision_mesh.collide(&game.ball.hitbox()) {
             Some(contact) => {

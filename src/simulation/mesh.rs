@@ -14,13 +14,8 @@ impl Mesh {
     pub fn from(other_meshes: Vec<&Self>) -> Self {
         let mut id_offset = 0;
 
-        let mut n_ids = 0;
-        let mut n_vertices = 0;
-
-        for m in &other_meshes {
-            n_ids += m.ids.len();
-            n_vertices += m.vertices.len();
-        }
+        let n_ids = other_meshes.iter().map(|mesh| mesh.ids.len()).sum();
+        let n_vertices = other_meshes.iter().map(|mesh| mesh.vertices.len()).sum();
 
         let mut ids: Vec<i32> = Vec::with_capacity(n_ids);
         let mut vertices: Vec<f32> = Vec::with_capacity(n_vertices);

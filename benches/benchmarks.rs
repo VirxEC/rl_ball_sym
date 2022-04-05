@@ -11,17 +11,6 @@ lazy_static! {
     static ref GAME: Mutex<Game> = Mutex::new(load_soccar());
 }
 
-// This bench seems unnecssary, it seems to only test how long it takes to lock a mutex.
-fn init_benchmark(c: &mut Criterion) {
-    c.bench_function("init", |b| {
-        b.iter(|| {
-            let mut game = GAME.lock().unwrap();
-            game.ball.location.z = 1900.;
-            Ball::get_ball_prediction_struct(&mut game);
-        })
-    });
-}
-
 fn load_soccar_benchmark(c: &mut Criterion) {
     c.bench_function("load_soccar", |b| b.iter(load_soccar));
 }
@@ -68,6 +57,6 @@ fn get_ball_prediction_struct_throwback(c: &mut Criterion) {
     c.bench_function("get_ball_prediction/throwback", |b| b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game))));
 }
 
-criterion_group!(init, init_benchmark, load_soccar_benchmark, load_hoops_benchmark, load_dropshot_benchmark, load_soccar_throwback_benchmark,);
+criterion_group!(init, load_soccar_benchmark, load_hoops_benchmark, load_dropshot_benchmark, load_soccar_throwback_benchmark,);
 criterion_group!(ball_prediction, get_ball_prediction_struct_with_time_benchmark, get_ball_prediction_struct_benchmark, get_ball_prediction_struct_hoops_benchmark, get_ball_prediction_struct_dropshot, get_ball_prediction_struct_throwback);
 criterion_main!(init, ball_prediction);
