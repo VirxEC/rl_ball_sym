@@ -32,7 +32,7 @@ fn morton() {
     // let code = morton.get_code(&box_);
     let c = (box_.min() + box_.max()) / 2.;
 
-    let u = (c - morton.offset) * morton.scale;
+    let u = (c - morton.offset()) * morton.scale();
     dbg!(&u);
 
     let code_x = Morton::expand3(u.x as u32);

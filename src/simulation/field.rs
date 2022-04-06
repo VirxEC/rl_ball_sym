@@ -14,10 +14,7 @@ const FLIP_Y: Mat3A = const_mat3a!([1., 0., 0.], [0., -1., 0.], [0., 0., 1.]);
 fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
     let vertices = [p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2].iter().flat_map(|vertex| vertex.to_array()).collect();
 
-    Mesh {
-        ids: vec![0, 1, 3, 1, 2, 3],
-        vertices,
-    }
+    Mesh::from(vec![0, 1, 3, 1, 2, 3], vertices)
 }
 
 /// Get a BVH generated from the given soccar field meshes.
@@ -28,7 +25,7 @@ pub fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_
 
     let side_walls = [quad(vec3a(4096., 0., 1024.), vec3a(0., -5120., 0.), vec3a(0., 0., 1024.)), quad(vec3a(-4096., 0., 1024.), vec3a(0., 5120., 0.), vec3a(0., 0., 1024.))];
 
-    let field_mesh = Mesh::from(vec![
+    let field_mesh = Mesh::combine(vec![
         soccar_corner,
         &soccar_corner.transform(FLIP_X),
         &soccar_corner.transform(FLIP_Y),
@@ -69,7 +66,7 @@ pub fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh,
 
     let back_walls = [quad(vec3a(0., 0., 1024.), vec3a(0., -5120., 0.), vec3a(0., 0., 1024.)), quad(vec3a(0., 0., 1024.), vec3a(0., 5120., 0.), vec3a(0., 0., 1024.))];
 
-    let field_mesh = Mesh::from(vec![
+    let field_mesh = Mesh::combine(vec![
         hoops_corner,
         &hoops_corner.transform(FLIP_X),
         &hoops_corner.transform(FLIP_Y),
@@ -121,7 +118,7 @@ pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
         x = dot(r, x);
     }
 
-    let field_mesh = Mesh::from(vec![&dropshot.transform(q.dot(s)).translate(dz), &floor, &ceiling, &walls[0], &walls[1], &walls[2], &walls[3], &walls[4], &walls[5]]);
+    let field_mesh = Mesh::combine(vec![&dropshot.transform(q.dot(s)).translate(dz), &floor, &ceiling, &walls[0], &walls[1], &walls[2], &walls[3], &walls[4], &walls[5]]);
 
     let triangles = field_mesh.to_triangles();
 
@@ -177,7 +174,7 @@ pub fn initialize_throwback(
     let throwback_corner_wall_1 = corner_wall_1.transform(s);
     let throwback_corner_wall_2 = corner_wall_2.transform(s);
 
-    let field_mesh = Mesh::from(vec![
+    let field_mesh = Mesh::combine(vec![
         &throwback_corner_ramps_lower,
         &throwback_corner_ramps_lower.transform(FLIP_X),
         &throwback_corner_ramps_lower.transform(FLIP_Y),

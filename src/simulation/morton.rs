@@ -2,19 +2,19 @@ use glam::Vec3A;
 
 use super::geometry::Aabb;
 
+/// Basic data for generating morton codes.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Morton {
-    pub offset: Vec3A,
-    pub scale: Vec3A,
+    offset: Vec3A,
+    scale: Vec3A,
 }
 
 impl Morton {
-    // 2 ^ 21 - 1 = 2097151
-    // 2 ^ 20 - 1 = 1048575
-
+    /// Calculate basic information required to generate a morton code.
     pub fn from(global_box: &Aabb) -> Morton {
         let offset = global_box.min();
-        let scale = 1048575. / (global_box.max() - offset);
+        // 2 ^ 21 - 1 = 2097151
+        let scale = 2097151. / (global_box.max() - offset);
 
         Morton {
             offset,
@@ -22,6 +22,17 @@ impl Morton {
         }
     }
 
+    /// Get the vector offset.
+    pub const fn offset(&self) -> Vec3A {
+        self.offset
+    }
+
+    /// Get the vector scale.
+    pub const fn scale(&self) -> Vec3A {
+        self.scale
+    }
+
+    /// Prepare a 21-bit unsigned int for inverweaving.
     pub fn expand3(a: u32) -> u64 {
         let mut x = (a as u64) & 0x1fffff; // we only look at the first 21 bits
 
@@ -34,7 +45,7 @@ impl Morton {
         x
     }
 
-    pub fn encode(u: Vec3A) -> u64 {
+    fn encode(u: Vec3A) -> u64 {
         // These should actually be 21 bits, but there's no u21 type and the final type is u64 (21 bits * 3 = 63 bits)
         let x = u.x as u32;
         let y = u.y as u32;
@@ -43,6 +54,7 @@ impl Morton {
         Morton::expand3(x) | Morton::expand3(y) << 1 | Morton::expand3(z) << 2
     }
 
+    /// Get an AABB's morton code.
     pub fn get_code(&self, box_: &Aabb) -> u64 {
         // get the centroid of the ith bounding box
         let c = (box_.min() + box_.max()) / 2.;

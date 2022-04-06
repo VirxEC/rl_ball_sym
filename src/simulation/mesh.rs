@@ -4,20 +4,30 @@ use super::geometry::Tri;
 
 use crate::linear_algebra::math::dot;
 
+/// A collection of inter-connected triangles.
 #[derive(Clone, Debug, Default)]
 pub struct Mesh {
-    pub ids: Vec<i32>,
-    pub vertices: Vec<f32>,
+    ids: Vec<usize>,
+    vertices: Vec<f32>,
 }
 
 impl Mesh {
-    pub fn from(other_meshes: Vec<&Self>) -> Self {
+    /// Create a new Mesh from a list of ids and vertices.
+    pub const fn from(ids: Vec<usize>, vertices: Vec<f32>) -> Self {
+        Self {
+            ids,
+            vertices,
+        }
+    }
+
+    /// Combine different meshes all into one
+    pub fn combine(other_meshes: Vec<&Self>) -> Self {
         let mut id_offset = 0;
 
         let n_ids = other_meshes.iter().map(|mesh| mesh.ids.len()).sum();
         let n_vertices = other_meshes.iter().map(|mesh| mesh.vertices.len()).sum();
 
-        let mut ids: Vec<i32> = Vec::with_capacity(n_ids);
+        let mut ids: Vec<usize> = Vec::with_capacity(n_ids);
         let mut vertices: Vec<f32> = Vec::with_capacity(n_vertices);
 
         for m in other_meshes {
@@ -29,7 +39,7 @@ impl Mesh {
                 vertices.push(*vertex);
             }
 
-            id_offset += (m.vertices.len() / 3) as i32;
+            id_offset += m.vertices.len() / 3;
         }
 
         Self {
@@ -38,6 +48,7 @@ impl Mesh {
         }
     }
 
+    /// Transform the mesh by the given matrix.
     pub fn transform(&self, a: Mat3A) -> Self {
         debug_assert_eq!(self.vertices.len() % 3, 0);
         debug_assert_eq!(self.ids.len() % 3, 0);
@@ -65,6 +76,7 @@ impl Mesh {
         }
     }
 
+    /// Translate the mesh by the given vector.
     pub fn translate(&self, p: Vec3A) -> Self {
         debug_assert_eq!(self.vertices.len() % 3, 0);
 
@@ -76,6 +88,7 @@ impl Mesh {
         }
     }
 
+    /// Convert the mesh to a list of triangles.
     #[rustfmt::skip]
     pub fn to_triangles(&self) -> Vec<Tri> {
         let n = self.ids.len() / 3;
@@ -84,7 +97,7 @@ impl Mesh {
         for i in 0..n {
             triangles.push(Tri::default());
             for j in 0..3 {
-                let id = (self.ids[i * 3 + j] * 3) as usize;
+                let id = self.ids[i * 3 + j] * 3;
                 triangles[i].p[j].x = self.vertices[id    ] as f32;
                 triangles[i].p[j].y = self.vertices[id + 1] as f32;
                 triangles[i].p[j].z = self.vertices[id + 2] as f32;

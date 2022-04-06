@@ -13,14 +13,16 @@ use simulation::mesh::Mesh;
 use crate::simulation::field::InitializeThrowbackParams;
 
 fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> Mesh {
+    let ids_len = (ids_dat.len() / 4) as usize;
+    let vertices_len = (vertices_dat.len() / 4) as usize;
     let mut ids_dat = Cursor::new(ids_dat);
     let mut vertices_dat = Cursor::new(vertices_dat);
-    let mut ids: Vec<i32> = Vec::new();
-    let mut vertices: Vec<f32> = Vec::new();
+    let mut ids: Vec<usize> = Vec::with_capacity(ids_len);
+    let mut vertices: Vec<f32> = Vec::with_capacity(vertices_len);
 
     loop {
         ids.push(match ids_dat.read_i32::<LittleEndian>() {
-            Ok(num) => num,
+            Ok(num) => num as usize,
             Err(error) => match error.kind() {
                 ErrorKind::UnexpectedEof => break,
                 other_error => {
@@ -42,10 +44,7 @@ fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> Mesh {
         });
     }
 
-    Mesh {
-        ids,
-        vertices,
-    }
+    Mesh::from(ids, vertices)
 }
 
 /// Returns a Game object with a standard soccar field and soccar ball.
