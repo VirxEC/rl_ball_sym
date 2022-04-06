@@ -1,25 +1,30 @@
 use crate::linear_algebra::math::{dot, local};
 use glam::{Mat3A, Vec3A};
 
+/// Find the distance between a ray and a point.
 pub fn distance_between(start: Vec3A, dir: Vec3A, p: Vec3A) -> f32 {
     let u = ((p - start).dot(dir) / dir.length_squared()).clamp(0., 1.);
     (start + dir * u - p).length()
 }
 
+/// A triangle made from 3 points.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Tri {
     pub p: [Vec3A; 3],
 }
 
 impl Tri {
+    /// Get the center of the triangle.
     pub fn center(&self) -> Vec3A {
         self.p.iter().sum::<Vec3A>() / 3.
     }
 
+    /// Get the normal of the triangle.
     pub fn unit_normal(&self) -> Vec3A {
         (self.p[1] - self.p[0]).cross(self.p[2] - self.p[0]).normalize()
     }
 
+    /// Check if a sphere intersects the triangle.
     #[allow(clippy::many_single_char_names)]
     pub fn intersect_sphere(&self, b: &Sphere) -> bool {
         let e1 = self.p[1] - self.p[0];
@@ -53,13 +58,33 @@ impl Tri {
 
 // AABB stands for "Axis-Aligned Bounding Boxes"
 // Learn more here: https://developer.nvidia.com/blog/thinking-parallel-part-i-collision-detection-gpu/
+/// An axis-aligned bounding box.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Aabb {
-    pub min: Vec3A,
-    pub max: Vec3A,
+    min: Vec3A,
+    max: Vec3A,
 }
 
 impl Aabb {
+    /// Create a new AABB.
+    pub const fn from(min: Vec3A, max: Vec3A) -> Aabb {
+        Aabb {
+            min,
+            max,
+        }
+    }
+
+    /// The minimum point contained in the AABB.
+    pub const fn min(&self) -> Vec3A {
+        self.min
+    }
+
+    /// The maximum point contained in the AABB.
+    pub const fn max(&self) -> Vec3A {
+        self.max
+    }
+
+    /// Combine two AABBs.
     pub fn add(&self, b: &Aabb) -> Self {
         Self {
             min: self.min.min(b.min),
@@ -67,10 +92,10 @@ impl Aabb {
         }
     }
 
+    /// Create an AABB from a triangle.
     pub fn from_tri(t: &Tri) -> Self {
-        let min = t.p.into_iter().reduce(Vec3A::min).expect("Tri points array empty?");
-
-        let max = t.p.into_iter().reduce(Vec3A::max).expect("Tri points array empty?");
+        let min = t.p.into_iter().reduce(Vec3A::min).unwrap();
+        let max = t.p.into_iter().reduce(Vec3A::max).unwrap();
 
         Self {
             min,
@@ -78,6 +103,7 @@ impl Aabb {
         }
     }
 
+    /// Create an AABB from a sphere
     pub fn from_sphere(s: &Sphere) -> Self {
         Self {
             min: s.center - s.radius,
@@ -85,10 +111,12 @@ impl Aabb {
         }
     }
 
+    /// Check if another AABB intersects this one.
     pub fn intersect_self(&self, b: &Aabb) -> bool {
         self.min.cmple(b.max).all() && self.max.cmpge(b.min).all()
     }
 
+    /// Check if a sphere intersects this AABB.
     pub fn intersect_sphere(&self, b: &Sphere) -> bool {
         let nearest = b.center.clamp(self.min, self.max);
 
@@ -108,27 +136,37 @@ impl From<&'_ Sphere> for Aabb {
     }
 }
 
-// endpoint is start + direction
+/// A ray starting at `start` and going in `direction`.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Ray {
+    /// Starting location of the ray.
     pub start: Vec3A,
+    /// Direction the ray is pointing.
     pub direction: Vec3A,
 }
 
+/// A Sphere-like object.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Sphere {
+    /// Location of the center of the sphere.
     pub center: Vec3A,
+    /// Radius of the sphere.
     pub radius: f32,
 }
 
+/// A generic object bounding box
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Obb {
+    /// Location of the center of the OBB.
     pub center: Vec3A,
+    /// Distance of the center to the front, side, and top of the OBB.
     pub half_width: Vec3A,
+    /// Rotation of the OBB.
     pub orientation: Mat3A,
 }
 
 impl Obb {
+    /// Create a new OBB.
     pub fn new(location: Vec3A, orientation: Mat3A, dimensions: Vec3A, offset: Vec3A) -> Self {
         Self {
             orientation,
@@ -137,6 +175,7 @@ impl Obb {
         }
     }
 
+    /// Get the closest point on the OBB to a given point.
     pub fn closest_point_on_obb(&self, v: Vec3A) -> Vec3A {
         let mut v_local = local(v - self.center, self.orientation);
 

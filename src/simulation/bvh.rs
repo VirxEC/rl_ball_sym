@@ -231,85 +231,42 @@ mod test {
 
     #[test]
     fn global_bounding_box() {
-        let bounding_boxes = vec![
-            Aabb {
-                min: vec3a(MIN_X, 0.0, 0.0),
-                max: Vec3A::ZERO,
-            },
-            Aabb {
-                min: vec3a(0.0, MIN_Y, 0.0),
-                max: Vec3A::ZERO,
-            },
-            Aabb {
-                min: vec3a(0.0, 0.0, MIN_Z),
-                max: Vec3A::ZERO,
-            },
-            Aabb {
-                min: Vec3A::ZERO,
-                max: vec3a(MAX_X, 0.0, 0.0),
-            },
-            Aabb {
-                min: Vec3A::ZERO,
-                max: vec3a(0.0, MAX_Y, 0.0),
-            },
-            Aabb {
-                min: Vec3A::ZERO,
-                max: vec3a(0.0, 0.0, MAX_Z),
-            },
-        ];
+        let bounding_boxes = vec![Aabb::from(vec3a(MIN_X, 0.0, 0.0), Vec3A::ZERO), Aabb::from(vec3a(0.0, MIN_Y, 0.0), Vec3A::ZERO), Aabb::from(vec3a(0.0, 0.0, MIN_Z), Vec3A::ZERO), Aabb::from(Vec3A::ZERO, vec3a(MAX_X, 0.0, 0.0)), Aabb::from(Vec3A::ZERO, vec3a(0.0, MAX_Y, 0.0)), Aabb::from(Vec3A::ZERO, vec3a(0.0, 0.0, MAX_Z))];
 
         let global = global_aabb(&bounding_boxes);
 
-        assert!((global.min.x - MIN_X).abs() < f32::EPSILON);
-        assert!((global.min.y - MIN_Y).abs() < f32::EPSILON);
-        assert!((global.min.z - MIN_Z).abs() < f32::EPSILON);
-        assert!((global.max.x - MAX_X).abs() < f32::EPSILON);
-        assert!((global.max.y - MAX_Y).abs() < f32::EPSILON);
-        assert!((global.max.z - MAX_Z).abs() < f32::EPSILON);
+        assert!((global.min().x - MIN_X).abs() < f32::EPSILON);
+        assert!((global.min().y - MIN_Y).abs() < f32::EPSILON);
+        assert!((global.min().z - MIN_Z).abs() < f32::EPSILON);
+        assert!((global.max().x - MAX_X).abs() < f32::EPSILON);
+        assert!((global.max().y - MAX_Y).abs() < f32::EPSILON);
+        assert!((global.max().z - MAX_Z).abs() < f32::EPSILON);
     }
 
     #[test]
     fn global_bounding_box_min() {
-        let bounding_boxes = vec![
-            Aabb {
-                min: vec3a(MIN_X, MIN_Y, MIN_Z),
-                max: vec3a(MIN_X, MIN_Y, MIN_Z),
-            },
-            Aabb {
-                min: vec3a(MIN_X, MIN_Y, MIN_Z),
-                max: vec3a(MIN_X, MIN_Y, MIN_Z),
-            },
-        ];
+        let bounding_boxes = vec![Aabb::from(vec3a(MIN_X, MIN_Y, MIN_Z), vec3a(MIN_X, MIN_Y, MIN_Z)), Aabb::from(vec3a(MIN_X, MIN_Y, MIN_Z), vec3a(MIN_X, MIN_Y, MIN_Z))];
         let global = global_aabb(&bounding_boxes);
 
-        assert!((global.min.x - MIN_X).abs() < f32::EPSILON);
-        assert!((global.min.y - MIN_Y).abs() < f32::EPSILON);
-        assert!((global.min.z - MIN_Z).abs() < f32::EPSILON);
-        assert!((global.max.x - MIN_X).abs() < f32::EPSILON);
-        assert!((global.max.y - MIN_Y).abs() < f32::EPSILON);
-        assert!((global.max.z - MIN_Z).abs() < f32::EPSILON);
+        assert!((global.min().x - MIN_X).abs() < f32::EPSILON);
+        assert!((global.min().y - MIN_Y).abs() < f32::EPSILON);
+        assert!((global.min().z - MIN_Z).abs() < f32::EPSILON);
+        assert!((global.max().x - MIN_X).abs() < f32::EPSILON);
+        assert!((global.max().y - MIN_Y).abs() < f32::EPSILON);
+        assert!((global.max().z - MIN_Z).abs() < f32::EPSILON);
     }
 
     #[test]
     fn global_bounding_box_max() {
-        let bounding_boxes = vec![
-            Aabb {
-                min: vec3a(MAX_X, MAX_Y, MAX_Z),
-                max: vec3a(MAX_X, MAX_Y, MAX_Z),
-            },
-            Aabb {
-                min: vec3a(MAX_X, MAX_Y, MAX_Z),
-                max: vec3a(MAX_X, MAX_Y, MAX_Z),
-            },
-        ];
+        let bounding_boxes = vec![Aabb::from(vec3a(MAX_X, MAX_Y, MAX_Z), vec3a(MAX_X, MAX_Y, MAX_Z)), Aabb::from(vec3a(MAX_X, MAX_Y, MAX_Z), vec3a(MAX_X, MAX_Y, MAX_Z))];
         let global = global_aabb(&bounding_boxes);
 
-        assert!((global.min.x - MAX_X).abs() < f32::EPSILON);
-        assert!((global.min.y - MAX_Y).abs() < f32::EPSILON);
-        assert!((global.min.z - MAX_Z).abs() < f32::EPSILON);
-        assert!((global.max.x - MAX_X).abs() < f32::EPSILON);
-        assert!((global.max.y - MAX_Y).abs() < f32::EPSILON);
-        assert!((global.max.z - MAX_Z).abs() < f32::EPSILON);
+        assert!((global.min().x - MAX_X).abs() < f32::EPSILON);
+        assert!((global.min().y - MAX_Y).abs() < f32::EPSILON);
+        assert!((global.min().z - MAX_Z).abs() < f32::EPSILON);
+        assert!((global.max().x - MAX_X).abs() < f32::EPSILON);
+        assert!((global.max().y - MAX_Y).abs() < f32::EPSILON);
+        assert!((global.max().z - MAX_Z).abs() < f32::EPSILON);
     }
 
     static VERT_MAP: &[[usize; 3]; 12] = &[[1, 0, 2], [3, 1, 2], [7, 5, 6], [4, 6, 5], [2, 0, 4], [6, 2, 4], [7, 3, 5], [1, 5, 3], [4, 0, 1], [5, 4, 1], [7, 6, 3], [2, 3, 6]];

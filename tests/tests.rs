@@ -23,20 +23,14 @@ fn init() {
 
 #[test]
 fn morton() {
-    let global_box = Aabb {
-        min: vec3a(-4096., -5120., 0.),
-        max: vec3a(4096., 5120., 2044.),
-    };
+    let global_box = Aabb::from(vec3a(-4096., -5120., 0.), vec3a(4096., 5120., 2044.));
 
     let morton = Morton::from(&global_box);
 
-    let box_ = Aabb {
-        min: vec3a(-4095., -5119., 1.),
-        max: vec3a(-4094., -5118., 2.),
-    };
+    let box_ = Aabb::from(vec3a(-4095., -5119., 1.), vec3a(-4094., -5118., 2.));
 
     // let code = morton.get_code(&box_);
-    let c = (box_.min + box_.max) / 2.;
+    let c = (box_.min() + box_.max()) / 2.;
 
     let u = (c - morton.offset) * morton.scale;
     dbg!(&u);
@@ -237,14 +231,14 @@ fn basic_predict() {
     dbg!(*z_locs.iter().min().unwrap());
     dbg!(*z_locs.iter().max().unwrap());
 
-    assert!(*z_locs.iter().min().unwrap() > game.collision_mesh.global_box.min.z as isize);
-    assert!(*z_locs.iter().max().unwrap() < game.collision_mesh.global_box.max.z as isize);
+    assert!(*z_locs.iter().min().unwrap() > game.collision_mesh.global_box.min().z as isize);
+    assert!(*z_locs.iter().max().unwrap() < game.collision_mesh.global_box.max().z as isize);
 
-    assert!(*y_locs.iter().min().unwrap() > game.collision_mesh.global_box.min.y as isize);
-    assert!(*y_locs.iter().max().unwrap() < game.collision_mesh.global_box.max.y as isize);
+    assert!(*y_locs.iter().min().unwrap() > game.collision_mesh.global_box.min().y as isize);
+    assert!(*y_locs.iter().max().unwrap() < game.collision_mesh.global_box.max().y as isize);
 
-    assert!(*x_locs.iter().min().unwrap() > game.collision_mesh.global_box.min.x as isize);
-    assert!(*x_locs.iter().max().unwrap() < game.collision_mesh.global_box.max.x as isize);
+    assert!(*x_locs.iter().min().unwrap() > game.collision_mesh.global_box.min().x as isize);
+    assert!(*x_locs.iter().max().unwrap() < game.collision_mesh.global_box.max().x as isize);
 }
 
 #[test]
@@ -306,14 +300,14 @@ fn basic_predict_throwback() {
     dbg!(*z_locs.iter().min().unwrap());
     dbg!(*z_locs.iter().max().unwrap());
 
-    assert!(*z_locs.iter().min().unwrap() > game.collision_mesh.global_box.min.z as isize);
-    assert!(*z_locs.iter().max().unwrap() < game.collision_mesh.global_box.max.z as isize);
+    assert!(*z_locs.iter().min().unwrap() > game.collision_mesh.global_box.min().z as isize);
+    assert!(*z_locs.iter().max().unwrap() < game.collision_mesh.global_box.max().z as isize);
 
-    assert!(*y_locs.iter().min().unwrap() > game.collision_mesh.global_box.min.y as isize);
-    assert!(*y_locs.iter().max().unwrap() < game.collision_mesh.global_box.max.y as isize);
+    assert!(*y_locs.iter().min().unwrap() > game.collision_mesh.global_box.min().y as isize);
+    assert!(*y_locs.iter().max().unwrap() < game.collision_mesh.global_box.max().y as isize);
 
-    assert!(*x_locs.iter().min().unwrap() > game.collision_mesh.global_box.min.x as isize);
-    assert!(*x_locs.iter().max().unwrap() < game.collision_mesh.global_box.max.x as isize);
+    assert!(*x_locs.iter().min().unwrap() > game.collision_mesh.global_box.min().x as isize);
+    assert!(*x_locs.iter().max().unwrap() < game.collision_mesh.global_box.max().x as isize);
 }
 
 #[test]

@@ -13,8 +13,8 @@ impl Morton {
     // 2 ^ 20 - 1 = 1048575
 
     pub fn from(global_box: &Aabb) -> Morton {
-        let offset = global_box.min;
-        let scale = 1048575. / (global_box.max - offset);
+        let offset = global_box.min();
+        let scale = 1048575. / (global_box.max() - offset);
 
         Morton {
             offset,
@@ -45,7 +45,7 @@ impl Morton {
 
     pub fn get_code(&self, box_: &Aabb) -> u64 {
         // get the centroid of the ith bounding box
-        let c = (box_.min + box_.max) / 2.;
+        let c = (box_.min() + box_.max()) / 2.;
 
         let u = (c - self.offset) * self.scale;
 
