@@ -173,7 +173,7 @@ fn gamemode_throwback_soccar() {
 }
 
 #[test]
-fn basic_predict() {
+fn basic_predict_soccar() {
     let mut game = load_soccar();
 
     assert_eq!(game.ball.time as i64, 0);
@@ -195,7 +195,7 @@ fn basic_predict() {
     let ball_prediction = Ball::get_ball_prediction_struct_for_time(&mut game, &time);
     assert_eq!(ball_prediction.len(), time as usize * 120);
 
-    let iters = 200;
+    let iters = 200000;
     let time = 10.; // 10 seconds
     let num_slices = time as usize * 120 * iters;
     let mut rng = rand::thread_rng();
@@ -212,7 +212,7 @@ fn basic_predict() {
         let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
 
         for slice in ball_prediction {
-            if slice.location.y.abs() > 5120. + slice.radius {
+            if slice.location.y.abs() > 5120. && slice.location.x.abs() < 900. {
                 break;
             }
 

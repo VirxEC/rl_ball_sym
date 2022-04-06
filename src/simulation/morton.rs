@@ -13,8 +13,8 @@ impl Morton {
     /// Calculate basic information required to generate a morton code.
     pub fn from(global_box: &Aabb) -> Morton {
         let offset = global_box.min();
-        // 2 ^ 21 - 1 = 2097151
-        let scale = 2097151. / (global_box.max() - offset);
+        // 2 ^ 20 - 1 = 1048575
+        let scale = 1048575. / (global_box.max() - offset);
 
         Morton {
             offset,

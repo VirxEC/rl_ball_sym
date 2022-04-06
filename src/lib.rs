@@ -13,8 +13,8 @@ use simulation::mesh::Mesh;
 use crate::simulation::field::InitializeThrowbackParams;
 
 fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> Mesh {
-    let ids_len = (ids_dat.len() / 4) as usize;
-    let vertices_len = (vertices_dat.len() / 4) as usize;
+    let ids_len = ids_dat.len() / 4;
+    let vertices_len = vertices_dat.len() / 4;
     let mut ids_dat = Cursor::new(ids_dat);
     let mut vertices_dat = Cursor::new(vertices_dat);
     let mut ids: Vec<usize> = Vec::with_capacity(ids_len);

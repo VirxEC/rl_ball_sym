@@ -3,12 +3,12 @@ use std::f32::consts::{FRAC_PI_3, FRAC_PI_6};
 use glam::{const_mat3a, vec3a, Mat3A, Vec3, Vec3A};
 
 use super::bvh::Bvh;
+use super::geometry::{Aabb, Tri};
 use super::mesh::Mesh;
 use crate::linear_algebra::mat::MatrixExt;
 use crate::linear_algebra::math::{axis_to_rotation, dot};
 
 const FLIP_X: Mat3A = const_mat3a!([-1., 0., 0.], [0., 1., 0.], [0., 0., 1.]);
-
 const FLIP_Y: Mat3A = const_mat3a!([1., 0., 0.], [0., -1., 0.], [0., 0., 1.]);
 
 fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
@@ -17,29 +17,67 @@ fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
     Mesh::from(vec![0, 1, 3, 1, 2, 3], vertices)
 }
 
+fn triangles_to_aabb(triangles: Vec<Tri>) -> Aabb {
+    let mut min = vec3a(std::f32::MAX, std::f32::MAX, std::f32::MAX);
+    let mut max = vec3a(std::f32::MIN, std::f32::MIN, std::f32::MIN);
+
+    for triangle in triangles {
+        for vertex in triangle.p {
+            min = min.min(vertex);
+            max = max.max(vertex);
+        }
+    }
+
+    Aabb::from(min, max)
+}
+
 /// Get a BVH generated from the given soccar field meshes.
 pub fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_0: &Mesh, soccar_ramps_1: &Mesh) -> Bvh {
-    let floor = quad(Vec3A::default(), vec3a(4096., 0., 0.), vec3a(0., 5120., 0.));
+    let scale = 100.;
 
+    let s = Mat3A::from_diagonal(Vec3::splat(scale));
+
+    // dbg!(triangles_to_aabb(soccar_goal.to_triangles()));
+
+    let soccar_corner = soccar_corner.transform(s);
+    let soccar_goal = soccar_goal.transform(s);
+    let soccar_ramps_0 = soccar_ramps_0.transform(s);
+    let soccar_ramps_1 = soccar_ramps_1.transform(s);
+
+    let floor = quad(Vec3A::default(), vec3a(4096., 0., 0.), vec3a(0., 6000., 0.));
     let ceiling = quad(vec3a(0., 0., 2048.), vec3a(-4096., 0., 0.), vec3a(0., 5120., 0.));
-
     let side_walls = [quad(vec3a(4096., 0., 1024.), vec3a(0., -5120., 0.), vec3a(0., 0., 1024.)), quad(vec3a(-4096., 0., 1024.), vec3a(0., 5120., 0.), vec3a(0., 0., 1024.))];
+    let back_walls = [
+        quad(vec3a(2500., 5120., 1024.), vec3a(4096., 0., 0.), vec3a(0., 0., 1024.)),
+        quad(vec3a(-2500., 5120., 1024.), vec3a(4096., 0., 0.), vec3a(0., 0., 1024.)),
+        quad(vec3a(2500., -5120., 1024.), vec3a(-4096., 0., 0.), vec3a(0., 0., 1024.)),
+        quad(vec3a(-2500., -5120., 1024.), vec3a(-4096., 0., 0.), vec3a(0., 0., 1024.)),
+    ];
+
+    dbg!(triangles_to_aabb(soccar_corner.to_triangles()));
+    dbg!(triangles_to_aabb(soccar_goal.to_triangles()));
+    dbg!(triangles_to_aabb(soccar_ramps_0.to_triangles()));
+    dbg!(triangles_to_aabb(soccar_ramps_1.to_triangles()));
 
     let field_mesh = Mesh::combine(vec![
-        soccar_corner,
+        &soccar_corner,
         &soccar_corner.transform(FLIP_X),
         &soccar_corner.transform(FLIP_Y),
         &soccar_corner.transform(FLIP_X.dot(FLIP_Y)),
         &soccar_goal.translate(vec3a(0., -5120., 0.)),
         &soccar_goal.translate(vec3a(0., -5120., 0.)).transform(FLIP_Y),
-        soccar_ramps_0,
+        &soccar_ramps_0,
         &soccar_ramps_0.transform(FLIP_X),
-        soccar_ramps_1,
+        &soccar_ramps_1,
         &soccar_ramps_1.transform(FLIP_X),
         &floor,
         &ceiling,
         &side_walls[0],
         &side_walls[1],
+        &back_walls[0],
+        &back_walls[1],
+        &back_walls[2],
+        &back_walls[3],
     ]);
 
     let triangles = field_mesh.to_triangles();
@@ -160,7 +198,6 @@ pub fn initialize_throwback(
     let floor = quad(Vec3A::default(), vec3a(4096.6, 0., 0.), vec3a(0., 6910., 0.));
     let ceiling = quad(vec3a(0., 0., 2048.), vec3a(-4096.6, 0., 0.), vec3a(0., 6910., 0.));
     let side_walls: [Mesh; 2] = [quad(vec3a(4096.6, 0., 1024.), vec3a(0., -6910., 0.), vec3a(0., 0., 1024.)), quad(vec3a(-4096.6, 0., 1024.), vec3a(0., 6910., 0.), vec3a(0., 0., 1024.))];
-
     let back_walls: [Mesh; 2] = [quad(vec3a(0., 6910., 1024.), vec3a(4096., 0., 0.), vec3a(0., 0., 1024.)), quad(vec3a(0., -6910., 1024.), vec3a(-4096., 0., 0.), vec3a(0., 0., 1024.))];
 
     let throwback_goal = goal.transform(s);
