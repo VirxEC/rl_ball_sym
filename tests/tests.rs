@@ -195,7 +195,7 @@ fn basic_predict_soccar() {
     let ball_prediction = Ball::get_ball_prediction_struct_for_time(&mut game, &time);
     assert_eq!(ball_prediction.len(), time as usize * 120);
 
-    let iters = 200000;
+    let iters = 200;
     let time = 10.; // 10 seconds
     let num_slices = time as usize * 120 * iters;
     let mut rng = rand::thread_rng();

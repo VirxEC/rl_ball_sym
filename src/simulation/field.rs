@@ -48,10 +48,10 @@ pub fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_
     let ceiling = quad(vec3a(0., 0., 2048.), vec3a(-4096., 0., 0.), vec3a(0., 5120., 0.));
     let side_walls = [quad(vec3a(4096., 0., 1024.), vec3a(0., -5120., 0.), vec3a(0., 0., 1024.)), quad(vec3a(-4096., 0., 1024.), vec3a(0., 5120., 0.), vec3a(0., 0., 1024.))];
     let back_walls = [
-        quad(vec3a(2500., 5120., 1024.), vec3a(4096., 0., 0.), vec3a(0., 0., 1024.)),
-        quad(vec3a(-2500., 5120., 1024.), vec3a(4096., 0., 0.), vec3a(0., 0., 1024.)),
-        quad(vec3a(2500., -5120., 1024.), vec3a(-4096., 0., 0.), vec3a(0., 0., 1024.)),
-        quad(vec3a(-2500., -5120., 1024.), vec3a(-4096., 0., 0.), vec3a(0., 0., 1024.)),
+        quad(vec3a(2600., 5120., 1024.), vec3a(1496., 0., 0.), vec3a(0., 0., 1024.)),
+        quad(vec3a(-2600., 5120., 1024.), vec3a(1496., 0., 0.), vec3a(0., 0., 1024.)),
+        quad(vec3a(2600., -5120., 1024.), vec3a(-1496., 0., 0.), vec3a(0., 0., 1024.)),
+        quad(vec3a(-2600., -5120., 1024.), vec3a(-1496., 0., 0.), vec3a(0., 0., 1024.)),
     ];
 
     dbg!(triangles_to_aabb(soccar_corner.to_triangles()));
