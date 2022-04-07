@@ -195,7 +195,7 @@ fn basic_predict_soccar() {
     let ball_prediction = Ball::get_ball_prediction_struct_for_time(&mut game, &time);
     assert_eq!(ball_prediction.len(), time as usize * 120);
 
-    let iters = 200;
+    let iters = 200000;
     let time = 10.; // 10 seconds
     let num_slices = time as usize * 120 * iters;
     let mut rng = rand::thread_rng();
@@ -207,15 +207,11 @@ fn basic_predict_soccar() {
     dbg!(game.collision_mesh.global_box);
 
     for _ in 0..iters {
-        game.ball.update(0., vec3a(rng.gen_range(-3900.0..3900.), rng.gen_range(-5000.0..5000.), rng.gen_range(100.0..1900.)), vec3a(rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.)), vec3a(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)));
+        game.ball.update(0., vec3a(rng.gen_range(-3200.0..3200.), rng.gen_range(-4500.0..4500.), rng.gen_range(100.0..1900.)), vec3a(rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.)), vec3a(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)));
 
         let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
 
         for slice in ball_prediction {
-            if slice.location.y.abs() > 5120. && slice.location.x.abs() < 900. {
-                break;
-            }
-
             x_locs.push(slice.location.x as isize);
             y_locs.push(slice.location.y as isize);
             z_locs.push(slice.location.z as isize);
