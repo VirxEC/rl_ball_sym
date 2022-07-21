@@ -29,7 +29,7 @@ impl Ball {
     const DRAG: f32 = -0.0305;
     const MU: f32 = 2.;
 
-    const V_MAX: f32 = 4000.;
+    const V_MAX: f32 = 6000.;
     const W_MAX: f32 = 6.;
 
     const M: f32 = 30.;
@@ -116,18 +116,18 @@ impl Ball {
     /// Simulate the ball for one game tick
     ///
     /// `dt` - The delta time (game tick length)
-    pub fn step(game: &mut Game, dt: f32) {
-        match game.collision_mesh.collide(&game.ball.hitbox()) {
+    pub fn step(&mut self, game: &Game, dt: f32) {
+        match game.collision_mesh.collide(&self.hitbox()) {
             Some(contact) => {
                 let p = contact.start;
                 let n = contact.direction;
 
-                let loc = p - game.ball.location;
+                let loc = p - self.location;
 
-                let m_reduced = 1. / (Ball::INV_M + loc.length_squared() / game.ball.moi);
+                let m_reduced = 1. / (Ball::INV_M + loc.length_squared() / self.moi);
 
-                let v_perp = n * game.ball.velocity.dot(n).min(0.);
-                let v_para = game.ball.velocity - v_perp - loc.cross(game.ball.angular_velocity);
+                let v_perp = n * self.velocity.dot(n).min(0.);
+                let v_para = self.velocity - v_perp - loc.cross(self.angular_velocity);
 
                 let ratio = v_perp.length() / v_para.length().max(0.0001);
 
@@ -136,43 +136,43 @@ impl Ball {
 
                 let j = j_perp + j_para;
 
-                game.ball.angular_velocity += loc.cross(j) / game.ball.moi;
-                game.ball.velocity += (j / Ball::M) + game.ball.velocity * (Ball::DRAG * dt);
-                game.ball.location += game.ball.velocity * dt;
+                self.angular_velocity += loc.cross(j) / self.moi;
+                self.velocity += (j / Ball::M) + self.velocity * (Ball::DRAG * dt);
+                self.location += self.velocity * dt;
 
-                let penetration = game.ball.collision_radius - (game.ball.location - p).dot(n);
+                let penetration = self.collision_radius - (self.location - p).dot(n);
                 if penetration > 0. {
-                    game.ball.location += n * (1.001 * penetration);
+                    self.location += n * (1.001 * penetration);
                 }
             }
             None => {
-                game.ball.velocity += (game.ball.velocity * Ball::DRAG + game.gravity) * dt;
-                game.ball.location += game.ball.velocity * dt;
+                self.velocity += (self.velocity * Ball::DRAG + game.gravity) * dt;
+                self.location += self.velocity * dt;
             }
         }
 
-        game.ball.angular_velocity *= (Ball::W_MAX * game.ball.angular_velocity.length_recip()).min(1.);
-        game.ball.velocity *= (Ball::V_MAX * game.ball.velocity.length_recip()).min(1.);
-        game.ball.time += dt;
+        self.angular_velocity *= (Ball::W_MAX * self.angular_velocity.length_recip()).min(1.);
+        self.velocity *= (Ball::V_MAX * self.velocity.length_recip()).min(1.);
+        self.time += dt;
     }
 
     /// Simulate the ball for a given amount of time
-    pub fn get_ball_prediction_struct_for_time(game: &mut Game, time: &f32) -> BallPrediction {
-        Ball::get_ball_prediction_struct_for_slices(game, (time / Ball::SIMULATION_DT).round() as usize)
+    pub fn get_ball_prediction_struct_for_time(&mut self, game: &Game, time: &f32) -> BallPrediction {
+        self.get_ball_prediction_struct_for_slices(game, (time / Ball::SIMULATION_DT).round() as usize)
     }
 
     /// Simulate the ball for the stand amount of time
-    pub fn get_ball_prediction_struct(game: &mut Game) -> BallPrediction {
-        Ball::get_ball_prediction_struct_for_slices(game, Ball::STANDARD_NUM_SLICES)
+    pub fn get_ball_prediction_struct(&mut self, game: &Game) -> BallPrediction {
+        self.get_ball_prediction_struct_for_slices(game, Ball::STANDARD_NUM_SLICES)
     }
 
     /// Simulate the ball for a given amount of ticks
-    pub fn get_ball_prediction_struct_for_slices(game: &mut Game, num_slices: usize) -> BallPrediction {
+    pub fn get_ball_prediction_struct_for_slices(&mut self, game: &Game, num_slices: usize) -> BallPrediction {
         let mut slices = Vec::with_capacity(num_slices);
 
         for _ in 0..num_slices {
-            Ball::step(game, Ball::SIMULATION_DT);
-            slices.push(game.ball);
+            self.step(game, Ball::SIMULATION_DT);
+            slices.push(*self);
         }
 
         slices
@@ -187,9 +187,9 @@ mod test {
 
     #[test]
     fn check_standard_num_slices() {
-        let mut game = load_soccar();
+        let (game, mut ball) = load_soccar();
 
-        let prediction = Ball::get_ball_prediction_struct(&mut game);
+        let prediction = ball.get_ball_prediction_struct(&game);
 
         assert_eq!(prediction.len(), Ball::STANDARD_NUM_SLICES);
     }
@@ -198,9 +198,9 @@ mod test {
     fn check_custom_num_slices() {
         const REQUESTED_SLICES: usize = 200;
 
-        let mut game = load_soccar();
+        let (game, mut ball) = load_soccar();
 
-        let prediction = Ball::get_ball_prediction_struct_for_slices(&mut game, REQUESTED_SLICES);
+        let prediction = ball.get_ball_prediction_struct_for_slices(&game, REQUESTED_SLICES);
 
         assert_eq!(prediction.len(), REQUESTED_SLICES);
     }
@@ -209,9 +209,9 @@ mod test {
     fn check_num_slices_for_time() {
         const REQUESTED_TIME: f32 = 8.0;
 
-        let mut game = load_soccar();
+        let (game, mut ball) = load_soccar();
 
-        let prediction = Ball::get_ball_prediction_struct_for_time(&mut game, &REQUESTED_TIME);
+        let prediction = ball.get_ball_prediction_struct_for_time(&game, &REQUESTED_TIME);
 
         let predicted_slices = (REQUESTED_TIME / Ball::SIMULATION_DT).round() as usize;
 

@@ -1,8 +1,6 @@
-use glam::{Mat3A, Vec3A};
-
 use super::geometry::Tri;
-
 use crate::linear_algebra::math::dot;
+use glam::{Mat3A, Vec3A};
 
 /// A collection of inter-connected triangles.
 #[derive(Clone, Debug, Default)]
@@ -14,10 +12,7 @@ pub struct Mesh {
 impl Mesh {
     /// Create a new Mesh from a list of ids and vertices.
     pub const fn from(ids: Vec<usize>, vertices: Vec<f32>) -> Self {
-        Self {
-            ids,
-            vertices,
-        }
+        Self { ids, vertices }
     }
 
     /// Combine different meshes all into one
@@ -42,10 +37,7 @@ impl Mesh {
             id_offset += m.vertices.len() / 3;
         }
 
-        Self {
-            ids,
-            vertices,
-        }
+        Self { ids, vertices }
     }
 
     /// Transform the mesh by the given matrix.
@@ -70,10 +62,7 @@ impl Mesh {
             self.ids.clone()
         };
 
-        Mesh {
-            ids,
-            vertices,
-        }
+        Mesh { ids, vertices }
     }
 
     /// Translate the mesh by the given vector.
@@ -82,10 +71,7 @@ impl Mesh {
 
         let vertices = self.vertices.chunks(3).flat_map(|vertex| (Vec3A::from_slice(vertex) + p).to_array()).collect();
 
-        Self {
-            ids: self.ids.clone(),
-            vertices,
-        }
+        Self { ids: self.ids.clone(), vertices }
     }
 
     /// Convert the mesh to a list of triangles.

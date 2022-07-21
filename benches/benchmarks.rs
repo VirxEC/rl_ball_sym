@@ -1,15 +1,5 @@
-use std::sync::Mutex;
-
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use lazy_static::lazy_static;
-use rl_ball_sym::{
-    load_dropshot, load_hoops, load_soccar, load_soccar_throwback,
-    simulation::{ball::Ball, game::Game},
-};
-
-lazy_static! {
-    static ref GAME: Mutex<Game> = Mutex::new(load_soccar());
-}
+use rl_ball_sym::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
 
 fn load_soccar_benchmark(c: &mut Criterion) {
     c.bench_function("load_soccar", |b| b.iter(load_soccar));
@@ -28,35 +18,45 @@ fn load_soccar_throwback_benchmark(c: &mut Criterion) {
 }
 
 fn get_ball_prediction_struct_with_time_benchmark(c: &mut Criterion) {
-    let mut game = load_soccar();
+    let (game, mut ball) = load_soccar();
     let time = 8.;
 
-    c.bench_with_input(BenchmarkId::new("get_ball_prediction_struct_for_time", time), &time, |b, time| b.iter(|| Ball::get_ball_prediction_struct_for_time(black_box(&mut game), time)));
+    c.bench_with_input(BenchmarkId::new("get_ball_prediction_struct_for_time", time), &time, |b, time| {
+        b.iter(|| ball.get_ball_prediction_struct_for_time(black_box(&game), time))
+    });
 }
 
 fn get_ball_prediction_struct_benchmark(c: &mut Criterion) {
-    let mut game = load_soccar();
-    c.bench_function("get_ball_prediction/soccar", |b| b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game))));
+    let (game, mut ball) = load_soccar();
+
+    c.bench_function("get_ball_prediction/soccar", |b| b.iter(|| ball.get_ball_prediction_struct(black_box(&game))));
 }
 
 fn get_ball_prediction_struct_hoops_benchmark(c: &mut Criterion) {
-    let mut game = load_hoops();
+    let (game, mut ball) = load_hoops();
 
-    c.bench_function("get_ball_prediction/hoops", |b| b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game))));
+    c.bench_function("get_ball_prediction/hoops", |b| b.iter(|| ball.get_ball_prediction_struct(black_box(&game))));
 }
 
 fn get_ball_prediction_struct_dropshot(c: &mut Criterion) {
-    let mut game = load_dropshot();
+    let (game, mut ball) = load_dropshot();
 
-    c.bench_function("get_ball_prediction/dropshot", |b| b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game))));
+    c.bench_function("get_ball_prediction/dropshot", |b| b.iter(|| ball.get_ball_prediction_struct(black_box(&game))));
 }
 
 fn get_ball_prediction_struct_throwback(c: &mut Criterion) {
-    let mut game = load_soccar_throwback();
+    let (game, mut ball) = load_soccar_throwback();
 
-    c.bench_function("get_ball_prediction/throwback", |b| b.iter(|| Ball::get_ball_prediction_struct(black_box(&mut game))));
+    c.bench_function("get_ball_prediction/throwback", |b| b.iter(|| ball.get_ball_prediction_struct(black_box(&game))));
 }
 
 criterion_group!(init, load_soccar_benchmark, load_hoops_benchmark, load_dropshot_benchmark, load_soccar_throwback_benchmark,);
-criterion_group!(ball_prediction, get_ball_prediction_struct_with_time_benchmark, get_ball_prediction_struct_benchmark, get_ball_prediction_struct_hoops_benchmark, get_ball_prediction_struct_dropshot, get_ball_prediction_struct_throwback);
+criterion_group!(
+    ball_prediction,
+    get_ball_prediction_struct_with_time_benchmark,
+    get_ball_prediction_struct_benchmark,
+    get_ball_prediction_struct_hoops_benchmark,
+    get_ball_prediction_struct_dropshot,
+    get_ball_prediction_struct_throwback
+);
 criterion_main!(init, ball_prediction);

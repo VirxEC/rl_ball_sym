@@ -3,59 +3,72 @@ use super::geometry::{Ray, Sphere};
 use super::morton::Morton;
 use std::boxed::Box;
 
-/// A node in the BVH.
-#[derive(Clone, Debug, Default)]
-pub struct BvhNode {
-    /// Whether this node is a leaf.
-    /// If it is, then the `left` and `right` fields are None and `primative` isn't.
-    pub is_terminal: bool,
-    /// The bounding box of this node.
+/// A leaf in the BVH.
+#[derive(Clone, Copy, Debug)]
+pub struct Leaf {
+    /// The bounding box of this leaf.
     pub box_: Aabb,
-    /// One-half of the bounding box. None if `is_terminal` is true.
-    pub right: Option<Box<BvhNode>>,
-    /// One-half of the bounding box. None if `is_terminal` is true.
-    pub left: Option<Box<BvhNode>>,
-    /// The primitive that this node represents. None if `is_terminal` is false.
-    pub primitive: Option<Tri>,
-    /// The morton code of this node.
-    pub morton: Option<u64>,
+    /// The primitive that this leaf represents.
+    pub primitive: Tri,
+    /// The morton code of this leaf.
+    pub morton: u64,
+}
+
+impl Leaf {
+    /// Create a new leaf.
+    pub const fn new(primitive: Tri, box_: Aabb, morton: u64) -> Leaf {
+        Leaf { box_, primitive, morton }
+    }
+}
+
+// A branch in the BVH.
+#[derive(Clone, Debug)]
+pub struct Branch {
+    /// The bounding box of this branch.
+    pub box_: Aabb,
+    /// The left child of this branch.
+    pub left: Box<BvhNode>,
+    /// The right child of this branch.
+    pub right: Box<BvhNode>,
+}
+
+impl Branch {
+    /// Create a new branch.
+    pub const fn new(box_: Aabb, left: Box<BvhNode>, right: Box<BvhNode>) -> Branch {
+        Branch { box_, left, right }
+    }
+}
+
+/// A node in the BVH.
+#[derive(Clone, Debug)]
+pub enum BvhNode {
+    Leaf(Leaf),
+    Branch(Branch),
 }
 
 impl BvhNode {
     /// Creates a new branch for the BVH given two children.
-    pub fn branch(right: Box<BvhNode>, left: Box<BvhNode>) -> Box<Self> {
-        Box::new(Self {
-            is_terminal: false,
-            box_: right.box_.add(&left.box_),
-            right: Some(right),
-            left: Some(left),
-            primitive: None,
-            morton: None,
-        })
+    pub fn branch(right: BvhNode, left: BvhNode) -> Self {
+        Self::Branch(Branch::new(right.box_().add(&left.box_()), Box::new(left), Box::new(right)))
     }
 
-    /// Creates a new leaf for the BVH given a primitive, its bounding box, and its morton code.
-    pub fn leaf(primitive: Tri, box_: Aabb, morton_code: u64) -> Box<Self> {
-        Box::new(Self {
-            is_terminal: true,
-            box_,
-            right: None,
-            left: None,
-            primitive: Some(primitive),
-            morton: Some(morton_code),
-        })
+    pub const fn box_(&self) -> Aabb {
+        match self {
+            Self::Leaf(leaf) => leaf.box_,
+            Self::Branch(branch) => branch.box_,
+        }
     }
 }
 
 /// A bounding volume hierarchy.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Bvh {
     /// The bounding box of the entire BVH.
     pub global_box: Aabb,
     /// The number of leaves that the BVH has.
     pub num_leaves: u64,
     /// The root of the BVH.
-    pub root: Box<BvhNode>,
+    pub root: BvhNode,
 }
 
 fn global_aabb(boxes: &[Aabb]) -> Aabb {
@@ -81,13 +94,13 @@ impl Bvh {
         let global_box = global_aabb(&boxes);
 
         let morton = Morton::from(&global_box);
-        let mut sorted_leaves: Vec<Box<BvhNode>> = Vec::with_capacity(num_leaves);
+        let mut sorted_leaves: Vec<Leaf> = Vec::with_capacity(num_leaves);
 
         for (i, box_) in boxes.iter().enumerate() {
-            sorted_leaves.push(BvhNode::leaf(primitives[i], *box_, morton.get_code(box_)));
+            sorted_leaves.push(Leaf::new(primitives[i], *box_, morton.get_code(box_)));
         }
 
-        sorted_leaves.sort_unstable_by_key(|leaf| leaf.morton);
+        radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.morton);
 
         let root = Bvh::generate_hierarchy(&sorted_leaves, 0, num_leaves - 1);
 
@@ -98,10 +111,10 @@ impl Bvh {
         }
     }
 
-    fn generate_hierarchy(sorted_leaves: &[Box<BvhNode>], first: usize, last: usize) -> Box<BvhNode> {
+    fn generate_hierarchy(sorted_leaves: &[Leaf], first: usize, last: usize) -> BvhNode {
         // If we're dealing with a single object, return the leaf node
         if first == last {
-            return sorted_leaves[first].clone();
+            return BvhNode::Leaf(sorted_leaves[first]);
         }
 
         // Determine where to split the range
@@ -126,58 +139,48 @@ impl Bvh {
         let mut stack: Vec<&BvhNode> = Vec::with_capacity(32);
 
         // Traverse nodes starting from the root.
-        let mut node = &*self.root;
+        let mut node = &self.root;
 
         // Check each child node for overlap.
         loop {
-            // We must save the right node to a variable
-            // There's the potential for node to be overwritten
-            let right_og = node.right.as_deref();
+            if let BvhNode::Branch(branch) = node {
+                let mut traverse_left = false;
 
-            let mut traverse_left = false;
-            if let Some(left) = node.left.as_deref() {
-                if left.box_.intersect_self(&query_box) {
-                    match left.primitive {
-                        Some(left_tri) => {
-                            if left_tri.intersect_sphere(query_object) {
-                                hits.push(left_tri);
-                            }
+                let left = branch.left.as_ref();
+                let right = branch.right.as_ref();
+
+                if left.box_().intersect_self(&query_box) {
+                    if let BvhNode::Leaf(left) = left {
+                        if left.primitive.intersect_sphere(query_object) {
+                            hits.push(left.primitive);
                         }
-                        None => {
-                            traverse_left = true;
-                            node = left;
-                        }
+                    } else {
+                        traverse_left = true;
                     }
+                }
+
+                if right.box_().intersect_self(&query_box) {
+                    if let BvhNode::Leaf(right) = right {
+                        if right.primitive.intersect_sphere(query_object) {
+                            hits.push(right.primitive);
+                        }
+                    } else if traverse_left {
+                        stack.push(right);
+                    } else {
+                        node = right;
+                        continue;
+                    }
+                }
+
+                if traverse_left {
+                    node = left;
+                    continue;
                 }
             }
 
-            let mut traverse_right = false;
-            if let Some(right) = right_og {
-                if right.box_.intersect_self(&query_box) {
-                    match right.primitive {
-                        Some(right_tri) => {
-                            if right_tri.intersect_sphere(query_object) {
-                                hits.push(right_tri);
-                            }
-                        }
-                        None => {
-                            traverse_right = true;
-
-                            if traverse_left {
-                                stack.push(right);
-                            } else {
-                                node = right;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if !(traverse_left || traverse_right) {
-                match stack.pop() {
-                    Some(n) => node = n,
-                    None => break,
-                }
+            match stack.pop() {
+                Some(n) => node = n,
+                None => break,
             }
         }
 
@@ -218,7 +221,7 @@ impl Bvh {
 #[cfg(test)]
 mod test {
     use criterion::black_box;
-    use glam::{vec3a, Vec3A};
+    use glam::Vec3A;
 
     use super::*;
 
@@ -231,7 +234,14 @@ mod test {
 
     #[test]
     fn global_bounding_box() {
-        let bounding_boxes = vec![Aabb::from(vec3a(MIN_X, 0.0, 0.0), Vec3A::ZERO), Aabb::from(vec3a(0.0, MIN_Y, 0.0), Vec3A::ZERO), Aabb::from(vec3a(0.0, 0.0, MIN_Z), Vec3A::ZERO), Aabb::from(Vec3A::ZERO, vec3a(MAX_X, 0.0, 0.0)), Aabb::from(Vec3A::ZERO, vec3a(0.0, MAX_Y, 0.0)), Aabb::from(Vec3A::ZERO, vec3a(0.0, 0.0, MAX_Z))];
+        let bounding_boxes = vec![
+            Aabb::from(Vec3A::new(MIN_X, 0.0, 0.0), Vec3A::ZERO),
+            Aabb::from(Vec3A::new(0.0, MIN_Y, 0.0), Vec3A::ZERO),
+            Aabb::from(Vec3A::new(0.0, 0.0, MIN_Z), Vec3A::ZERO),
+            Aabb::from(Vec3A::ZERO, Vec3A::new(MAX_X, 0.0, 0.0)),
+            Aabb::from(Vec3A::ZERO, Vec3A::new(0.0, MAX_Y, 0.0)),
+            Aabb::from(Vec3A::ZERO, Vec3A::new(0.0, 0.0, MAX_Z)),
+        ];
 
         let global = global_aabb(&bounding_boxes);
 
@@ -245,7 +255,10 @@ mod test {
 
     #[test]
     fn global_bounding_box_min() {
-        let bounding_boxes = vec![Aabb::from(vec3a(MIN_X, MIN_Y, MIN_Z), vec3a(MIN_X, MIN_Y, MIN_Z)), Aabb::from(vec3a(MIN_X, MIN_Y, MIN_Z), vec3a(MIN_X, MIN_Y, MIN_Z))];
+        let bounding_boxes = vec![
+            Aabb::from(Vec3A::new(MIN_X, MIN_Y, MIN_Z), Vec3A::new(MIN_X, MIN_Y, MIN_Z)),
+            Aabb::from(Vec3A::new(MIN_X, MIN_Y, MIN_Z), Vec3A::new(MIN_X, MIN_Y, MIN_Z)),
+        ];
         let global = global_aabb(&bounding_boxes);
 
         assert!((global.min().x - MIN_X).abs() < f32::EPSILON);
@@ -258,7 +271,10 @@ mod test {
 
     #[test]
     fn global_bounding_box_max() {
-        let bounding_boxes = vec![Aabb::from(vec3a(MAX_X, MAX_Y, MAX_Z), vec3a(MAX_X, MAX_Y, MAX_Z)), Aabb::from(vec3a(MAX_X, MAX_Y, MAX_Z), vec3a(MAX_X, MAX_Y, MAX_Z))];
+        let bounding_boxes = vec![
+            Aabb::from(Vec3A::new(MAX_X, MAX_Y, MAX_Z), Vec3A::new(MAX_X, MAX_Y, MAX_Z)),
+            Aabb::from(Vec3A::new(MAX_X, MAX_Y, MAX_Z), Vec3A::new(MAX_X, MAX_Y, MAX_Z)),
+        ];
         let global = global_aabb(&bounding_boxes);
 
         assert!((global.min().x - MAX_X).abs() < f32::EPSILON);
@@ -269,17 +285,37 @@ mod test {
         assert!((global.max().z - MAX_Z).abs() < f32::EPSILON);
     }
 
-    static VERT_MAP: &[[usize; 3]; 12] = &[[1, 0, 2], [3, 1, 2], [7, 5, 6], [4, 6, 5], [2, 0, 4], [6, 2, 4], [7, 3, 5], [1, 5, 3], [4, 0, 1], [5, 4, 1], [7, 6, 3], [2, 3, 6]];
+    static VERT_MAP: &[[usize; 3]; 12] = &[
+        [1, 0, 2],
+        [3, 1, 2],
+        [7, 5, 6],
+        [4, 6, 5],
+        [2, 0, 4],
+        [6, 2, 4],
+        [7, 3, 5],
+        [1, 5, 3],
+        [4, 0, 1],
+        [5, 4, 1],
+        [7, 6, 3],
+        [2, 3, 6],
+    ];
 
     fn generate_tris() -> Vec<Tri> {
-        let verts = &[vec3a(-4096.0, -5120.0, 0.0), vec3a(-4096.0, -5120.0, 2044.0), vec3a(-4096.0, 5120.0, 0.0), vec3a(-4096.0, 5120.0, 2044.0), vec3a(4096.0, -5120.0, 0.0), vec3a(4096.0, -5120.0, 2044.0), vec3a(4096.0, 5120.0, 0.0), vec3a(4096.0, 5120.0, 2044.0)];
+        let verts = &[
+            Vec3A::new(-4096.0, -5120.0, 0.0),
+            Vec3A::new(-4096.0, -5120.0, 2044.0),
+            Vec3A::new(-4096.0, 5120.0, 0.0),
+            Vec3A::new(-4096.0, 5120.0, 2044.0),
+            Vec3A::new(4096.0, -5120.0, 0.0),
+            Vec3A::new(4096.0, -5120.0, 2044.0),
+            Vec3A::new(4096.0, 5120.0, 0.0),
+            Vec3A::new(4096.0, 5120.0, 2044.0),
+        ];
         VERT_MAP
             .iter()
             .map(|map| {
                 let p = [verts[map[0]], verts[map[1]], verts[map[2]]];
-                Tri {
-                    p,
-                }
+                Tri { p }
             })
             .collect()
     }
@@ -299,7 +335,7 @@ mod test {
         {
             // Sphere hits nothing
             let sphere = Sphere {
-                center: vec3a(0., 0., 1022.),
+                center: Vec3A::new(0., 0., 1022.),
                 radius: 100.,
             };
             let hits = bvh.intersect(&sphere);
@@ -308,7 +344,7 @@ mod test {
         {
             // Sphere hits one Tri
             let sphere = Sphere {
-                center: vec3a(4096. / 2., 5120. / 2., 100.),
+                center: Vec3A::new(4096. / 2., 5120. / 2., 100.),
                 radius: 100.,
             };
             let hits = bvh.intersect(&sphere);
@@ -340,7 +376,7 @@ mod test {
         {
             // Sphere is in a corner
             let sphere = Sphere {
-                center: vec3a(4096., 5120., 0.),
+                center: Vec3A::new(4096., 5120., 0.),
                 radius: 100.,
             };
             let hits = bvh.intersect(&sphere);
@@ -358,7 +394,7 @@ mod test {
         {
             // Sphere hits nothing
             let sphere = Sphere {
-                center: vec3a(0., 0., 1022.),
+                center: Vec3A::new(0., 0., 1022.),
                 radius: 100.,
             };
 
@@ -369,7 +405,7 @@ mod test {
         {
             // Sphere hits one Tri
             let sphere = Sphere {
-                center: vec3a(4096. / 2., 5120. / 2., 99.),
+                center: Vec3A::new(4096. / 2., 5120. / 2., 99.),
                 radius: 100.,
             };
 
@@ -405,7 +441,7 @@ mod test {
         {
             // Sphere is in a corner
             let sphere = Sphere {
-                center: vec3a(4096., 5120., 0.),
+                center: Vec3A::new(4096., 5120., 0.),
                 radius: 100.,
             };
 
@@ -430,7 +466,7 @@ mod test {
 
         {
             let sphere = Sphere {
-                center: vec3a(0., 0., 93.15),
+                center: Vec3A::new(0., 0., 93.15),
                 radius: 93.15,
             };
 

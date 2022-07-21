@@ -1,15 +1,13 @@
-use std::f32::consts::{FRAC_PI_3, FRAC_PI_6};
-
-use glam::{const_mat3a, vec3a, Mat3A, Vec3, Vec3A};
-
 use super::bvh::Bvh;
+use glam::{Mat3A, Vec3, Vec3A};
+use std::f32::consts::{FRAC_PI_3, FRAC_PI_6};
 // use super::geometry::{Aabb, Tri};
 use super::mesh::Mesh;
 use crate::linear_algebra::mat::MatrixExt;
 use crate::linear_algebra::math::{axis_to_rotation, dot};
 
-const FLIP_X: Mat3A = const_mat3a!([-1., 0., 0.], [0., 1., 0.], [0., 0., 1.]);
-const FLIP_Y: Mat3A = const_mat3a!([1., 0., 0.], [0., -1., 0.], [0., 0., 1.]);
+const FLIP_X: Mat3A = Mat3A::from_cols_array_2d(&[[-1., 0., 0.], [0., 1., 0.], [0., 0., 1.]]);
+const FLIP_Y: Mat3A = Mat3A::from_cols_array_2d(&[[1., 0., 0.], [0., -1., 0.], [0., 0., 1.]]);
 
 fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
     let vertices = [p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2].iter().flat_map(|vertex| vertex.to_array()).collect();
@@ -18,8 +16,8 @@ fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
 }
 
 // fn triangles_to_aabb(triangles: Vec<Tri>) -> Aabb {
-//     let mut min = vec3a(std::f32::MAX, std::f32::MAX, std::f32::MAX);
-//     let mut max = vec3a(std::f32::MIN, std::f32::MIN, std::f32::MIN);
+//     let mut min = Vec3A::new(std::f32::MAX, std::f32::MAX, std::f32::MAX);
+//     let mut max = Vec3A::new(std::f32::MIN, std::f32::MIN, std::f32::MIN);
 
 //     for triangle in triangles {
 //         for vertex in triangle.p {
@@ -42,17 +40,20 @@ pub fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_
     let soccar_ramps_0 = soccar_ramps_0.transform(s);
     let soccar_ramps_1 = soccar_ramps_1.transform(s);
 
-    let floor = quad(Vec3A::default(), vec3a(4096., 0., 0.), vec3a(0., 5500., 0.));
-    let ceiling = quad(vec3a(0., 0., 2048.), vec3a(-4096., 0., 0.), vec3a(0., 5120., 0.));
-    let side_walls = [quad(vec3a(4096., 0., 1024.), vec3a(0., -5120., 0.), vec3a(0., 0., 1024.)), quad(vec3a(-4096., 0., 1024.), vec3a(0., 5120., 0.), vec3a(0., 0., 1024.))];
+    let floor = quad(Vec3A::default(), Vec3A::new(4096., 0., 0.), Vec3A::new(0., 5500., 0.));
+    let ceiling = quad(Vec3A::new(0., 0., 2048.), Vec3A::new(-4096., 0., 0.), Vec3A::new(0., 5120., 0.));
+    let side_walls = [
+        quad(Vec3A::new(4096., 0., 1024.), Vec3A::new(0., -5120., 0.), Vec3A::new(0., 0., 1024.)),
+        quad(Vec3A::new(-4096., 0., 1024.), Vec3A::new(0., 5120., 0.), Vec3A::new(0., 0., 1024.)),
+    ];
 
     let field_mesh = Mesh::combine(vec![
         &soccar_corner,
         &soccar_corner.transform(FLIP_X),
         &soccar_corner.transform(FLIP_Y),
         &soccar_corner.transform(FLIP_X.dot(FLIP_Y)),
-        &soccar_goal.translate(vec3a(0., -5120., 0.)),
-        &soccar_goal.translate(vec3a(0., -5120., 0.)).transform(FLIP_Y),
+        &soccar_goal.translate(Vec3A::new(0., -5120., 0.)),
+        &soccar_goal.translate(Vec3A::new(0., -5120., 0.)).transform(FLIP_Y),
         &soccar_ramps_0,
         &soccar_ramps_0.transform(FLIP_X),
         &soccar_ramps_1,
@@ -74,18 +75,24 @@ pub fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh,
 
     let s = Mat3A::from_diagonal(Vec3::splat(scale));
 
-    let dy = vec3a(0., y_offset, 0.);
+    let dy = Vec3A::new(0., y_offset, 0.);
 
     let transformed_hoops_net = hoops_net.transform(s).translate(dy);
     let transformed_hoops_rim = hoops_rim.transform(s).translate(dy);
 
-    let floor = quad(Vec3A::default(), vec3a(2966., 0., 0.), vec3a(0., 3581., 0.));
+    let floor = quad(Vec3A::default(), Vec3A::new(2966., 0., 0.), Vec3A::new(0., 3581., 0.));
 
-    let ceiling = quad(vec3a(0., 0., 1820.), vec3a(-2966., 0., 0.), vec3a(0., 3581., 0.));
+    let ceiling = quad(Vec3A::new(0., 0., 1820.), Vec3A::new(-2966., 0., 0.), Vec3A::new(0., 3581., 0.));
 
-    let side_walls = [quad(vec3a(2966., 0., 910.), vec3a(0., -3581., 0.), vec3a(0., 0., 910.)), quad(vec3a(-2966., 0., 910.), vec3a(0., 3581., 0.), vec3a(0., 0., 910.))];
+    let side_walls = [
+        quad(Vec3A::new(2966., 0., 910.), Vec3A::new(0., -3581., 0.), Vec3A::new(0., 0., 910.)),
+        quad(Vec3A::new(-2966., 0., 910.), Vec3A::new(0., 3581., 0.), Vec3A::new(0., 0., 910.)),
+    ];
 
-    let back_walls = [quad(vec3a(0., 0., 1024.), vec3a(0., -5120., 0.), vec3a(0., 0., 1024.)), quad(vec3a(0., 0., 1024.), vec3a(0., 5120., 0.), vec3a(0., 0., 1024.))];
+    let back_walls = [
+        quad(Vec3A::new(0., 0., 1024.), Vec3A::new(0., -5120., 0.), Vec3A::new(0., 0., 1024.)),
+        quad(Vec3A::new(0., 0., 1024.), Vec3A::new(0., 5120., 0.), Vec3A::new(0., 0., 1024.)),
+    ];
 
     let field_mesh = Mesh::combine(vec![
         hoops_corner,
@@ -118,20 +125,20 @@ pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
     let scale = 0.393;
     let z_offset = -207.565;
 
-    let q = axis_to_rotation(vec3a(0., 0., FRAC_PI_6));
+    let q = axis_to_rotation(Vec3A::new(0., 0., FRAC_PI_6));
 
     let s = Mat3A::from_diagonal(Vec3::splat(scale));
 
-    let dz = vec3a(0., 0., z_offset);
+    let dz = Vec3A::new(0., 0., z_offset);
 
-    let floor = quad(vec3a(0., 0., 2.), vec3a(10000., 0., 0.), vec3a(0., 7000., 0.));
-    let ceiling = quad(vec3a(0., 0., 2020.), vec3a(-10000., 0., 0.), vec3a(0., 7000., 0.));
+    let floor = quad(Vec3A::new(0., 0., 2.), Vec3A::new(10000., 0., 0.), Vec3A::new(0., 7000., 0.));
+    let ceiling = quad(Vec3A::new(0., 0., 2020.), Vec3A::new(-10000., 0., 0.), Vec3A::new(0., 7000., 0.));
     let mut walls: Vec<Mesh> = Vec::with_capacity(6);
 
-    let mut p = vec3a(0., 11683.6 * scale, 2768.64 * scale - z_offset);
-    let mut x = vec3a(5000., 0., 0.);
-    let z = vec3a(0., 0., 1010.);
-    let r = axis_to_rotation(vec3a(0., 0., FRAC_PI_3));
+    let mut p = Vec3A::new(0., 11683.6 * scale, 2768.64 * scale - z_offset);
+    let mut x = Vec3A::new(5000., 0., 0.);
+    let z = Vec3A::new(0., 0., 1010.);
+    let r = axis_to_rotation(Vec3A::new(0., 0., FRAC_PI_3));
 
     for _ in 0..6 {
         walls.push(quad(p, x, z));
@@ -139,7 +146,17 @@ pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
         x = dot(r, x);
     }
 
-    let field_mesh = Mesh::combine(vec![&dropshot.transform(q.dot(s)).translate(dz), &floor, &ceiling, &walls[0], &walls[1], &walls[2], &walls[3], &walls[4], &walls[5]]);
+    let field_mesh = Mesh::combine(vec![
+        &dropshot.transform(q.dot(s)).translate(dz),
+        &floor,
+        &ceiling,
+        &walls[0],
+        &walls[1],
+        &walls[2],
+        &walls[3],
+        &walls[4],
+        &walls[5],
+    ]);
 
     let triangles = field_mesh.to_triangles();
 
@@ -178,10 +195,16 @@ pub fn initialize_throwback(
 
     let s = Mat3A::from_diagonal(Vec3::splat(scale));
 
-    let floor = quad(Vec3A::default(), vec3a(4096.6, 0., 0.), vec3a(0., 6910., 0.));
-    let ceiling = quad(vec3a(0., 0., 2048.), vec3a(-4096.6, 0., 0.), vec3a(0., 6910., 0.));
-    let side_walls: [Mesh; 2] = [quad(vec3a(4096.6, 0., 1024.), vec3a(0., -6910., 0.), vec3a(0., 0., 1024.)), quad(vec3a(-4096.6, 0., 1024.), vec3a(0., 6910., 0.), vec3a(0., 0., 1024.))];
-    let back_walls: [Mesh; 2] = [quad(vec3a(0., 6910., 1024.), vec3a(4096., 0., 0.), vec3a(0., 0., 1024.)), quad(vec3a(0., -6910., 1024.), vec3a(-4096., 0., 0.), vec3a(0., 0., 1024.))];
+    let floor = quad(Vec3A::default(), Vec3A::new(4096.6, 0., 0.), Vec3A::new(0., 6910., 0.));
+    let ceiling = quad(Vec3A::new(0., 0., 2048.), Vec3A::new(-4096.6, 0., 0.), Vec3A::new(0., 6910., 0.));
+    let side_walls: [Mesh; 2] = [
+        quad(Vec3A::new(4096.6, 0., 1024.), Vec3A::new(0., -6910., 0.), Vec3A::new(0., 0., 1024.)),
+        quad(Vec3A::new(-4096.6, 0., 1024.), Vec3A::new(0., 6910., 0.), Vec3A::new(0., 0., 1024.)),
+    ];
+    let back_walls: [Mesh; 2] = [
+        quad(Vec3A::new(0., 6910., 1024.), Vec3A::new(4096., 0., 0.), Vec3A::new(0., 0., 1024.)),
+        quad(Vec3A::new(0., -6910., 1024.), Vec3A::new(-4096., 0., 0.), Vec3A::new(0., 0., 1024.)),
+    ];
 
     let throwback_goal = goal.transform(s);
     let throwback_side_ramps_lower = side_ramps_lower.transform(s);

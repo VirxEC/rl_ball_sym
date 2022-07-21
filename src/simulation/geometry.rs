@@ -49,7 +49,10 @@ impl Tri {
         let dist = if (0. ..=1.).contains(&u) && (0. ..=1.).contains(&v) && (0. ..=1.).contains(&w) {
             z.abs()
         } else {
-            (b.radius + 1.).min(distance_between(self.p[0], e1, b.center)).min(distance_between(self.p[1], e2, b.center)).min(distance_between(self.p[2], e3, b.center))
+            (b.radius + 1.)
+                .min(distance_between(self.p[0], e1, b.center))
+                .min(distance_between(self.p[1], e2, b.center))
+                .min(distance_between(self.p[2], e3, b.center))
         };
 
         dist <= b.radius
@@ -68,10 +71,7 @@ pub struct Aabb {
 impl Aabb {
     /// Create a new AABB.
     pub const fn from(min: Vec3A, max: Vec3A) -> Aabb {
-        Aabb {
-            min,
-            max,
-        }
+        Aabb { min, max }
     }
 
     /// The minimum point contained in the AABB.
@@ -97,10 +97,7 @@ impl Aabb {
         let min = t.p.into_iter().reduce(Vec3A::min).unwrap();
         let max = t.p.into_iter().reduce(Vec3A::max).unwrap();
 
-        Self {
-            min,
-            max,
-        }
+        Self { min, max }
     }
 
     /// Create an AABB from a sphere
@@ -189,35 +186,35 @@ impl Obb {
 
 #[cfg(test)]
 mod test {
-    use glam::{const_vec3a, vec3a};
+    use glam::Vec3A;
 
     use super::*;
 
     const TRI: Tri = Tri {
-        p: [const_vec3a!([-1.0, 5.0, 0.0]), const_vec3a!([2.0, 2.0, -3.0]), const_vec3a!([5.0, 5.0, 0.0])],
+        p: [Vec3A::new(-1.0, 5.0, 0.0), Vec3A::new(2.0, 2.0, -3.0), Vec3A::new(5.0, 5.0, 0.0)],
     };
 
     const SPHERE: Sphere = Sphere {
-        center: const_vec3a!([1.0, 0.0, 1.0]),
+        center: Vec3A::new(1.0, 0.0, 1.0),
         radius: 2.0,
     };
 
     const BOUNDING_BOXES: &[Aabb] = &[
         Aabb {
-            min: const_vec3a!([-0.5, -2.0, -0.5]),
-            max: const_vec3a!([0.5, 2.0, 0.5]),
+            min: Vec3A::new(-0.5, -2.0, -0.5),
+            max: Vec3A::new(0.5, 2.0, 0.5),
         },
         Aabb {
-            min: const_vec3a!([-1.0, -1.0, -1.0]),
-            max: const_vec3a!([1.0, 1.0, 1.0]),
+            min: Vec3A::new(-1.0, -1.0, -1.0),
+            max: Vec3A::new(1.0, 1.0, 1.0),
         },
         Aabb {
-            min: const_vec3a!([1.0, 1.0, 1.0]),
-            max: const_vec3a!([3.0, 3.0, 3.0]),
+            min: Vec3A::new(1.0, 1.0, 1.0),
+            max: Vec3A::new(3.0, 3.0, 3.0),
         },
         Aabb {
-            min: const_vec3a!([-4.0, -4.0, -4.0]),
-            max: const_vec3a!([-3.0, -3.0, -3.0]),
+            min: Vec3A::new(-4.0, -4.0, -4.0),
+            max: Vec3A::new(-3.0, -3.0, -3.0),
         },
     ];
 
@@ -225,7 +222,7 @@ mod test {
     fn tri_sphere_intersect() {
         {
             let sphere = Sphere {
-                center: vec3a(2.0, 4.0, -1.0),
+                center: Vec3A::new(2.0, 4.0, -1.0),
                 radius: 0.5,
             };
 
@@ -233,7 +230,7 @@ mod test {
         }
         {
             let sphere = Sphere {
-                center: vec3a(-1.0, 5.0, 0.0),
+                center: Vec3A::new(-1.0, 5.0, 0.0),
                 radius: 0.5,
             };
 
@@ -265,16 +262,16 @@ mod test {
     fn aabb_sphere_intersect() {
         {
             let aabb = Aabb {
-                min: vec3a(2.0, 1.0, 2.0),
-                max: vec3a(4.0, 3.0, 4.0),
+                min: Vec3A::new(2.0, 1.0, 2.0),
+                max: Vec3A::new(4.0, 3.0, 4.0),
             };
 
             assert!(aabb.intersect_sphere(&SPHERE));
         }
         {
             let aabb = Aabb {
-                min: vec3a(0.0, -1.0, 0.0),
-                max: vec3a(1.0, 0.0, 1.0),
+                min: Vec3A::new(0.0, -1.0, 0.0),
+                max: Vec3A::new(1.0, 0.0, 1.0),
             };
 
             assert!(aabb.intersect_sphere(&SPHERE));

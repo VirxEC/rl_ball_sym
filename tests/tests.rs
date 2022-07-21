@@ -1,33 +1,26 @@
-use glam::{vec3a, Vec3A};
+use glam::Vec3A;
 use rand::Rng;
-use rl_ball_sym::simulation::ball::Ball;
-use rl_ball_sym::simulation::game::Game;
+use rl_ball_sym::simulation::bvh::BvhNode;
 use rl_ball_sym::simulation::geometry::Aabb;
 use rl_ball_sym::simulation::morton::Morton;
 use rl_ball_sym::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
 
-static mut GAME_0: Option<Game> = None;
-
 #[test]
 fn init() {
-    let game: &mut Game;
-    unsafe {
-        GAME_0 = Some(load_soccar());
-        game = GAME_0.as_mut().unwrap();
-    }
+    let (game, mut ball) = load_soccar();
+    ball.location.z = 1900.;
 
-    game.ball.location.z = 1900.;
-    let ball_prediction_struct = Ball::get_ball_prediction_struct(game);
+    let ball_prediction_struct = ball.get_ball_prediction_struct(&game);
     dbg!(ball_prediction_struct.len());
 }
 
 #[test]
 fn morton() {
-    let global_box = Aabb::from(vec3a(-4096., -5120., 0.), vec3a(4096., 5120., 2044.));
+    let global_box = Aabb::from(Vec3A::new(-4096., -5120., 0.), Vec3A::new(4096., 5120., 2044.));
 
     let morton = Morton::from(&global_box);
 
-    let box_ = Aabb::from(vec3a(-4095., -5119., 1.), vec3a(-4094., -5118., 2.));
+    let box_ = Aabb::from(Vec3A::new(-4095., -5119., 1.), Vec3A::new(-4094., -5118., 2.));
 
     // let code = morton.get_code(&box_);
     let c = (box_.min() + box_.max()) / 2.;
@@ -60,7 +53,7 @@ fn morton() {
 
 #[test]
 fn gamemode_soccar() {
-    let game = load_soccar();
+    let (game, ball) = load_soccar();
 
     // test all the default values to make sure they're proper
 
@@ -68,27 +61,27 @@ fn gamemode_soccar() {
     assert_eq!(game.gravity.y as i64, 0);
     assert_eq!(game.gravity.z as i64, -650);
 
-    dbg!(game.collision_mesh.root.box_);
+    dbg!(game.collision_mesh.root.box_());
 
     assert_eq!(game.collision_mesh.num_leaves, 8028u64);
 
-    assert_eq!(game.ball.time as i64, 0);
-    assert_eq!(game.ball.location.x as i64, 0);
-    assert_eq!(game.ball.location.y as i64, 0);
-    assert_eq!(game.ball.location.z as i64, 102);
-    assert_eq!(game.ball.velocity.x as i64, 0);
-    assert_eq!(game.ball.velocity.y as i64, 0);
-    assert_eq!(game.ball.velocity.z as i64, 0);
-    assert_eq!(game.ball.angular_velocity.x as i64, 0);
-    assert_eq!(game.ball.angular_velocity.y as i64, 0);
-    assert_eq!(game.ball.angular_velocity.z as i64, 0);
-    assert_eq!(game.ball.radius as i64, 91);
-    assert_eq!(game.ball.collision_radius as i64, 93);
+    assert_eq!(ball.time as i64, 0);
+    assert_eq!(ball.location.x as i64, 0);
+    assert_eq!(ball.location.y as i64, 0);
+    assert_eq!(ball.location.z as i64, 102);
+    assert_eq!(ball.velocity.x as i64, 0);
+    assert_eq!(ball.velocity.y as i64, 0);
+    assert_eq!(ball.velocity.z as i64, 0);
+    assert_eq!(ball.angular_velocity.x as i64, 0);
+    assert_eq!(ball.angular_velocity.y as i64, 0);
+    assert_eq!(ball.angular_velocity.z as i64, 0);
+    assert_eq!(ball.radius as i64, 91);
+    assert_eq!(ball.collision_radius as i64, 93);
 }
 
 #[test]
 fn gamemode_hoops() {
-    let game = load_hoops();
+    let (game, ball) = load_hoops();
 
     // test all the default values to make sure they're proper
 
@@ -96,27 +89,27 @@ fn gamemode_hoops() {
     assert_eq!(game.gravity.y as i64, 0);
     assert_eq!(game.gravity.z as i64, -650);
 
-    dbg!(game.collision_mesh.root.box_);
+    dbg!(game.collision_mesh.root.box_());
 
     assert_eq!(game.collision_mesh.num_leaves, 15732u64);
 
-    assert_eq!(game.ball.time as i64, 0);
-    assert_eq!(game.ball.location.x as i64, 0);
-    assert_eq!(game.ball.location.y as i64, 0);
-    assert_eq!(game.ball.location.z as i64, 102);
-    assert_eq!(game.ball.velocity.x as i64, 0);
-    assert_eq!(game.ball.velocity.y as i64, 0);
-    assert_eq!(game.ball.velocity.z as i64, 0);
-    assert_eq!(game.ball.angular_velocity.x as i64, 0);
-    assert_eq!(game.ball.angular_velocity.y as i64, 0);
-    assert_eq!(game.ball.angular_velocity.z as i64, 0);
-    assert_eq!(game.ball.radius as i64, 91);
-    assert_eq!(game.ball.collision_radius as i64, 93);
+    assert_eq!(ball.time as i64, 0);
+    assert_eq!(ball.location.x as i64, 0);
+    assert_eq!(ball.location.y as i64, 0);
+    assert_eq!(ball.location.z as i64, 102);
+    assert_eq!(ball.velocity.x as i64, 0);
+    assert_eq!(ball.velocity.y as i64, 0);
+    assert_eq!(ball.velocity.z as i64, 0);
+    assert_eq!(ball.angular_velocity.x as i64, 0);
+    assert_eq!(ball.angular_velocity.y as i64, 0);
+    assert_eq!(ball.angular_velocity.z as i64, 0);
+    assert_eq!(ball.radius as i64, 91);
+    assert_eq!(ball.collision_radius as i64, 93);
 }
 
 #[test]
 fn gamemode_dropshot() {
-    let game = load_dropshot();
+    let (game, ball) = load_dropshot();
 
     // test all the default values to make sure they're proper
 
@@ -124,27 +117,27 @@ fn gamemode_dropshot() {
     assert_eq!(game.gravity.y as i64, 0);
     assert_eq!(game.gravity.z as i64, -650);
 
-    dbg!(game.collision_mesh.root.box_);
+    dbg!(game.collision_mesh.root.box_());
 
     assert_eq!(game.collision_mesh.num_leaves, 3616u64);
 
-    assert_eq!(game.ball.time as i64, 0);
-    assert_eq!(game.ball.location.x as i64, 0);
-    assert_eq!(game.ball.location.y as i64, 0);
-    assert_eq!(game.ball.location.z as i64, 113);
-    assert_eq!(game.ball.velocity.x as i64, 0);
-    assert_eq!(game.ball.velocity.y as i64, 0);
-    assert_eq!(game.ball.velocity.z as i64, 0);
-    assert_eq!(game.ball.angular_velocity.x as i64, 0);
-    assert_eq!(game.ball.angular_velocity.y as i64, 0);
-    assert_eq!(game.ball.angular_velocity.z as i64, 0);
-    assert_eq!(game.ball.radius as i64, 100);
-    assert_eq!(game.ball.collision_radius as i64, 103);
+    assert_eq!(ball.time as i64, 0);
+    assert_eq!(ball.location.x as i64, 0);
+    assert_eq!(ball.location.y as i64, 0);
+    assert_eq!(ball.location.z as i64, 113);
+    assert_eq!(ball.velocity.x as i64, 0);
+    assert_eq!(ball.velocity.y as i64, 0);
+    assert_eq!(ball.velocity.z as i64, 0);
+    assert_eq!(ball.angular_velocity.x as i64, 0);
+    assert_eq!(ball.angular_velocity.y as i64, 0);
+    assert_eq!(ball.angular_velocity.z as i64, 0);
+    assert_eq!(ball.radius as i64, 100);
+    assert_eq!(ball.collision_radius as i64, 103);
 }
 
 #[test]
 fn gamemode_throwback_soccar() {
-    let game = load_soccar_throwback();
+    let (game, ball) = load_soccar_throwback();
 
     // test all the default values to make sure they're proper
 
@@ -152,50 +145,57 @@ fn gamemode_throwback_soccar() {
     assert_eq!(game.gravity.y as i64, 0);
     assert_eq!(game.gravity.z as i64, -650);
 
-    dbg!(&game.collision_mesh.root.box_);
-    dbg!(&game.collision_mesh.root.left.as_deref().unwrap().box_);
-    dbg!(&game.collision_mesh.root.right.as_deref().unwrap().box_);
+    dbg!(&game.collision_mesh.root.box_());
+    if let BvhNode::Branch(branch) = &game.collision_mesh.root {
+        dbg!(branch.left.box_());
+        dbg!(branch.right.box_());
+    }
 
     assert_eq!(game.collision_mesh.num_leaves, 9272);
 
-    assert_eq!(game.ball.time as i64, 0);
-    assert_eq!(game.ball.location.x as i64, 0);
-    assert_eq!(game.ball.location.y as i64, 0);
-    assert_eq!(game.ball.location.z as i64, 102);
-    assert_eq!(game.ball.velocity.x as i64, 0);
-    assert_eq!(game.ball.velocity.y as i64, 0);
-    assert_eq!(game.ball.velocity.z as i64, 0);
-    assert_eq!(game.ball.angular_velocity.x as i64, 0);
-    assert_eq!(game.ball.angular_velocity.y as i64, 0);
-    assert_eq!(game.ball.angular_velocity.z as i64, 0);
-    assert_eq!(game.ball.radius as i64, 91);
-    assert_eq!(game.ball.collision_radius as i64, 93);
+    assert_eq!(ball.time as i64, 0);
+    assert_eq!(ball.location.x as i64, 0);
+    assert_eq!(ball.location.y as i64, 0);
+    assert_eq!(ball.location.z as i64, 102);
+    assert_eq!(ball.velocity.x as i64, 0);
+    assert_eq!(ball.velocity.y as i64, 0);
+    assert_eq!(ball.velocity.z as i64, 0);
+    assert_eq!(ball.angular_velocity.x as i64, 0);
+    assert_eq!(ball.angular_velocity.y as i64, 0);
+    assert_eq!(ball.angular_velocity.z as i64, 0);
+    assert_eq!(ball.radius as i64, 91);
+    assert_eq!(ball.collision_radius as i64, 93);
 }
 
 #[test]
 fn basic_predict_soccar() {
-    let mut game = load_soccar();
+    let (game, mut ball) = load_soccar();
 
-    assert_eq!(game.ball.time as i64, 0);
-    assert_eq!(game.ball.location.x as i64, 0);
-    assert_eq!(game.ball.location.y as i64, 0);
-    assert_eq!(game.ball.location.z as i64, 102);
-    assert_eq!(game.ball.velocity.x as i64, 0);
-    assert_eq!(game.ball.velocity.y as i64, 0);
-    assert_eq!(game.ball.velocity.z as i64, 0);
-    assert_eq!(game.ball.angular_velocity.x as i64, 0);
-    assert_eq!(game.ball.angular_velocity.y as i64, 0);
-    assert_eq!(game.ball.angular_velocity.z as i64, 0);
-    assert_eq!(game.ball.radius as i64, 91);
-    assert_eq!(game.ball.collision_radius as i64, 93);
+    assert_eq!(ball.time as i64, 0);
+    assert_eq!(ball.location.x as i64, 0);
+    assert_eq!(ball.location.y as i64, 0);
+    assert_eq!(ball.location.z as i64, 102);
+    assert_eq!(ball.velocity.x as i64, 0);
+    assert_eq!(ball.velocity.y as i64, 0);
+    assert_eq!(ball.velocity.z as i64, 0);
+    assert_eq!(ball.angular_velocity.x as i64, 0);
+    assert_eq!(ball.angular_velocity.y as i64, 0);
+    assert_eq!(ball.angular_velocity.z as i64, 0);
+    assert_eq!(ball.radius as i64, 91);
+    assert_eq!(ball.collision_radius as i64, 93);
 
-    game.ball.update(0.098145, vec3a(-2294.5247, 1684.136, 317.17673), vec3a(1273.7537, -39.792305, 763.2827), vec3a(2.3894, -0.8755, 3.8078));
+    ball.update(
+        0.098145,
+        Vec3A::new(-2294.5247, 1684.136, 317.17673),
+        Vec3A::new(1273.7537, -39.792305, 763.2827),
+        Vec3A::new(2.3894, -0.8755, 3.8078),
+    );
 
     let time = 60.; // 1 minute, lol
-    let ball_prediction = Ball::get_ball_prediction_struct_for_time(&mut game, &time);
+    let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, &time);
     assert_eq!(ball_prediction.len(), time as usize * 120);
 
-    let iters = 200000;
+    let iters = 20000;
     let time = 10.; // 10 seconds
     let num_slices = time as usize * 120 * iters;
     let mut rng = rand::thread_rng();
@@ -207,9 +207,14 @@ fn basic_predict_soccar() {
     dbg!(game.collision_mesh.global_box);
 
     for _ in 0..iters {
-        game.ball.update(0., vec3a(rng.gen_range(-3200.0..3200.), rng.gen_range(-4500.0..4500.), rng.gen_range(100.0..1900.)), vec3a(rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.)), vec3a(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)));
+        ball.update(
+            0.,
+            Vec3A::new(rng.gen_range(-3200.0..3200.), rng.gen_range(-4500.0..4500.), rng.gen_range(100.0..1900.)),
+            Vec3A::new(rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.)),
+            Vec3A::new(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)),
+        );
 
-        let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
+        let ball_prediction = ball.get_ball_prediction_struct(&game);
 
         for slice in ball_prediction {
             x_locs.push(slice.location.x as isize);
@@ -239,25 +244,30 @@ fn basic_predict_soccar() {
 
 #[test]
 fn basic_predict_throwback() {
-    let mut game = load_soccar_throwback();
+    let (game, mut ball) = load_soccar_throwback();
 
-    assert_eq!(game.ball.time as i64, 0);
-    assert_eq!(game.ball.location.x as i64, 0);
-    assert_eq!(game.ball.location.y as i64, 0);
-    assert_eq!(game.ball.location.z as i64, 102);
-    assert_eq!(game.ball.velocity.x as i64, 0);
-    assert_eq!(game.ball.velocity.y as i64, 0);
-    assert_eq!(game.ball.velocity.z as i64, 0);
-    assert_eq!(game.ball.angular_velocity.x as i64, 0);
-    assert_eq!(game.ball.angular_velocity.y as i64, 0);
-    assert_eq!(game.ball.angular_velocity.z as i64, 0);
-    assert_eq!(game.ball.radius as i64, 91);
-    assert_eq!(game.ball.collision_radius as i64, 93);
+    assert_eq!(ball.time as i64, 0);
+    assert_eq!(ball.location.x as i64, 0);
+    assert_eq!(ball.location.y as i64, 0);
+    assert_eq!(ball.location.z as i64, 102);
+    assert_eq!(ball.velocity.x as i64, 0);
+    assert_eq!(ball.velocity.y as i64, 0);
+    assert_eq!(ball.velocity.z as i64, 0);
+    assert_eq!(ball.angular_velocity.x as i64, 0);
+    assert_eq!(ball.angular_velocity.y as i64, 0);
+    assert_eq!(ball.angular_velocity.z as i64, 0);
+    assert_eq!(ball.radius as i64, 91);
+    assert_eq!(ball.collision_radius as i64, 93);
 
-    game.ball.update(0.098145, vec3a(-2294.5247, 1684.136, 317.17673), vec3a(1273.7537, -39.792305, 763.2827), vec3a(2.3894, -0.8755, 3.8078));
+    ball.update(
+        0.098145,
+        Vec3A::new(-2294.5247, 1684.136, 317.17673),
+        Vec3A::new(1273.7537, -39.792305, 763.2827),
+        Vec3A::new(2.3894, -0.8755, 3.8078),
+    );
 
     let time = 60.; // 1 minute, lol
-    let ball_prediction = Ball::get_ball_prediction_struct_for_time(&mut game, &time);
+    let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, &time);
     assert_eq!(ball_prediction.len(), time as usize * 120);
 
     let iters = 200;
@@ -272,9 +282,14 @@ fn basic_predict_throwback() {
     dbg!(game.collision_mesh.global_box);
 
     for _ in 0..iters {
-        game.ball.update(0., vec3a(rng.gen_range(-3900.0..3900.), rng.gen_range(-5000.0..5000.), rng.gen_range(100.0..1900.)), vec3a(rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.)), vec3a(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)));
+        ball.update(
+            0.,
+            Vec3A::new(rng.gen_range(-3900.0..3900.), rng.gen_range(-5000.0..5000.), rng.gen_range(100.0..1900.)),
+            Vec3A::new(rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.)),
+            Vec3A::new(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)),
+        );
 
-        let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
+        let ball_prediction = ball.get_ball_prediction_struct(&game);
 
         for slice in ball_prediction {
             if slice.location.y.abs() > 5120. + slice.radius {
@@ -308,52 +323,52 @@ fn basic_predict_throwback() {
 
 #[test]
 fn predict_custom_soccar() {
-    let mut game = load_soccar();
+    let (game, mut ball) = load_soccar();
     let time = 8.;
 
-    let ball_prediction = Ball::get_ball_prediction_struct_for_time(&mut game, &time);
+    let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, &time);
     assert_eq!(ball_prediction.len(), 960);
 }
 
 #[test]
 fn predict_soccar() {
-    let mut game = load_soccar();
+    let (game, mut ball) = load_soccar();
 
-    let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
+    let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
 }
 
 #[test]
 fn predict_hoops() {
-    let mut game = load_hoops();
+    let (game, mut ball) = load_hoops();
 
-    let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
+    let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
 }
 
 #[test]
 fn predict_dropshot() {
-    let mut game = load_dropshot();
+    let (game, mut ball) = load_dropshot();
 
-    let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
+    let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
 }
 
 #[test]
 fn predict_throwback_soccar() {
-    let mut game = load_soccar_throwback();
+    let (game, mut ball) = load_soccar_throwback();
 
-    let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
+    let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
 }
 
 #[test]
 fn check_for_nans() {
-    let mut game = load_soccar();
+    let (game, mut ball) = load_soccar();
 
-    game.ball.update(0., vec3a(0., 0., 100.), Vec3A::ZERO, Vec3A::ZERO);
+    ball.update(0., Vec3A::new(0., 0., 100.), Vec3A::ZERO, Vec3A::ZERO);
 
-    let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
+    let ball_prediction = ball.get_ball_prediction_struct(&game);
 
     for slice in ball_prediction {
         assert!(slice.location.is_finite());
@@ -364,11 +379,11 @@ fn check_for_nans() {
 
 #[test]
 fn check_for_nans_ball() {
-    let mut game = load_soccar();
+    let (game, mut ball) = load_soccar();
 
-    game.ball.update(0., vec3a(0., 0., 100.), Vec3A::ZERO, Vec3A::ZERO);
+    ball.update(0., Vec3A::new(0., 0., 100.), Vec3A::ZERO, Vec3A::ZERO);
 
-    let ball_prediction = Ball::get_ball_prediction_struct(&mut game);
+    let ball_prediction = ball.get_ball_prediction_struct(&game);
 
     for slice in ball_prediction {
         assert!(slice.location.is_finite());

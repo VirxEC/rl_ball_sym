@@ -1,6 +1,5 @@
-use glam::Vec3A;
-
 use super::geometry::Aabb;
+use glam::Vec3A;
 
 /// Basic data for generating morton codes.
 #[derive(Clone, Copy, Debug, Default)]
@@ -16,10 +15,7 @@ impl Morton {
         // 2 ^ 20 - 1 = 1048575
         let scale = 1048575. / (global_box.max() - offset);
 
-        Morton {
-            offset,
-            scale,
-        }
+        Morton { offset, scale }
     }
 
     /// Get the vector offset.
