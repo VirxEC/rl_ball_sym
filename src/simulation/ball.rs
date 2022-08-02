@@ -42,16 +42,17 @@ impl Ball {
     const DROPSHOT_COLLISION_RADIUS: f32 = 103.6;
 
     const INV_M: f32 = 1. / 30.;
-    const RESTITUTION_M: f32 = -(1. + Ball::RESTITUTION) * Ball::M;
+    const RESTITUTION_M: f32 = -(1. + Self::RESTITUTION) * Self::M;
 
     const SIMULATION_DT: f32 = 1. / 120.;
     const STANDARD_NUM_SLICES: usize = 720;
 
     /// Sets the default values for a soccar ball
+    #[must_use]
     pub fn initialize_soccar() -> Self {
-        let mut ball = Ball {
-            radius: Ball::SOCCAR_RADIUS,
-            collision_radius: Ball::SOCCAR_COLLISION_RADIUS,
+        let mut ball = Self {
+            radius: Self::SOCCAR_RADIUS,
+            collision_radius: Self::SOCCAR_COLLISION_RADIUS,
             ..Default::default()
         };
 
@@ -61,10 +62,11 @@ impl Ball {
     }
 
     /// Sets the default values for a hoops ball
+    #[must_use]
     pub fn initialize_hoops() -> Self {
-        let mut ball = Ball {
-            radius: Ball::HOOPS_RADIUS,
-            collision_radius: Ball::HOOPS_COLLISION_RADIUS,
+        let mut ball = Self {
+            radius: Self::HOOPS_RADIUS,
+            collision_radius: Self::HOOPS_COLLISION_RADIUS,
             ..Default::default()
         };
 
@@ -74,10 +76,11 @@ impl Ball {
     }
 
     /// Sets the default values for a dropshot ball
+    #[must_use]
     pub fn initialize_dropshot() -> Self {
-        let mut ball = Ball {
-            radius: Ball::DROPSHOT_RADIUS,
-            collision_radius: Ball::DROPSHOT_COLLISION_RADIUS,
+        let mut ball = Self {
+            radius: Self::DROPSHOT_RADIUS,
+            collision_radius: Self::DROPSHOT_COLLISION_RADIUS,
             ..Default::default()
         };
 
@@ -94,7 +97,7 @@ impl Ball {
 
     /// Calculates the moment of inertia of the ball
     pub fn calculate_moi(&mut self) {
-        self.moi = 0.4 * Ball::M * self.radius * self.radius;
+        self.moi = 0.4 * Self::M * self.radius * self.radius;
     }
 
     /// Updates the ball with everything that changes from game tick to game tick
@@ -106,6 +109,7 @@ impl Ball {
     }
 
     /// Converts the ball into a sphere
+    #[must_use]
     pub const fn hitbox(&self) -> Sphere {
         Sphere {
             center: self.location,
@@ -124,20 +128,20 @@ impl Ball {
 
                 let loc = p - self.location;
 
-                let m_reduced = 1. / (Ball::INV_M + loc.length_squared() / self.moi);
+                let m_reduced = 1. / (Self::INV_M + loc.length_squared() / self.moi);
 
                 let v_perp = n * self.velocity.dot(n).min(0.);
                 let v_para = self.velocity - v_perp - loc.cross(self.angular_velocity);
 
                 let ratio = v_perp.length() / v_para.length().max(0.0001);
 
-                let j_perp = v_perp * Ball::RESTITUTION_M;
-                let j_para = -(Ball::MU * ratio).min(1.) * m_reduced * v_para;
+                let j_perp = v_perp * Self::RESTITUTION_M;
+                let j_para = -(Self::MU * ratio).min(1.) * m_reduced * v_para;
 
                 let j = j_perp + j_para;
 
                 self.angular_velocity += loc.cross(j) / self.moi;
-                self.velocity += (j / Ball::M) + self.velocity * (Ball::DRAG * dt);
+                self.velocity += (j / Self::M) + self.velocity * (Self::DRAG * dt);
                 self.location += self.velocity * dt;
 
                 let penetration = self.collision_radius - (self.location - p).dot(n);
@@ -146,24 +150,24 @@ impl Ball {
                 }
             }
             None => {
-                self.velocity += (self.velocity * Ball::DRAG + game.gravity) * dt;
+                self.velocity += (self.velocity * Self::DRAG + game.gravity) * dt;
                 self.location += self.velocity * dt;
             }
         }
 
-        self.angular_velocity *= (Ball::W_MAX * self.angular_velocity.length_recip()).min(1.);
-        self.velocity *= (Ball::V_MAX * self.velocity.length_recip()).min(1.);
+        self.angular_velocity *= (Self::W_MAX * self.angular_velocity.length_recip()).min(1.);
+        self.velocity *= (Self::V_MAX * self.velocity.length_recip()).min(1.);
         self.time += dt;
     }
 
     /// Simulate the ball for a given amount of time
     pub fn get_ball_prediction_struct_for_time(&mut self, game: &Game, time: &f32) -> BallPrediction {
-        self.get_ball_prediction_struct_for_slices(game, (time / Ball::SIMULATION_DT).round() as usize)
+        self.get_ball_prediction_struct_for_slices(game, (time / Self::SIMULATION_DT).round() as usize)
     }
 
     /// Simulate the ball for the stand amount of time
     pub fn get_ball_prediction_struct(&mut self, game: &Game) -> BallPrediction {
-        self.get_ball_prediction_struct_for_slices(game, Ball::STANDARD_NUM_SLICES)
+        self.get_ball_prediction_struct_for_slices(game, Self::STANDARD_NUM_SLICES)
     }
 
     /// Simulate the ball for a given amount of ticks
@@ -171,7 +175,7 @@ impl Ball {
         let mut slices = Vec::with_capacity(num_slices);
 
         for _ in 0..num_slices {
-            self.step(game, Ball::SIMULATION_DT);
+            self.step(game, Self::SIMULATION_DT);
             slices.push(*self);
         }
 

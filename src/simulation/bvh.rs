@@ -16,8 +16,9 @@ pub struct Leaf {
 
 impl Leaf {
     /// Create a new leaf.
-    pub const fn new(primitive: Tri, box_: Aabb, morton: u64) -> Leaf {
-        Leaf { box_, primitive, morton }
+    #[must_use]
+    pub const fn new(primitive: Tri, box_: Aabb, morton: u64) -> Self {
+        Self { box_, primitive, morton }
     }
 }
 
@@ -34,8 +35,9 @@ pub struct Branch {
 
 impl Branch {
     /// Create a new branch.
-    pub const fn new(box_: Aabb, left: Box<BvhNode>, right: Box<BvhNode>) -> Branch {
-        Branch { box_, left, right }
+    #[must_use]
+    pub const fn new(box_: Aabb, left: Box<BvhNode>, right: Box<BvhNode>) -> Self {
+        Self { box_, left, right }
     }
 }
 
@@ -48,10 +50,12 @@ pub enum BvhNode {
 
 impl BvhNode {
     /// Creates a new branch for the BVH given two children.
-    pub fn branch(right: BvhNode, left: BvhNode) -> Self {
+    #[must_use]
+    pub fn branch(right: Self, left: Self) -> Self {
         Self::Branch(Branch::new(right.box_().add(&left.box_()), Box::new(left), Box::new(right)))
     }
 
+    #[must_use]
     pub const fn box_(&self) -> Aabb {
         match self {
             Self::Leaf(leaf) => leaf.box_,
@@ -83,6 +87,7 @@ fn global_aabb(boxes: &[Aabb]) -> Aabb {
 
 impl Bvh {
     /// Creates a new BVH from a list of primitives.
+    #[must_use]
     pub fn from(primitives: &[Tri]) -> Self {
         let num_leaves = primitives.len();
 
@@ -102,7 +107,7 @@ impl Bvh {
 
         radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.morton);
 
-        let root = Bvh::generate_hierarchy(&sorted_leaves, 0, num_leaves - 1);
+        let root = Self::generate_hierarchy(&sorted_leaves, 0, num_leaves - 1);
 
         Self {
             global_box,
@@ -123,13 +128,14 @@ impl Bvh {
 
         // Process the resulting sub-ranges recursively
 
-        let right = Bvh::generate_hierarchy(sorted_leaves, first, split);
-        let left = Bvh::generate_hierarchy(sorted_leaves, split + 1, last);
+        let right = Self::generate_hierarchy(sorted_leaves, first, split);
+        let left = Self::generate_hierarchy(sorted_leaves, split + 1, last);
 
         BvhNode::branch(right, left)
     }
 
     /// Returns a Vec of the triangles intersecting with the `query_object`.
+    #[must_use]
     pub fn intersect(&self, query_object: &Sphere) -> Vec<Tri> {
         let query_box: Aabb = query_object.into();
 
@@ -189,6 +195,7 @@ impl Bvh {
 
     /// Returns the calculated ray-intersection of the given Sphere and the BVH.
     /// Returns None if no intersecting objects were found in the BVH.
+    #[must_use]
     pub fn collide(&self, s: &Sphere) -> Option<Ray> {
         let mut contact_point = Ray::default();
         let mut count = 0;
@@ -452,9 +459,9 @@ mod test {
             assert!((ray.start.x - 4096.).abs() < f32::EPSILON);
             assert!((ray.start.y - 5120.).abs() < f32::EPSILON);
             assert!((ray.start.z - 0.0).abs() < f32::EPSILON);
-            assert!((ray.direction.x - 0.6666667).abs() < f32::EPSILON);
-            assert!((ray.direction.y - 0.6666667).abs() < f32::EPSILON);
-            assert!((ray.direction.z - 0.33333334).abs() < f32::EPSILON);
+            assert!((ray.direction.x - 0.666_666_7).abs() < f32::EPSILON);
+            assert!((ray.direction.y - 0.666_666_7).abs() < f32::EPSILON);
+            assert!((ray.direction.z - 0.333_333_34).abs() < f32::EPSILON);
         }
     }
 

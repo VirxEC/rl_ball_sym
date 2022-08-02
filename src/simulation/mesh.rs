@@ -11,11 +11,13 @@ pub struct Mesh {
 
 impl Mesh {
     /// Create a new Mesh from a list of ids and vertices.
+    #[must_use]
     pub const fn from(ids: Vec<usize>, vertices: Vec<f32>) -> Self {
         Self { ids, vertices }
     }
 
     /// Combine different meshes all into one
+    #[must_use]
     pub fn combine(other_meshes: Vec<&Self>) -> Self {
         let mut id_offset = 0;
 
@@ -41,6 +43,7 @@ impl Mesh {
     }
 
     /// Transform the mesh by the given matrix.
+    #[must_use]
     pub fn transform(&self, a: Mat3A) -> Self {
         debug_assert_eq!(self.vertices.len() % 3, 0);
         debug_assert_eq!(self.ids.len() % 3, 0);
@@ -62,10 +65,11 @@ impl Mesh {
             self.ids.clone()
         };
 
-        Mesh { ids, vertices }
+        Self { ids, vertices }
     }
 
     /// Translate the mesh by the given vector.
+    #[must_use]
     pub fn translate(&self, p: Vec3A) -> Self {
         debug_assert_eq!(self.vertices.len() % 3, 0);
 
@@ -76,6 +80,7 @@ impl Mesh {
 
     /// Convert the mesh to a list of triangles.
     #[rustfmt::skip]
+    #[must_use]
     pub fn to_triangles(&self) -> Vec<Tri> {
         let n = self.ids.len() / 3;
         let mut triangles: Vec<Tri> = Vec::with_capacity(n);

@@ -10,7 +10,7 @@ const FLIP_X: Mat3A = Mat3A::from_cols_array_2d(&[[-1., 0., 0.], [0., 1., 0.], [
 const FLIP_Y: Mat3A = Mat3A::from_cols_array_2d(&[[1., 0., 0.], [0., -1., 0.], [0., 0., 1.]]);
 
 fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
-    let vertices = [p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2].iter().flat_map(|vertex| vertex.to_array()).collect();
+    let vertices = [p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2].iter().flat_map(glam::Vec3A::to_array).collect();
 
     Mesh::from(vec![0, 1, 3, 1, 2, 3], vertices)
 }
@@ -30,6 +30,7 @@ fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
 // }
 
 /// Get a BVH generated from the given soccar field meshes.
+#[must_use]
 pub fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_0: &Mesh, soccar_ramps_1: &Mesh) -> Bvh {
     let scale = 100.;
 
@@ -69,6 +70,7 @@ pub fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_
 }
 
 /// Get a BVH generated from the given hoops field meshes.
+#[must_use]
 pub fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh, hoops_ramps_0: &Mesh, hoops_ramps_1: &Mesh) -> Bvh {
     let scale = 0.9;
     let y_offset = 431.664;
@@ -121,6 +123,7 @@ pub fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh,
 }
 
 /// Get a BVH generated from the given dropshot field meshes.
+#[must_use]
 pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
     let scale = 0.393;
     let z_offset = -207.565;
@@ -177,6 +180,7 @@ pub struct InitializeThrowbackParams<'a> {
 }
 
 /// Get a BVH generated from the given throwback stadium meshes.
+#[must_use]
 pub fn initialize_throwback(
     InitializeThrowbackParams {
         back_ramps_lower,

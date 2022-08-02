@@ -2,6 +2,7 @@ use crate::linear_algebra::math::{dot, local};
 use glam::{Mat3A, Vec3A};
 
 /// Find the distance between a ray and a point.
+#[must_use]
 pub fn distance_between(start: Vec3A, dir: Vec3A, p: Vec3A) -> f32 {
     let u = ((p - start).dot(dir) / dir.length_squared()).clamp(0., 1.);
     (start + dir * u - p).length()
@@ -15,17 +16,20 @@ pub struct Tri {
 
 impl Tri {
     /// Get the center of the triangle.
+    #[must_use]
     pub fn center(&self) -> Vec3A {
         self.p.iter().sum::<Vec3A>() / 3.
     }
 
     /// Get the normal of the triangle.
+    #[must_use]
     pub fn unit_normal(&self) -> Vec3A {
         (self.p[1] - self.p[0]).cross(self.p[2] - self.p[0]).normalize()
     }
 
     /// Check if a sphere intersects the triangle.
     #[allow(clippy::many_single_char_names)]
+    #[must_use]
     pub fn intersect_sphere(&self, b: &Sphere) -> bool {
         let e1 = self.p[1] - self.p[0];
         let e2 = self.p[2] - self.p[1];
@@ -70,22 +74,26 @@ pub struct Aabb {
 
 impl Aabb {
     /// Create a new AABB.
-    pub const fn from(min: Vec3A, max: Vec3A) -> Aabb {
-        Aabb { min, max }
+    #[must_use]
+    pub const fn from(min: Vec3A, max: Vec3A) -> Self {
+        Self { min, max }
     }
 
     /// The minimum point contained in the AABB.
+    #[must_use]
     pub const fn min(&self) -> Vec3A {
         self.min
     }
 
     /// The maximum point contained in the AABB.
+    #[must_use]
     pub const fn max(&self) -> Vec3A {
         self.max
     }
 
     /// Combine two AABBs.
-    pub fn add(&self, b: &Aabb) -> Self {
+    #[must_use]
+    pub fn add(&self, b: &Self) -> Self {
         Self {
             min: self.min.min(b.min),
             max: self.max.max(b.max),
@@ -93,6 +101,7 @@ impl Aabb {
     }
 
     /// Create an AABB from a triangle.
+    #[must_use]
     pub fn from_tri(t: &Tri) -> Self {
         let min = t.p.into_iter().reduce(Vec3A::min).unwrap();
         let max = t.p.into_iter().reduce(Vec3A::max).unwrap();
@@ -101,6 +110,7 @@ impl Aabb {
     }
 
     /// Create an AABB from a sphere
+    #[must_use]
     pub fn from_sphere(s: &Sphere) -> Self {
         Self {
             min: s.center - s.radius,
@@ -109,11 +119,13 @@ impl Aabb {
     }
 
     /// Check if another AABB intersects this one.
-    pub fn intersect_self(&self, b: &Aabb) -> bool {
+    #[must_use]
+    pub fn intersect_self(&self, b: &Self) -> bool {
         self.min.cmple(b.max).all() && self.max.cmpge(b.min).all()
     }
 
     /// Check if a sphere intersects this AABB.
+    #[must_use]
     pub fn intersect_sphere(&self, b: &Sphere) -> bool {
         let nearest = b.center.clamp(self.min, self.max);
 
@@ -123,13 +135,13 @@ impl Aabb {
 
 impl From<&'_ Tri> for Aabb {
     fn from(value: &'_ Tri) -> Self {
-        Aabb::from_tri(value)
+        Self::from_tri(value)
     }
 }
 
 impl From<&'_ Sphere> for Aabb {
     fn from(value: &'_ Sphere) -> Self {
-        Aabb::from_sphere(value)
+        Self::from_sphere(value)
     }
 }
 
@@ -164,6 +176,7 @@ pub struct Obb {
 
 impl Obb {
     /// Create a new OBB.
+    #[must_use]
     pub fn new(location: Vec3A, orientation: Mat3A, dimensions: Vec3A, offset: Vec3A) -> Self {
         Self {
             orientation,
@@ -173,6 +186,7 @@ impl Obb {
     }
 
     /// Get the closest point on the OBB to a given point.
+    #[must_use]
     pub fn closest_point_on_obb(&self, v: Vec3A) -> Vec3A {
         let mut v_local = local(v - self.center, self.orientation);
 

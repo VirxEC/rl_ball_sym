@@ -1,13 +1,17 @@
 use glam::Vec3A;
 use rand::Rng;
-use rl_ball_sym::load_soccar;
-use rl_ball_sym::simulation::ball::{Ball, BallPrediction};
-use rl_ball_sym::simulation::game::Game;
+use rl_ball_sym::{
+    load_soccar,
+    simulation::{
+        ball::{Ball, BallPrediction},
+        game::Game,
+    },
+};
 
 static mut GAME: Option<Game> = None;
 static mut BALL: Option<Ball> = None;
 
-pub fn main() {
+fn main() {
     let mut rng = rand::thread_rng();
     let mut time = 0.;
 
