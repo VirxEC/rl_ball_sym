@@ -1,5 +1,7 @@
 # rl_ball_sym
 
+[![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
+
 Rust implementation of ball path prediction for Rocket League; Inspired by Samuel (Chip) P. Mish's C++ utils called [RLUtilities](https://github.com/samuelpmish/RLUtilities).
 
 ## Running

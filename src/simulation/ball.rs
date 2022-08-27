@@ -121,6 +121,12 @@ impl Ball {
     ///
     /// `dt` - The delta time (game tick length)
     pub fn step(&mut self, game: &Game, dt: f32) {
+        let g = if self.velocity.length_squared() != 0. {
+            game.gravity
+        } else {
+            Vec3A::ZERO
+        };
+
         match game.collision_mesh.collide(&self.hitbox()) {
             Some(contact) => {
                 let p = contact.start;
@@ -141,7 +147,7 @@ impl Ball {
                 let j = j_perp + j_para;
 
                 self.angular_velocity += loc.cross(j) / self.moi;
-                self.velocity += (j / Self::M) + self.velocity * (Self::DRAG * dt);
+                self.velocity += (j / Self::M) + (Self::DRAG * self.velocity + g) * dt;
                 self.location += self.velocity * dt;
 
                 let penetration = self.collision_radius - (self.location - p).dot(n);
@@ -150,7 +156,7 @@ impl Ball {
                 }
             }
             None => {
-                self.velocity += (self.velocity * Self::DRAG + game.gravity) * dt;
+                self.velocity += (self.velocity * Self::DRAG + g) * dt;
                 self.location += self.velocity * dt;
             }
         }

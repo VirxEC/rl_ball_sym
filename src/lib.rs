@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 pub mod linear_algebra;
 pub mod simulation;
 
