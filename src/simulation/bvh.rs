@@ -1,6 +1,7 @@
-use super::geometry::{Aabb, Tri};
-use super::geometry::{Ray, Sphere};
-use super::morton::Morton;
+use super::{
+    geometry::{Aabb, Ray, Sphere, Tri},
+    morton::Morton,
+};
 use std::boxed::Box;
 
 /// A leaf in the BVH.
@@ -17,6 +18,7 @@ pub struct Leaf {
 impl Leaf {
     /// Create a new leaf.
     #[must_use]
+    #[inline]
     pub const fn new(primitive: Tri, box_: Aabb, morton: u64) -> Self {
         Self { box_, primitive, morton }
     }
@@ -36,6 +38,7 @@ pub struct Branch {
 impl Branch {
     /// Create a new branch.
     #[must_use]
+    #[inline]
     pub const fn new(box_: Aabb, left: Box<BvhNode>, right: Box<BvhNode>) -> Self {
         Self { box_, left, right }
     }
@@ -56,6 +59,7 @@ impl BvhNode {
     }
 
     #[must_use]
+    #[inline]
     pub const fn box_(&self) -> Aabb {
         match self {
             Self::Leaf(leaf) => leaf.box_,

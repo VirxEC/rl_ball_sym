@@ -1,5 +1,4 @@
-use glam::Vec3A;
-use rl_ball_sym::{load_soccar, simulation::ball::BallPrediction};
+use rl_ball_sym::{glam::Vec3A, load_soccar, simulation::ball::BallPrediction};
 
 fn main() {
     let (game, mut ball) = load_soccar();

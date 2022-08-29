@@ -1,5 +1,4 @@
-use crate::simulation::game::Game;
-use crate::simulation::geometry::Sphere;
+use crate::simulation::{game::Game, geometry::Sphere};
 use glam::Vec3A;
 
 /// Represents the game's ball
@@ -110,6 +109,7 @@ impl Ball {
 
     /// Converts the ball into a sphere
     #[must_use]
+    #[inline]
     pub const fn hitbox(&self) -> Sphere {
         Sphere {
             center: self.location,
@@ -121,11 +121,7 @@ impl Ball {
     ///
     /// `dt` - The delta time (game tick length)
     pub fn step(&mut self, game: &Game, dt: f32) {
-        let g = if self.velocity.length_squared() != 0. {
-            game.gravity
-        } else {
-            Vec3A::ZERO
-        };
+        let g = if self.velocity.length_squared() != 0. { game.gravity } else { Vec3A::ZERO };
 
         match game.collision_mesh.collide(&self.hitbox()) {
             Some(contact) => {

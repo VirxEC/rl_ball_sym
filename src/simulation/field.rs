@@ -1,10 +1,14 @@
-use super::bvh::Bvh;
+use super::{
+    bvh::Bvh,
+    // geometry::{Aabb, Tri},
+    mesh::Mesh,
+};
+use crate::linear_algebra::{
+    mat::MatrixExt,
+    math::{axis_to_rotation, dot},
+};
 use glam::{Mat3A, Vec3, Vec3A};
 use std::f32::consts::{FRAC_PI_3, FRAC_PI_6};
-// use super::geometry::{Aabb, Tri};
-use super::mesh::Mesh;
-use crate::linear_algebra::mat::MatrixExt;
-use crate::linear_algebra::math::{axis_to_rotation, dot};
 
 const FLIP_X: Mat3A = Mat3A::from_cols_array_2d(&[[-1., 0., 0.], [0., 1., 0.], [0., 0., 1.]]);
 const FLIP_Y: Mat3A = Mat3A::from_cols_array_2d(&[[1., 0., 0.], [0., -1., 0.], [0., 0., 1.]]);

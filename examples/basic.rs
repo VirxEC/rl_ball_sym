@@ -1,6 +1,6 @@
-use glam::Vec3A;
 use rand::Rng;
 use rl_ball_sym::{
+    glam::Vec3A,
     load_soccar,
     simulation::{
         ball::{Ball, BallPrediction},

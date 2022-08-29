@@ -1,17 +1,19 @@
 #![forbid(unsafe_code)]
 
+pub extern crate glam;
+
 pub mod linear_algebra;
 pub mod simulation;
 
+use crate::simulation::{
+    ball::Ball,
+    field::{initialize_dropshot, initialize_hoops, initialize_soccar, initialize_throwback, InitializeThrowbackParams},
+    game::Game,
+    mesh::Mesh,
+};
 use byteorder::{LittleEndian, ReadBytesExt};
 use glam::Vec3A;
-use simulation::ball::Ball;
-use simulation::field::{initialize_dropshot, initialize_hoops, initialize_soccar, initialize_throwback};
-use simulation::game::Game;
-use simulation::mesh::Mesh;
 use std::io::{Cursor, ErrorKind};
-
-use crate::simulation::field::InitializeThrowbackParams;
 
 fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> Mesh {
     let ids_len = ids_dat.len() / 4;

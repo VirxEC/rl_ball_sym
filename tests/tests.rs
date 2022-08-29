@@ -1,9 +1,9 @@
-use glam::Vec3A;
 use rand::Rng;
-use rl_ball_sym::simulation::bvh::BvhNode;
-use rl_ball_sym::simulation::geometry::Aabb;
-use rl_ball_sym::simulation::morton::Morton;
-use rl_ball_sym::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
+use rl_ball_sym::{
+    glam::Vec3A,
+    load_dropshot, load_hoops, load_soccar, load_soccar_throwback,
+    simulation::{bvh::BvhNode, geometry::Aabb, morton::Morton},
+};
 
 #[test]
 fn init() {

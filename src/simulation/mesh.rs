@@ -12,6 +12,7 @@ pub struct Mesh {
 impl Mesh {
     /// Create a new Mesh from a list of ids and vertices.
     #[must_use]
+    #[inline]
     pub const fn from(ids: Vec<usize>, vertices: Vec<f32>) -> Self {
         Self { ids, vertices }
     }

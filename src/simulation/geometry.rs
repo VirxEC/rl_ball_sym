@@ -75,18 +75,21 @@ pub struct Aabb {
 impl Aabb {
     /// Create a new AABB.
     #[must_use]
+    #[inline]
     pub const fn from(min: Vec3A, max: Vec3A) -> Self {
         Self { min, max }
     }
 
     /// The minimum point contained in the AABB.
     #[must_use]
+    #[inline]
     pub const fn min(&self) -> Vec3A {
         self.min
     }
 
     /// The maximum point contained in the AABB.
     #[must_use]
+    #[inline]
     pub const fn max(&self) -> Vec3A {
         self.max
     }

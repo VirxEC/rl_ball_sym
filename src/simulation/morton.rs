@@ -21,12 +21,14 @@ impl Morton {
 
     /// Get the vector offset.
     #[must_use]
+    #[inline]
     pub const fn offset(&self) -> Vec3A {
         self.offset
     }
 
     /// Get the vector scale.
     #[must_use]
+    #[inline]
     pub const fn scale(&self) -> Vec3A {
         self.scale
     }
