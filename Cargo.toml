@@ -16,7 +16,6 @@ include = ["src/", "assets/", "benches/"]
 [dev-dependencies]
 rand = "0.8"
 criterion = { version = "0.3", features = ["html_reports"] }
-lazy_static = "1.4"
 
 [dependencies]
 byteorder = "1"
