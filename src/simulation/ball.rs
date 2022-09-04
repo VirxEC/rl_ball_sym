@@ -1,3 +1,5 @@
+//! Tools for simulation a Rocket League ball.
+
 use crate::simulation::{game::Game, geometry::Sphere};
 use glam::Vec3A;
 
@@ -162,23 +164,26 @@ impl Ball {
         self.time += dt;
     }
 
+    #[inline]
     /// Simulate the ball for a given amount of time
-    pub fn get_ball_prediction_struct_for_time(&mut self, game: &Game, time: &f32) -> BallPrediction {
+    pub fn get_ball_prediction_struct_for_time(self, game: &Game, time: &f32) -> BallPrediction {
         self.get_ball_prediction_struct_for_slices(game, (time / Self::SIMULATION_DT).round() as usize)
     }
 
+    #[inline]
     /// Simulate the ball for the stand amount of time
-    pub fn get_ball_prediction_struct(&mut self, game: &Game) -> BallPrediction {
+    pub fn get_ball_prediction_struct(self, game: &Game) -> BallPrediction {
         self.get_ball_prediction_struct_for_slices(game, Self::STANDARD_NUM_SLICES)
     }
 
     /// Simulate the ball for a given amount of ticks
-    pub fn get_ball_prediction_struct_for_slices(&mut self, game: &Game, num_slices: usize) -> BallPrediction {
+    pub fn get_ball_prediction_struct_for_slices(self, game: &Game, num_slices: usize) -> BallPrediction {
+        let mut ball = self;
         let mut slices = Vec::with_capacity(num_slices);
 
         for _ in 0..num_slices {
-            self.step(game, Self::SIMULATION_DT);
-            slices.push(*self);
+            ball.step(game, Self::SIMULATION_DT);
+            slices.push(ball);
         }
 
         slices
@@ -187,13 +192,12 @@ impl Ball {
 
 #[cfg(test)]
 mod test {
-    use crate::load_soccar;
-
     use super::*;
+    use crate::load_soccar;
 
     #[test]
     fn check_standard_num_slices() {
-        let (game, mut ball) = load_soccar();
+        let (game, ball) = load_soccar();
 
         let prediction = ball.get_ball_prediction_struct(&game);
 
@@ -204,7 +208,7 @@ mod test {
     fn check_custom_num_slices() {
         const REQUESTED_SLICES: usize = 200;
 
-        let (game, mut ball) = load_soccar();
+        let (game, ball) = load_soccar();
 
         let prediction = ball.get_ball_prediction_struct_for_slices(&game, REQUESTED_SLICES);
 
@@ -215,7 +219,7 @@ mod test {
     fn check_num_slices_for_time() {
         const REQUESTED_TIME: f32 = 8.0;
 
-        let (game, mut ball) = load_soccar();
+        let (game, ball) = load_soccar();
 
         let prediction = ball.get_ball_prediction_struct_for_time(&game, &REQUESTED_TIME);
 

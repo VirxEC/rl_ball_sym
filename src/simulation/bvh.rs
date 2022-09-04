@@ -1,3 +1,5 @@
+//! Tools for calculating collisions between objects and the Rocket League field.
+
 use super::{
     geometry::{Aabb, Ray, Sphere, Tri},
     morton::Morton,
@@ -16,15 +18,15 @@ pub struct Leaf {
 }
 
 impl Leaf {
-    /// Create a new leaf.
     #[must_use]
     #[inline]
+    /// Create a new leaf.
     pub const fn new(primitive: Tri, box_: Aabb, morton: u64) -> Self {
         Self { box_, primitive, morton }
     }
 }
 
-// A branch in the BVH.
+/// A branch in the BVH.
 #[derive(Clone, Debug)]
 pub struct Branch {
     /// The bounding box of this branch.
@@ -36,9 +38,9 @@ pub struct Branch {
 }
 
 impl Branch {
-    /// Create a new branch.
     #[must_use]
     #[inline]
+    /// Create a new branch.
     pub const fn new(box_: Aabb, left: Box<BvhNode>, right: Box<BvhNode>) -> Self {
         Self { box_, left, right }
     }
@@ -47,19 +49,23 @@ impl Branch {
 /// A node in the BVH.
 #[derive(Clone, Debug)]
 pub enum BvhNode {
+    /// A leaf node at the end of a series of branches
     Leaf(Leaf),
+    /// A branch node that connects to more nodes
     Branch(Branch),
 }
 
 impl BvhNode {
-    /// Creates a new branch for the BVH given two children.
     #[must_use]
+    #[inline]
+    /// Creates a new branch for the BVH given two children.
     pub fn branch(right: Self, left: Self) -> Self {
-        Self::Branch(Branch::new(right.box_().add(&left.box_()), Box::new(left), Box::new(right)))
+        Self::Branch(Branch::new(right.box_() + left.box_(), Box::new(left), Box::new(right)))
     }
 
     #[must_use]
     #[inline]
+    /// Returns the bounding box of this node.
     pub const fn box_(&self) -> Aabb {
         match self {
             Self::Leaf(leaf) => leaf.box_,
@@ -74,50 +80,34 @@ pub struct Bvh {
     /// The bounding box of the entire BVH.
     pub global_box: Aabb,
     /// The number of leaves that the BVH has.
-    pub num_leaves: u64,
+    pub num_leaves: usize,
     /// The root of the BVH.
     pub root: BvhNode,
 }
 
 fn global_aabb(boxes: &[Aabb]) -> Aabb {
-    let mut global_box = boxes[0];
-
-    for b in boxes {
-        global_box = global_box.add(b);
-    }
-
-    global_box
+    boxes.iter().fold(boxes[0], |a, b| a + *b)
 }
 
 impl Bvh {
-    /// Creates a new BVH from a list of primitives.
     #[must_use]
+    /// Creates a new BVH from a list of primitives.
     pub fn from(primitives: &[Tri]) -> Self {
-        let num_leaves = primitives.len();
-
-        let mut boxes: Vec<Aabb> = Vec::with_capacity(num_leaves);
-        for primitive in primitives {
-            boxes.push(primitive.into());
-        }
-
+        let boxes: Vec<Aabb> = primitives.iter().map(|primitive| primitive.into()).collect();
         let global_box = global_aabb(&boxes);
+        let morton = Morton::from(global_box);
 
-        let morton = Morton::from(&global_box);
-        let mut sorted_leaves: Vec<Leaf> = Vec::with_capacity(num_leaves);
-
-        for (i, box_) in boxes.iter().enumerate() {
-            sorted_leaves.push(Leaf::new(primitives[i], *box_, morton.get_code(box_)));
-        }
-
+        let mut sorted_leaves: Vec<Leaf> = boxes
+            .into_iter()
+            .enumerate()
+            .map(|(i, box_)| Leaf::new(primitives[i], box_, morton.get_code(box_)))
+            .collect();
         radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.morton);
 
+        let num_leaves = primitives.len();
         let root = Self::generate_hierarchy(&sorted_leaves, 0, num_leaves - 1);
-
-        Self {
-            global_box,
-            num_leaves: num_leaves as u64,
-            root,
-        }
+        
+        Self { global_box, num_leaves, root }
     }
 
     fn generate_hierarchy(sorted_leaves: &[Leaf], first: usize, last: usize) -> BvhNode {
@@ -127,19 +117,17 @@ impl Bvh {
         }
 
         // Determine where to split the range
-
         let split = first + ((last - first) / 2);
 
         // Process the resulting sub-ranges recursively
-
         let right = Self::generate_hierarchy(sorted_leaves, first, split);
         let left = Self::generate_hierarchy(sorted_leaves, split + 1, last);
 
         BvhNode::branch(right, left)
     }
 
-    /// Returns a Vec of the triangles intersecting with the `query_object`.
     #[must_use]
+    /// Returns a Vec of the triangles intersecting with the `query_object`.
     pub fn intersect(&self, query_object: &Sphere) -> Vec<Tri> {
         let query_box: Aabb = query_object.into();
 
@@ -197,14 +185,17 @@ impl Bvh {
         hits
     }
 
+    #[must_use]
     /// Returns the calculated ray-intersection of the given Sphere and the BVH.
     /// Returns None if no intersecting objects were found in the BVH.
-    #[must_use]
     pub fn collide(&self, s: &Sphere) -> Option<Ray> {
+        let tris_hit = self.intersect(s);
+        if tris_hit.is_empty() {
+            return None;
+        }
+
         let mut contact_point = Ray::default();
         let mut count = 0;
-
-        let tris_hit = self.intersect(s);
 
         for tri in tris_hit {
             let p = tri.center();
@@ -218,10 +209,6 @@ impl Bvh {
             }
         }
 
-        if count == 0 {
-            return None;
-        }
-
         contact_point.start /= count as f32;
         contact_point.direction = contact_point.direction.normalize_or_zero();
 
@@ -231,10 +218,9 @@ impl Bvh {
 
 #[cfg(test)]
 mod test {
+    use super::*;
     use criterion::black_box;
     use glam::Vec3A;
-
-    use super::*;
 
     const MIN_X: f32 = -4107.33;
     const MIN_Y: f32 = -6000.0;
@@ -246,12 +232,12 @@ mod test {
     #[test]
     fn global_bounding_box() {
         let bounding_boxes = vec![
-            Aabb::from(Vec3A::new(MIN_X, 0.0, 0.0), Vec3A::ZERO),
-            Aabb::from(Vec3A::new(0.0, MIN_Y, 0.0), Vec3A::ZERO),
-            Aabb::from(Vec3A::new(0.0, 0.0, MIN_Z), Vec3A::ZERO),
-            Aabb::from(Vec3A::ZERO, Vec3A::new(MAX_X, 0.0, 0.0)),
-            Aabb::from(Vec3A::ZERO, Vec3A::new(0.0, MAX_Y, 0.0)),
-            Aabb::from(Vec3A::ZERO, Vec3A::new(0.0, 0.0, MAX_Z)),
+            Aabb::from_minmax(Vec3A::new(MIN_X, 0.0, 0.0), Vec3A::ZERO),
+            Aabb::from_minmax(Vec3A::new(0.0, MIN_Y, 0.0), Vec3A::ZERO),
+            Aabb::from_minmax(Vec3A::new(0.0, 0.0, MIN_Z), Vec3A::ZERO),
+            Aabb::from_minmax(Vec3A::ZERO, Vec3A::new(MAX_X, 0.0, 0.0)),
+            Aabb::from_minmax(Vec3A::ZERO, Vec3A::new(0.0, MAX_Y, 0.0)),
+            Aabb::from_minmax(Vec3A::ZERO, Vec3A::new(0.0, 0.0, MAX_Z)),
         ];
 
         let global = global_aabb(&bounding_boxes);
@@ -267,8 +253,8 @@ mod test {
     #[test]
     fn global_bounding_box_min() {
         let bounding_boxes = vec![
-            Aabb::from(Vec3A::new(MIN_X, MIN_Y, MIN_Z), Vec3A::new(MIN_X, MIN_Y, MIN_Z)),
-            Aabb::from(Vec3A::new(MIN_X, MIN_Y, MIN_Z), Vec3A::new(MIN_X, MIN_Y, MIN_Z)),
+            Aabb::from_minmax(Vec3A::new(MIN_X, MIN_Y, MIN_Z), Vec3A::new(MIN_X, MIN_Y, MIN_Z)),
+            Aabb::from_minmax(Vec3A::new(MIN_X, MIN_Y, MIN_Z), Vec3A::new(MIN_X, MIN_Y, MIN_Z)),
         ];
         let global = global_aabb(&bounding_boxes);
 
@@ -283,8 +269,8 @@ mod test {
     #[test]
     fn global_bounding_box_max() {
         let bounding_boxes = vec![
-            Aabb::from(Vec3A::new(MAX_X, MAX_Y, MAX_Z), Vec3A::new(MAX_X, MAX_Y, MAX_Z)),
-            Aabb::from(Vec3A::new(MAX_X, MAX_Y, MAX_Z), Vec3A::new(MAX_X, MAX_Y, MAX_Z)),
+            Aabb::from_minmax(Vec3A::new(MAX_X, MAX_Y, MAX_Z), Vec3A::new(MAX_X, MAX_Y, MAX_Z)),
+            Aabb::from_minmax(Vec3A::new(MAX_X, MAX_Y, MAX_Z), Vec3A::new(MAX_X, MAX_Y, MAX_Z)),
         ];
         let global = global_aabb(&bounding_boxes);
 
@@ -296,7 +282,7 @@ mod test {
         assert!((global.max().z - MAX_Z).abs() < f32::EPSILON);
     }
 
-    static VERT_MAP: &[[usize; 3]; 12] = &[
+    const VERT_MAP: &[[usize; 3]; 12] = &[
         [1, 0, 2],
         [3, 1, 2],
         [7, 5, 6],
@@ -322,13 +308,7 @@ mod test {
             Vec3A::new(4096.0, 5120.0, 0.0),
             Vec3A::new(4096.0, 5120.0, 2044.0),
         ];
-        VERT_MAP
-            .iter()
-            .map(|map| {
-                let p = [verts[map[0]], verts[map[1]], verts[map[2]]];
-                Tri { p }
-            })
-            .collect()
+        VERT_MAP.iter().map(|map| Tri::from_points(verts[map[0]], verts[map[1]], verts[map[2]])).collect()
     }
 
     #[test]
@@ -361,15 +341,15 @@ mod test {
             let hits = bvh.intersect(&sphere);
 
             assert_eq!(hits.len(), 1);
-            let p0 = hits[0].p[0];
+            let p0 = hits[0].get_point(0);
             assert!((p0.x - 4096.).abs() < f32::EPSILON);
             assert!((p0.y - 5120.).abs() < f32::EPSILON);
             assert!((p0.z - 0.).abs() < f32::EPSILON);
-            let p1 = hits[0].p[1];
+            let p1 = hits[0].get_point(1);
             assert!((p1.x - -4096.).abs() < f32::EPSILON);
             assert!((p1.y - 5120.).abs() < f32::EPSILON);
             assert!((p1.z - 0.).abs() < f32::EPSILON);
-            let p2 = hits[0].p[2];
+            let p2 = hits[0].get_point(2);
             assert!((p2.x - 4096.).abs() < f32::EPSILON);
             assert!((p2.y - -5120.).abs() < f32::EPSILON);
             assert!((p2.z - 0.).abs() < f32::EPSILON);

@@ -1,10 +1,11 @@
 use rl_ball_sym::{glam::Vec3A, load_soccar, simulation::ball::BallPrediction};
 
 fn main() {
+    // load a standard soccer match
     let (game, mut ball) = load_soccar();
 
-    // generate random values
-    ball.update(0., Vec3A::new(0., 0., 200.), Vec3A::new(0., 0., 0.), Vec3A::new(0., 0., 0.));
+    // the current state of the ball in the game
+    ball.update(0., Vec3A::new(0., 0., 200.), Vec3A::new(0., 0., -0.1), Vec3A::new(0., 0., 0.));
 
     // generate the ball prediction struct
     // this is a list of 720 slices
@@ -12,6 +13,6 @@ fn main() {
     let ball_prediction: BallPrediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
 
-    // game.ball is modified, it doesn't stay the same!
-    assert_eq!((ball_prediction[ball_prediction.len() - 1].time * 1000.).round() as i32, (ball.time * 1000.).round() as i32);
+    // ball is not modified, it stays the same!
+    assert_eq!(ball.time, 0.);
 }

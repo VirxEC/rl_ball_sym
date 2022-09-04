@@ -16,11 +16,11 @@ fn init() {
 
 #[test]
 fn morton() {
-    let global_box = Aabb::from(Vec3A::new(-4096., -5120., 0.), Vec3A::new(4096., 5120., 2044.));
+    let global_box = Aabb::from_minmax(Vec3A::new(-4096., -5120., 0.), Vec3A::new(4096., 5120., 2044.));
 
-    let morton = Morton::from(&global_box);
+    let morton = Morton::from(global_box);
 
-    let box_ = Aabb::from(Vec3A::new(-4095., -5119., 1.), Vec3A::new(-4094., -5118., 2.));
+    let box_ = Aabb::from_minmax(Vec3A::new(-4095., -5119., 1.), Vec3A::new(-4094., -5118., 2.));
 
     // let code = morton.get_code(&box_);
     let c = (box_.min() + box_.max()) / 2.;
@@ -63,7 +63,7 @@ fn gamemode_soccar() {
 
     dbg!(game.collision_mesh.root.box_());
 
-    assert_eq!(game.collision_mesh.num_leaves, 8028u64);
+    assert_eq!(game.collision_mesh.num_leaves, 8028);
 
     assert_eq!(ball.time as i64, 0);
     assert_eq!(ball.location.x as i64, 0);
@@ -91,7 +91,7 @@ fn gamemode_hoops() {
 
     dbg!(game.collision_mesh.root.box_());
 
-    assert_eq!(game.collision_mesh.num_leaves, 15732u64);
+    assert_eq!(game.collision_mesh.num_leaves, 15732);
 
     assert_eq!(ball.time as i64, 0);
     assert_eq!(ball.location.x as i64, 0);
@@ -119,7 +119,7 @@ fn gamemode_dropshot() {
 
     dbg!(game.collision_mesh.root.box_());
 
-    assert_eq!(game.collision_mesh.num_leaves, 3616u64);
+    assert_eq!(game.collision_mesh.num_leaves, 3616);
 
     assert_eq!(ball.time as i64, 0);
     assert_eq!(ball.location.x as i64, 0);
@@ -323,7 +323,7 @@ fn basic_predict_throwback() {
 
 #[test]
 fn predict_custom_soccar() {
-    let (game, mut ball) = load_soccar();
+    let (game, ball) = load_soccar();
     let time = 8.;
 
     let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, &time);
@@ -332,7 +332,7 @@ fn predict_custom_soccar() {
 
 #[test]
 fn predict_soccar() {
-    let (game, mut ball) = load_soccar();
+    let (game, ball) = load_soccar();
 
     let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
@@ -340,7 +340,7 @@ fn predict_soccar() {
 
 #[test]
 fn predict_hoops() {
-    let (game, mut ball) = load_hoops();
+    let (game, ball) = load_hoops();
 
     let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
@@ -348,7 +348,7 @@ fn predict_hoops() {
 
 #[test]
 fn predict_dropshot() {
-    let (game, mut ball) = load_dropshot();
+    let (game, ball) = load_dropshot();
 
     let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
@@ -356,7 +356,7 @@ fn predict_dropshot() {
 
 #[test]
 fn predict_throwback_soccar() {
-    let (game, mut ball) = load_soccar_throwback();
+    let (game, ball) = load_soccar_throwback();
 
     let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);

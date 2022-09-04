@@ -1,14 +1,12 @@
 use glam::Mat3A;
 
-/// Default orientation matrix.
-pub const EYE: Mat3A = Mat3A::from_cols_array_2d(&[[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]]);
-
 pub(crate) trait MatrixExt {
     fn dot(&self, other: Self) -> Self;
     fn denom(&self, other: f32) -> Self;
 }
 
 impl MatrixExt for Mat3A {
+    #[inline]
     fn dot(&self, other: Self) -> Self {
         // For some reason, glam does matrix multiplication in column order. So,
         // we have to transpose both matrices prior to multiplying them. Then,
@@ -16,6 +14,7 @@ impl MatrixExt for Mat3A {
         (self.transpose() * other.transpose()).transpose()
     }
 
+    #[inline]
     fn denom(&self, other: f32) -> Self {
         Self::from_cols(self.x_axis / other, self.y_axis / other, self.z_axis / other)
     }

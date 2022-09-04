@@ -1,3 +1,5 @@
+//! All the data about the game to simulate it.
+
 use super::bvh::Bvh;
 use glam::Vec3A;
 

@@ -7,9 +7,10 @@ use rl_ball_sym::{
         game::Game,
     },
 };
+use std::sync::RwLock;
 
-static mut GAME: Option<Game> = None;
-static mut BALL: Option<Ball> = None;
+// RwLock's can only have one reader, but they can have multiple writers enabling safe parallel access to the data once it's been initilized
+static GAME: RwLock<Option<(Game, Ball)>> = RwLock::new(None);
 
 fn main() {
     let mut rng = rand::thread_rng();
@@ -28,22 +29,30 @@ fn main() {
 }
 
 fn get_output(ball_location: Vec3A, ball_velocity: Vec3A, ball_angular_velocity: Vec3A, time: f32) {
-    let game: &Game;
-    let mut ball: Ball;
+    let read_lock = {
+        let read_lock = GAME.read().expect("game lock poisoned");
 
-    unsafe {
-        // if game is unintialized, initialize soccar
-        if GAME.is_none() {
-            let (game, ball) = load_soccar();
-            GAME = Some(game);
-            BALL = Some(ball);
+        if read_lock.as_ref().is_some() {
+            // return the read lock with the game data
+            read_lock
+        } else {
+            // drop the read lock so we can grab the write lock
+            drop(read_lock);
+            // grab the write lock
+            let mut write_lock = GAME.write().expect("game lock poisoned");
+            // load a standard soccer match
+            *write_lock = Some(load_soccar());
+            // drop the write lock so we can read the game data
+            drop(write_lock);
+            // grab the read lock again
+            GAME.read().expect("game lock poisoned")
         }
+    };
 
-        // get a reference to GAME and unwrap
-        game = GAME.as_ref().unwrap();
-        // Ball implments the copy trait
-        ball = BALL.unwrap();
-    }
+    // Game is too complex and can't implement Copy, so the type of the variable game is &Game
+    // Since we have to reference Game to avoid cloning it, we need to hold read_lock until the end of the function
+    // Ball does implement Copy though, so we copy the basic ball data we got when we called load_soccar
+    let (game, mut ball) = read_lock.as_ref().unwrap();
 
     ball.update(time, ball_location, ball_velocity, ball_angular_velocity);
 
@@ -53,6 +62,6 @@ fn get_output(ball_location: Vec3A, ball_velocity: Vec3A, ball_angular_velocity:
     let ball_prediction: BallPrediction = ball.get_ball_prediction_struct(game);
     assert_eq!(ball_prediction.len(), 720);
 
-    // game.ball is modified, it doesn't stay the same!
-    assert_eq!((ball_prediction[ball_prediction.len() - 1].time * 1000.).round() as i32, (ball.time * 1000.).round() as i32);
+    // ball is not modified, it stays the same!
+    assert_eq!(ball.time, time);
 }

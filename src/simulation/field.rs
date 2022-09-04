@@ -1,8 +1,4 @@
-use super::{
-    bvh::Bvh,
-    // geometry::{Aabb, Tri},
-    mesh::Mesh,
-};
+use super::{bvh::Bvh, mesh::Mesh};
 use crate::linear_algebra::{
     mat::MatrixExt,
     math::{axis_to_rotation, dot},
@@ -19,23 +15,9 @@ fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
     Mesh::from(vec![0, 1, 3, 1, 2, 3], vertices)
 }
 
-// fn triangles_to_aabb(triangles: Vec<Tri>) -> Aabb {
-//     let mut min = Vec3A::new(std::f32::MAX, std::f32::MAX, std::f32::MAX);
-//     let mut max = Vec3A::new(std::f32::MIN, std::f32::MIN, std::f32::MIN);
-
-//     for triangle in triangles {
-//         for vertex in triangle.p {
-//             min = min.min(vertex);
-//             max = max.max(vertex);
-//         }
-//     }
-
-//     Aabb::from(min, max)
-// }
-
-/// Get a BVH generated from the given soccar field meshes.
 #[must_use]
-pub fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_0: &Mesh, soccar_ramps_1: &Mesh) -> Bvh {
+/// Get a BVH generated from the given soccar field meshes.
+pub(crate) fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_0: &Mesh, soccar_ramps_1: &Mesh) -> Bvh {
     let scale = 100.;
 
     let s = Mat3A::from_diagonal(Vec3::splat(scale));
@@ -52,7 +34,7 @@ pub fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_
         quad(Vec3A::new(-4096., 0., 1024.), Vec3A::new(0., 5120., 0.), Vec3A::new(0., 0., 1024.)),
     ];
 
-    let field_mesh = Mesh::combine(vec![
+    let field_mesh = Mesh::combine(&[
         &soccar_corner,
         &soccar_corner.transform(FLIP_X),
         &soccar_corner.transform(FLIP_Y),
@@ -73,9 +55,9 @@ pub fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_
     Bvh::from(&triangles)
 }
 
-/// Get a BVH generated from the given hoops field meshes.
 #[must_use]
-pub fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh, hoops_ramps_0: &Mesh, hoops_ramps_1: &Mesh) -> Bvh {
+/// Get a BVH generated from the given hoops field meshes.
+pub(crate) fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh, hoops_ramps_0: &Mesh, hoops_ramps_1: &Mesh) -> Bvh {
     let scale = 0.9;
     let y_offset = 431.664;
 
@@ -100,7 +82,7 @@ pub fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh,
         quad(Vec3A::new(0., 0., 1024.), Vec3A::new(0., 5120., 0.), Vec3A::new(0., 0., 1024.)),
     ];
 
-    let field_mesh = Mesh::combine(vec![
+    let field_mesh = Mesh::combine(&[
         hoops_corner,
         &hoops_corner.transform(FLIP_X),
         &hoops_corner.transform(FLIP_Y),
@@ -126,9 +108,9 @@ pub fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh,
     Bvh::from(&triangles)
 }
 
-/// Get a BVH generated from the given dropshot field meshes.
 #[must_use]
-pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
+/// Get a BVH generated from the given dropshot field meshes.
+pub(crate) fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
     let scale = 0.393;
     let z_offset = -207.565;
 
@@ -153,7 +135,7 @@ pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
         x = dot(r, x);
     }
 
-    let field_mesh = Mesh::combine(vec![
+    let field_mesh = Mesh::combine(&[
         &dropshot.transform(q.dot(s)).translate(dz),
         &floor,
         &ceiling,
@@ -170,7 +152,7 @@ pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
     Bvh::from(&triangles)
 }
 
-pub struct InitializeThrowbackParams<'a> {
+pub(crate) struct InitializeThrowbackParams<'a> {
     pub back_ramps_lower: &'a Mesh,
     pub back_ramps_upper: &'a Mesh,
     pub corner_ramps_lower: &'a Mesh,
@@ -183,9 +165,9 @@ pub struct InitializeThrowbackParams<'a> {
     pub side_ramps_upper: &'a Mesh,
 }
 
-/// Get a BVH generated from the given throwback stadium meshes.
 #[must_use]
-pub fn initialize_throwback(
+/// Get a BVH generated from the given throwback stadium meshes.
+pub(crate) fn initialize_throwback(
     InitializeThrowbackParams {
         back_ramps_lower,
         back_ramps_upper,
@@ -225,7 +207,7 @@ pub fn initialize_throwback(
     let throwback_corner_wall_1 = corner_wall_1.transform(s);
     let throwback_corner_wall_2 = corner_wall_2.transform(s);
 
-    let field_mesh = Mesh::combine(vec![
+    let field_mesh = Mesh::combine(&[
         &throwback_corner_ramps_lower,
         &throwback_corner_ramps_lower.transform(FLIP_X),
         &throwback_corner_ramps_lower.transform(FLIP_Y),

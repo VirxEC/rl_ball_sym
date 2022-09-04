@@ -1,3 +1,5 @@
+//! Tools for calculating morton codes and Morton codes for 3D points.
+
 use super::geometry::Aabb;
 use glam::Vec3A;
 
@@ -11,7 +13,7 @@ pub struct Morton {
 impl Morton {
     /// Calculate basic information required to generate a morton code.
     #[must_use]
-    pub fn from(global_box: &Aabb) -> Self {
+    pub fn from(global_box: Aabb) -> Self {
         let offset = global_box.min();
         // 2 ^ 20 - 1 = 1048575
         let scale = 1_048_575. / (global_box.max() - offset);
@@ -22,14 +24,14 @@ impl Morton {
     /// Get the vector offset.
     #[must_use]
     #[inline]
-    pub const fn offset(&self) -> Vec3A {
+    pub const fn offset(self) -> Vec3A {
         self.offset
     }
 
     /// Get the vector scale.
     #[must_use]
     #[inline]
-    pub const fn scale(&self) -> Vec3A {
+    pub const fn scale(self) -> Vec3A {
         self.scale
     }
 
@@ -47,23 +49,15 @@ impl Morton {
         x
     }
 
-    fn encode(u: Vec3A) -> u64 {
-        // These should actually be 21 bits, but there's no u21 type and the final type is u64 (21 bits * 3 = 63 bits)
-        let x = u.x as u32;
-        let y = u.y as u32;
-        let z = u.z as u32;
-
-        Self::expand3(x) | Self::expand3(y) << 1 | Self::expand3(z) << 2
-    }
-
     /// Get an AABB's morton code.
     #[must_use]
-    pub fn get_code(&self, box_: &Aabb) -> u64 {
+    pub fn get_code(self, box_: Aabb) -> u64 {
         // get the centroid of the ith bounding box
         let c = (box_.min() + box_.max()) / 2.;
 
         let u = (c - self.offset) * self.scale;
 
-        Self::encode(u)
+        // These should actually be 21 bits, but there's no u21 type and the final type is u64 (21 bits * 3 = 63 bits)
+        Self::expand3(u.x as u32) | Self::expand3(u.y as u32) << 1 | Self::expand3(u.z as u32) << 2
     }
 }

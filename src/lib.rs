@@ -1,8 +1,33 @@
 #![forbid(unsafe_code)]
+#![warn(missing_docs)]
+
+//! rl_ball_sym is a Rust implementation of a simulation of the Rocket League ball inside it's field.
+//! It loads the read geometry from the game and simulates the ball's movement in nanoseconds.
+//!
+//! ## Example: ultra_basic
+//!
+//! ```
+//! use rl_ball_sym::{glam::Vec3A, load_soccar, simulation::ball::BallPrediction};
+//!
+//! // load a standard soccer match
+//! let (game, mut ball) = load_soccar();
+//!
+//! // the current state of the ball in the game
+//! ball.update(0., Vec3A::new(0., 0., 200.), Vec3A::new(0., 0., -0.1), Vec3A::new(0., 0., 0.));
+//!
+//! // generate the ball prediction struct
+//! // this is a list of 720 slices
+//! // it goes 6 seconds into the future with 120 slices per second
+//! let ball_prediction: BallPrediction = ball.get_ball_prediction_struct(&game);
+//! assert_eq!(ball_prediction.len(), 720);
+//!
+//! // ball is not modified, it stays the same!
+//! assert_eq!(ball.time, 0.);
+//! ```
 
 pub extern crate glam;
 
-pub mod linear_algebra;
+mod linear_algebra;
 pub mod simulation;
 
 use crate::simulation::{
@@ -24,7 +49,7 @@ fn read_mesh(ids_dat: Vec<u8>, vertices_dat: Vec<u8>) -> Mesh {
     let mut vertices: Vec<f32> = Vec::with_capacity(vertices_len);
 
     loop {
-        ids.push(match ids_dat.read_i32::<LittleEndian>() {
+        ids.push(match ids_dat.read_u32::<LittleEndian>() {
             Ok(num) => num as usize,
             Err(error) => match error.kind() {
                 ErrorKind::UnexpectedEof => break,

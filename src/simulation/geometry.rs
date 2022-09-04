@@ -1,8 +1,11 @@
-use crate::linear_algebra::math::{dot, local};
-use glam::{Mat3A, Vec3A};
+//! Various geometrical objects and tools.
 
-/// Find the distance between a ray and a point.
+use crate::linear_algebra::math::dot;
+use glam::{Mat3A, Vec3A};
+use std::ops::Add;
+
 #[must_use]
+/// Find the distance between a ray and a point.
 pub fn distance_between(start: Vec3A, dir: Vec3A, p: Vec3A) -> f32 {
     let u = ((p - start).dot(dir) / dir.length_squared()).clamp(0., 1.);
     (start + dir * u - p).length()
@@ -11,25 +14,54 @@ pub fn distance_between(start: Vec3A, dir: Vec3A, p: Vec3A) -> f32 {
 /// A triangle made from 3 points.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Tri {
-    pub p: [Vec3A; 3],
+    p: [Vec3A; 3],
 }
 
 impl Tri {
-    /// Get the center of the triangle.
     #[must_use]
-    pub fn center(&self) -> Vec3A {
-        self.p.iter().sum::<Vec3A>() / 3.
+    #[inline]
+    /// Get one of the points of the triangle. Panics if the index is out of bounds.
+    pub const fn get_point(&self, i: usize) -> Vec3A {
+        self.p[i]
     }
 
-    /// Get the normal of the triangle.
     #[must_use]
+    #[inline]
+    /// Create a new triangle from 3 points
+    pub const fn from_points(p0: Vec3A, p1: Vec3A, p2: Vec3A) -> Self {
+        Self { p: [p0, p1, p2] }
+    }
+
+    #[must_use]
+    #[inline]
+    /// Create a new triangle from a slice of points
+    pub const fn from_array(p: [Vec3A; 3]) -> Self {
+        Self { p }
+    }
+
+    #[must_use]
+    #[inline]
+    /// Create a new triangle from a slice of points
+    pub const fn from_slice(p: &[Vec3A]) -> Self {
+        Self { p: [p[0], p[1], p[2]] }
+    }
+
+    #[must_use]
+    #[inline]
+    /// Get the center of the triangle.
+    pub fn center(&self) -> Vec3A {
+        (self.p[0] + self.p[1] + self.p[2]) / 3.
+    }
+
+    #[must_use]
+    /// Get the normal of the triangle.
     pub fn unit_normal(&self) -> Vec3A {
         (self.p[1] - self.p[0]).cross(self.p[2] - self.p[0]).normalize()
     }
 
-    /// Check if a sphere intersects the triangle.
     #[allow(clippy::many_single_char_names)]
     #[must_use]
+    /// Check if a sphere intersects the triangle.
     pub fn intersect_sphere(&self, b: &Sphere) -> bool {
         let e1 = self.p[1] - self.p[0];
         let e2 = self.p[2] - self.p[1];
@@ -73,47 +105,40 @@ pub struct Aabb {
 }
 
 impl Aabb {
-    /// Create a new AABB.
     #[must_use]
     #[inline]
-    pub const fn from(min: Vec3A, max: Vec3A) -> Self {
+    /// Create a new AABB.
+    pub const fn from_minmax(min: Vec3A, max: Vec3A) -> Self {
         Self { min, max }
     }
 
-    /// The minimum point contained in the AABB.
     #[must_use]
     #[inline]
-    pub const fn min(&self) -> Vec3A {
+    /// The minimum point contained in the AABB.
+    pub const fn min(self) -> Vec3A {
         self.min
     }
 
-    /// The maximum point contained in the AABB.
     #[must_use]
     #[inline]
-    pub const fn max(&self) -> Vec3A {
+    /// The maximum point contained in the AABB.
+    pub const fn max(self) -> Vec3A {
         self.max
     }
 
-    /// Combine two AABBs.
     #[must_use]
-    pub fn add(&self, b: &Self) -> Self {
+    #[inline]
+    /// Create an AABB from a triangle.
+    pub fn from_tri(t: &Tri) -> Self {
         Self {
-            min: self.min.min(b.min),
-            max: self.max.max(b.max),
+            min: t.p.into_iter().reduce(Vec3A::min).unwrap(),
+            max: t.p.into_iter().reduce(Vec3A::max).unwrap(),
         }
     }
 
-    /// Create an AABB from a triangle.
     #[must_use]
-    pub fn from_tri(t: &Tri) -> Self {
-        let min = t.p.into_iter().reduce(Vec3A::min).unwrap();
-        let max = t.p.into_iter().reduce(Vec3A::max).unwrap();
-
-        Self { min, max }
-    }
-
+    #[inline]
     /// Create an AABB from a sphere
-    #[must_use]
     pub fn from_sphere(s: &Sphere) -> Self {
         Self {
             min: s.center - s.radius,
@@ -121,14 +146,16 @@ impl Aabb {
         }
     }
 
-    /// Check if another AABB intersects this one.
     #[must_use]
+    #[inline]
+    /// Check if another AABB intersects this one.
     pub fn intersect_self(&self, b: &Self) -> bool {
         self.min.cmple(b.max).all() && self.max.cmpge(b.min).all()
     }
 
-    /// Check if a sphere intersects this AABB.
     #[must_use]
+    #[inline]
+    /// Check if a sphere intersects this AABB.
     pub fn intersect_sphere(&self, b: &Sphere) -> bool {
         let nearest = b.center.clamp(self.min, self.max);
 
@@ -136,13 +163,27 @@ impl Aabb {
     }
 }
 
+impl Add for Aabb {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, rhs: Self) -> Self {
+        Self {
+            min: self.min.min(rhs.min),
+            max: self.max.max(rhs.max),
+        }
+    }
+}
+
 impl From<&'_ Tri> for Aabb {
+    #[inline]
     fn from(value: &'_ Tri) -> Self {
         Self::from_tri(value)
     }
 }
 
 impl From<&'_ Sphere> for Aabb {
+    #[inline]
     fn from(value: &'_ Sphere) -> Self {
         Self::from_sphere(value)
     }
@@ -166,46 +207,10 @@ pub struct Sphere {
     pub radius: f32,
 }
 
-/// A generic object bounding box
-#[derive(Clone, Copy, Debug, Default)]
-pub struct Obb {
-    /// Location of the center of the OBB.
-    pub center: Vec3A,
-    /// Distance of the center to the front, side, and top of the OBB.
-    pub half_width: Vec3A,
-    /// Rotation of the OBB.
-    pub orientation: Mat3A,
-}
-
-impl Obb {
-    /// Create a new OBB.
-    #[must_use]
-    pub fn new(location: Vec3A, orientation: Mat3A, dimensions: Vec3A, offset: Vec3A) -> Self {
-        Self {
-            orientation,
-            half_width: dimensions / 2.,
-            center: dot(orientation, offset) + location,
-        }
-    }
-
-    /// Get the closest point on the OBB to a given point.
-    #[must_use]
-    pub fn closest_point_on_obb(&self, v: Vec3A) -> Vec3A {
-        let mut v_local = local(v - self.center, self.orientation);
-
-        v_local[0] = v_local[0].clamp(-self.half_width[0], self.half_width[0]);
-        v_local[1] = v_local[1].clamp(-self.half_width[1], self.half_width[1]);
-        v_local[2] = v_local[2].clamp(-self.half_width[2], self.half_width[2]);
-
-        dot(self.orientation, v_local) + self.center
-    }
-}
-
 #[cfg(test)]
 mod test {
-    use glam::Vec3A;
-
     use super::*;
+    use glam::Vec3A;
 
     const TRI: Tri = Tri {
         p: [Vec3A::new(-1.0, 5.0, 0.0), Vec3A::new(2.0, 2.0, -3.0), Vec3A::new(5.0, 5.0, 0.0)],
