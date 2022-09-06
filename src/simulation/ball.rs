@@ -18,7 +18,7 @@ pub struct Ball {
     pub radius: f32,
     /// Size of the ball for collisions
     pub collision_radius: f32,
-    /// Momemnt of inertia of the ball
+    /// Moment of inertia of the ball
     pub moi: f32,
 }
 
@@ -176,17 +176,13 @@ impl Ball {
         self.get_ball_prediction_struct_for_slices(game, Self::STANDARD_NUM_SLICES)
     }
 
+    #[inline]
     /// Simulate the ball for a given amount of ticks
-    pub fn get_ball_prediction_struct_for_slices(self, game: &Game, num_slices: usize) -> BallPrediction {
-        let mut ball = self;
-        let mut slices = Vec::with_capacity(num_slices);
-
-        for _ in 0..num_slices {
-            ball.step(game, Self::SIMULATION_DT);
-            slices.push(ball);
-        }
-
-        slices
+    pub fn get_ball_prediction_struct_for_slices(mut self, game: &Game, num_slices: usize) -> BallPrediction {
+        (0..num_slices).map(|_| {
+            self.step(game, Self::SIMULATION_DT);
+            self
+        }).collect()
     }
 }
 
