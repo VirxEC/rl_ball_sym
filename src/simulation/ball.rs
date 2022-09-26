@@ -108,6 +108,16 @@ impl Ball {
         self.moi = 0.4 * Self::M * self.radius * self.radius;
     }
 
+    /// Get the radius of the ball
+    pub fn radius(&self) -> f32 {
+        self.radius
+    }
+
+    /// Get the collision radius of the ball
+    pub fn collision_radius(&self) -> f32 {
+        self.collision_radius
+    }
+
     /// Updates the ball with everything that changes from game tick to game tick
     pub fn update(&mut self, time: f32, location: Vec3A, velocity: Vec3A, angular_velocity: Vec3A) {
         self.time = time;
