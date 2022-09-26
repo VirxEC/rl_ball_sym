@@ -1,4 +1,4 @@
-use rl_ball_sym::{glam::Vec3A, load_soccar, simulation::ball::BallPrediction};
+use rl_ball_sym::{load_soccar, BallPrediction, Vec3A};
 
 fn main() {
     // load a standard soccer match

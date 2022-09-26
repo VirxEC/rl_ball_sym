@@ -5,7 +5,7 @@ use glam::Vec3A;
 
 /// Basic data for generating morton codes.
 #[derive(Clone, Copy, Debug, Default)]
-pub struct Morton {
+pub(crate) struct Morton {
     offset: Vec3A,
     scale: Vec3A,
 }
@@ -19,20 +19,6 @@ impl Morton {
         let scale = 1_048_575. / (global_box.max() - offset);
 
         Self { offset, scale }
-    }
-
-    /// Get the vector offset.
-    #[must_use]
-    #[inline]
-    pub const fn offset(self) -> Vec3A {
-        self.offset
-    }
-
-    /// Get the vector scale.
-    #[must_use]
-    #[inline]
-    pub const fn scale(self) -> Vec3A {
-        self.scale
     }
 
     /// Prepare a 21-bit unsigned int for inverweaving.
@@ -59,5 +45,49 @@ impl Morton {
 
         // These should actually be 21 bits, but there's no u21 type and the final type is u64 (21 bits * 3 = 63 bits)
         Self::expand3(u.x as u32) | Self::expand3(u.y as u32) << 1 | Self::expand3(u.z as u32) << 2
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Morton;
+    use crate::simulation::geometry::Aabb;
+    use glam::Vec3A;
+
+    #[test]
+    fn morton() {
+        let global_box = Aabb::from_minmax(Vec3A::new(-4096., -5120., 0.), Vec3A::new(4096., 5120., 2044.));
+
+        let morton = Morton::from(global_box);
+
+        let box_ = Aabb::from_minmax(Vec3A::new(-4095., -5119., 1.), Vec3A::new(-4094., -5118., 2.));
+
+        // let code = morton.get_code(&box_);
+        let c = (box_.min() + box_.max()) / 2.;
+
+        let u = (c - morton.offset) * morton.scale;
+        dbg!(&u);
+
+        let code_x = Morton::expand3(u.x as u32);
+        dbg!(code_x);
+        dbg!(format!("{:b}", u.x as u32));
+        dbg!(format!("{:b}", code_x));
+        assert_eq!(format!("{:b}", code_x), "1000001001001001001001"); // 001000001001001001001001
+
+        let code_y = Morton::expand3(u.y as u32) << 1;
+        dbg!(code_y);
+        dbg!(format!("{:b}", u.y as u32));
+        dbg!(format!("{:b}", code_y));
+        assert_eq!(format!("{:b}", code_y), "10000000010010000000010"); // 010000000010010000000010
+
+        let code_z = Morton::expand3(u.z as u32) << 2;
+        dbg!(code_z);
+        dbg!(format!("{:b}", u.z as u32));
+        dbg!(format!("{:b}", code_z));
+        assert_eq!(format!("{:b}", code_z), "100100000000000000000000000100");
+
+        let code = code_z | code_y | code_x;
+        dbg!(&code); // 610317903
+        assert_eq!(format!("{:b}", code as u32), "100100011000001011011001001111");
     }
 }

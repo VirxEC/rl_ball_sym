@@ -22,9 +22,8 @@ impl MatrixExt for Mat3A {
 
 #[cfg(test)]
 mod test {
+    use super::MatrixExt;
     use glam::Mat3A;
-
-    use crate::linear_algebra::mat::MatrixExt;
 
     const A: Mat3A = Mat3A::from_cols_array_2d(&[[-1., 2., 3.], [4., 5., 6.], [7., 8., 9.]]);
     const B: Mat3A = Mat3A::from_cols_array_2d(&[[9., 8., 7.], [6., -5., 4.], [3., 2., 1.]]);

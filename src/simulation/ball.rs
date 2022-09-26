@@ -15,11 +15,11 @@ pub struct Ball {
     /// Rotational velocity of the ball
     pub angular_velocity: Vec3A,
     /// Size of the ball
-    pub radius: f32,
+    pub(crate) radius: f32,
     /// Size of the ball for collisions
-    pub collision_radius: f32,
+    pub(crate) collision_radius: f32,
     /// Moment of inertia of the ball
-    pub moi: f32,
+    pub(crate) moi: f32,
 }
 
 /// Collection of Balls representing future predictions based on field geometry
@@ -90,14 +90,21 @@ impl Ball {
         ball
     }
 
+    /// Set a custom radius for the ball
+    pub fn set_radius(&mut self, radius: f32, collision_radius: f32) {
+        self.radius = radius;
+        self.collision_radius = collision_radius;
+        self.calculate_moi();
+    }
+
     /// Sets a value location and calculates the moi
-    pub fn initialize(&mut self) {
+    fn initialize(&mut self) {
         self.location.z = 1.1 * self.collision_radius;
         self.calculate_moi();
     }
 
     /// Calculates the moment of inertia of the ball
-    pub fn calculate_moi(&mut self) {
+    fn calculate_moi(&mut self) {
         self.moi = 0.4 * Self::M * self.radius * self.radius;
     }
 
@@ -123,44 +130,45 @@ impl Ball {
     ///
     /// `dt` - The delta time (game tick length)
     pub fn step(&mut self, game: &Game, dt: f32) {
-        let g = if self.velocity.length_squared() != 0. { game.gravity } else { Vec3A::ZERO };
+        if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
+            match game.collision_mesh.collide(&self.hitbox()) {
+                Some(contact) => {
+                    let p = contact.start;
+                    let n = contact.direction;
 
-        match game.collision_mesh.collide(&self.hitbox()) {
-            Some(contact) => {
-                let p = contact.start;
-                let n = contact.direction;
+                    let loc = p - self.location;
 
-                let loc = p - self.location;
+                    let m_reduced = 1. / (Self::INV_M + loc.length_squared() / self.moi);
 
-                let m_reduced = 1. / (Self::INV_M + loc.length_squared() / self.moi);
+                    let v_perp = n * self.velocity.dot(n).min(0.);
+                    let v_para = self.velocity - v_perp - loc.cross(self.angular_velocity);
 
-                let v_perp = n * self.velocity.dot(n).min(0.);
-                let v_para = self.velocity - v_perp - loc.cross(self.angular_velocity);
+                    let ratio = v_perp.length() / v_para.length().max(0.0001);
 
-                let ratio = v_perp.length() / v_para.length().max(0.0001);
+                    let j_perp = v_perp * Self::RESTITUTION_M;
+                    let j_para = -(Self::MU * ratio).min(1.) * m_reduced * v_para;
 
-                let j_perp = v_perp * Self::RESTITUTION_M;
-                let j_para = -(Self::MU * ratio).min(1.) * m_reduced * v_para;
+                    let j = j_perp + j_para;
 
-                let j = j_perp + j_para;
+                    self.angular_velocity += loc.cross(j) / self.moi;
+                    self.velocity += (j / Self::M) + (Self::DRAG * self.velocity + game.gravity) * dt;
+                    self.location += self.velocity * dt;
 
-                self.angular_velocity += loc.cross(j) / self.moi;
-                self.velocity += (j / Self::M) + (Self::DRAG * self.velocity + g) * dt;
-                self.location += self.velocity * dt;
-
-                let penetration = self.collision_radius - (self.location - p).dot(n);
-                if penetration > 0. {
-                    self.location += n * (1.001 * penetration);
+                    let penetration = self.collision_radius - (self.location - p).dot(n);
+                    if penetration > 0. {
+                        self.location += n * (1.001 * penetration);
+                    }
+                }
+                None => {
+                    self.velocity += (self.velocity * Self::DRAG + game.gravity) * dt;
+                    self.location += self.velocity * dt;
                 }
             }
-            None => {
-                self.velocity += (self.velocity * Self::DRAG + g) * dt;
-                self.location += self.velocity * dt;
-            }
+
+            self.angular_velocity *= (Self::W_MAX * self.angular_velocity.length_recip()).min(1.);
+            self.velocity *= (Self::V_MAX * self.velocity.length_recip()).min(1.);
         }
 
-        self.angular_velocity *= (Self::W_MAX * self.angular_velocity.length_recip()).min(1.);
-        self.velocity *= (Self::V_MAX * self.velocity.length_recip()).min(1.);
         self.time += dt;
     }
 
@@ -179,10 +187,12 @@ impl Ball {
     #[inline]
     /// Simulate the ball for a given amount of ticks
     pub fn get_ball_prediction_struct_for_slices(mut self, game: &Game, num_slices: usize) -> BallPrediction {
-        (0..num_slices).map(|_| {
-            self.step(game, Self::SIMULATION_DT);
-            self
-        }).collect()
+        (0..num_slices)
+            .map(|_| {
+                self.step(game, Self::SIMULATION_DT);
+                self
+            })
+            .collect()
     }
 }
 

@@ -1,12 +1,5 @@
 use rand::Rng;
-use rl_ball_sym::{
-    glam::Vec3A,
-    load_soccar,
-    simulation::{
-        ball::{Ball, BallPrediction},
-        game::Game,
-    },
-};
+use rl_ball_sym::{load_soccar, Ball, BallPrediction, Game, Vec3A};
 use std::sync::RwLock;
 
 // RwLock's can only have one reader, but they can have multiple writers enabling safe parallel access to the data once it's been initilized

@@ -16,9 +16,8 @@ pub fn dot(matrix: Mat3A, vector: Vec3A) -> Vec3A {
 
 #[cfg(test)]
 mod test {
+    use super::dot;
     use glam::{Mat3A, Vec3A};
-
-    use crate::linear_algebra::math::dot;
 
     #[allow(clippy::approx_constant)]
     const MAT: Mat3A = Mat3A::from_cols_array_2d(&[

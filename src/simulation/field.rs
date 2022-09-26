@@ -3,31 +3,34 @@ use crate::linear_algebra::{
     mat::MatrixExt,
     math::{axis_to_rotation, dot},
 };
-use glam::{Mat3A, Vec3, Vec3A};
+use glam::{Mat3A, Vec3A};
 use std::f32::consts::{FRAC_PI_3, FRAC_PI_6};
 
 const FLIP_X: Mat3A = Mat3A::from_cols_array_2d(&[[-1., 0., 0.], [0., 1., 0.], [0., 0., 1.]]);
 const FLIP_Y: Mat3A = Mat3A::from_cols_array_2d(&[[1., 0., 0.], [0., -1., 0.], [0., 0., 1.]]);
 
+#[inline]
 fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
-    let vertices = [p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2].iter().flat_map(glam::Vec3A::to_array).collect();
-
-    Mesh::from(vec![0, 1, 3, 1, 2, 3], vertices)
+    Mesh::from(
+        vec![0, 1, 3, 1, 2, 3],
+        [p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2].iter().flat_map(Vec3A::to_array).collect(),
+    )
 }
 
 #[must_use]
 /// Get a BVH generated from the given soccar field meshes.
-pub(crate) fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar_ramps_0: &Mesh, soccar_ramps_1: &Mesh) -> Bvh {
-    let scale = 100.;
+pub(crate) fn initialize_soccer(soccer_corner: &Mesh, soccer_goal: &Mesh, soccer_ramps_0: &Mesh, soccer_ramps_1: &Mesh) -> Bvh {
+    const SCALE: f32 = 100.;
 
-    let s = Mat3A::from_diagonal(Vec3::splat(scale));
+    // NOTE: Use Mat3A::from_diagonal(Vec3A::splat(SCALE)) here, when when from_diagonal is const-ified.
+    const S: Mat3A = Mat3A::from_cols_array(&[SCALE, 0., 0., 0., SCALE, 0., 0., 0., SCALE]);
 
-    let soccar_corner = soccar_corner.transform(s);
-    let soccar_goal = soccar_goal.transform(s);
-    let soccar_ramps_0 = soccar_ramps_0.transform(s);
-    let soccar_ramps_1 = soccar_ramps_1.transform(s);
+    let soccar_corner = soccer_corner.transform(S);
+    let soccar_goal = soccer_goal.transform(S);
+    let soccar_ramps_0 = soccer_ramps_0.transform(S);
+    let soccar_ramps_1 = soccer_ramps_1.transform(S);
 
-    let floor = quad(Vec3A::default(), Vec3A::new(4096., 0., 0.), Vec3A::new(0., 5500., 0.));
+    let floor = quad(Vec3A::ZERO, Vec3A::new(4096., 0., 0.), Vec3A::new(0., 5500., 0.));
     let ceiling = quad(Vec3A::new(0., 0., 2048.), Vec3A::new(-4096., 0., 0.), Vec3A::new(0., 5120., 0.));
     let side_walls = [
         quad(Vec3A::new(4096., 0., 1024.), Vec3A::new(0., -5120., 0.), Vec3A::new(0., 0., 1024.)),
@@ -51,24 +54,24 @@ pub(crate) fn initialize_soccar(soccar_corner: &Mesh, soccar_goal: &Mesh, soccar
         &side_walls[1],
     ]);
 
-    let triangles = field_mesh.to_triangles();
-    Bvh::from(&triangles)
+    Bvh::from(&field_mesh.to_triangles())
 }
 
 #[must_use]
 /// Get a BVH generated from the given hoops field meshes.
 pub(crate) fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim: &Mesh, hoops_ramps_0: &Mesh, hoops_ramps_1: &Mesh) -> Bvh {
-    let scale = 0.9;
-    let y_offset = 431.664;
+    const SCALE: f32 = 0.9;
+    const Y_OFFSET: f32 = 431.664;
 
-    let s = Mat3A::from_diagonal(Vec3::splat(scale));
+    // NOTE: Use Mat3A::from_diagonal(Vec3A::splat(SCALE)) here, when when from_diagonal is const-ified.
+    const S: Mat3A = Mat3A::from_cols_array(&[SCALE, 0., 0., 0., SCALE, 0., 0., 0., SCALE]);
 
-    let dy = Vec3A::new(0., y_offset, 0.);
+    const DY: Vec3A = Vec3A::new(0., Y_OFFSET, 0.);
 
-    let transformed_hoops_net = hoops_net.transform(s).translate(dy);
-    let transformed_hoops_rim = hoops_rim.transform(s).translate(dy);
+    let transformed_hoops_net = hoops_net.transform(S).translate(DY);
+    let transformed_hoops_rim = hoops_rim.transform(S).translate(DY);
 
-    let floor = quad(Vec3A::default(), Vec3A::new(2966., 0., 0.), Vec3A::new(0., 3581., 0.));
+    let floor = quad(Vec3A::ZERO, Vec3A::new(2966., 0., 0.), Vec3A::new(0., 3581., 0.));
 
     let ceiling = quad(Vec3A::new(0., 0., 1820.), Vec3A::new(-2966., 0., 0.), Vec3A::new(0., 3581., 0.));
 
@@ -103,40 +106,41 @@ pub(crate) fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim:
         &back_walls[1],
     ]);
 
-    let triangles = field_mesh.to_triangles();
-
-    Bvh::from(&triangles)
+    Bvh::from(&field_mesh.to_triangles())
 }
 
 #[must_use]
 /// Get a BVH generated from the given dropshot field meshes.
 pub(crate) fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
-    let scale = 0.393;
-    let z_offset = -207.565;
+    const SCALE: f32 = 0.393;
+    const Z_OFFSET: f32 = -207.565;
 
     let q = axis_to_rotation(Vec3A::new(0., 0., FRAC_PI_6));
 
-    let s = Mat3A::from_diagonal(Vec3::splat(scale));
+    // NOTE: Use Mat3A::from_diagonal(Vec3A::splat(SCALE)) here, when when from_diagonal is const-ified.
+    const S: Mat3A = Mat3A::from_cols_array(&[SCALE, 0., 0., 0., SCALE, 0., 0., 0., SCALE]);
 
-    let dz = Vec3A::new(0., 0., z_offset);
+    const DZ: Vec3A = Vec3A::new(0., 0., Z_OFFSET);
 
     let floor = quad(Vec3A::new(0., 0., 2.), Vec3A::new(10000., 0., 0.), Vec3A::new(0., 7000., 0.));
     let ceiling = quad(Vec3A::new(0., 0., 2020.), Vec3A::new(-10000., 0., 0.), Vec3A::new(0., 7000., 0.));
-    let mut walls: Vec<Mesh> = Vec::with_capacity(6);
 
-    let mut p = Vec3A::new(0., 11683.6 * scale, 2768.64 * scale - z_offset);
+    let mut p = Vec3A::new(0., 11683.6 * SCALE, 2768.64 * SCALE - Z_OFFSET);
     let mut x = Vec3A::new(5000., 0., 0.);
-    let z = Vec3A::new(0., 0., 1010.);
+    const Z: Vec3A = Vec3A::new(0., 0., 1010.);
     let r = axis_to_rotation(Vec3A::new(0., 0., FRAC_PI_3));
 
-    for _ in 0..6 {
-        walls.push(quad(p, x, z));
-        p = dot(r, p);
-        x = dot(r, x);
-    }
+    let walls = (0..6)
+        .map(|_| {
+            let result = quad(p, x, Z);
+            p = dot(r, p);
+            x = dot(r, x);
+            result
+        })
+        .collect::<Vec<_>>();
 
     let field_mesh = Mesh::combine(&[
-        &dropshot.transform(q.dot(s)).translate(dz),
+        &dropshot.transform(q.dot(S)).translate(DZ),
         &floor,
         &ceiling,
         &walls[0],
@@ -147,9 +151,7 @@ pub(crate) fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
         &walls[5],
     ]);
 
-    let triangles = field_mesh.to_triangles();
-
-    Bvh::from(&triangles)
+    Bvh::from(&field_mesh.to_triangles())
 }
 
 pub(crate) struct InitializeThrowbackParams<'a> {
@@ -181,11 +183,12 @@ pub(crate) fn initialize_throwback(
         side_ramps_upper,
     }: InitializeThrowbackParams<'_>,
 ) -> Bvh {
-    let scale = 100.;
+    const SCALE: f32 = 100.;
 
-    let s = Mat3A::from_diagonal(Vec3::splat(scale));
+    // NOTE: Use Mat3A::from_diagonal(Vec3A::splat(SCALE)) here, when when from_diagonal is const-ified.
+    const S: Mat3A = Mat3A::from_cols_array(&[SCALE, 0., 0., 0., SCALE, 0., 0., 0., SCALE]);
 
-    let floor = quad(Vec3A::default(), Vec3A::new(4096.6, 0., 0.), Vec3A::new(0., 6910., 0.));
+    let floor = quad(Vec3A::ZERO, Vec3A::new(4096.6, 0., 0.), Vec3A::new(0., 6910., 0.));
     let ceiling = quad(Vec3A::new(0., 0., 2048.), Vec3A::new(-4096.6, 0., 0.), Vec3A::new(0., 6910., 0.));
     let side_walls: [Mesh; 2] = [
         quad(Vec3A::new(4096.6, 0., 1024.), Vec3A::new(0., -6910., 0.), Vec3A::new(0., 0., 1024.)),
@@ -196,16 +199,16 @@ pub(crate) fn initialize_throwback(
         quad(Vec3A::new(0., -6910., 1024.), Vec3A::new(-4096., 0., 0.), Vec3A::new(0., 0., 1024.)),
     ];
 
-    let throwback_goal = goal.transform(s);
-    let throwback_side_ramps_lower = side_ramps_lower.transform(s);
-    let throwback_side_ramps_upper = side_ramps_upper.transform(s);
-    let throwback_back_ramps_lower = back_ramps_lower.transform(s);
-    let throwback_back_ramps_upper = back_ramps_upper.transform(s);
-    let throwback_corner_ramps_lower = corner_ramps_lower.transform(s);
-    let throwback_corner_ramps_upper = corner_ramps_upper.transform(s);
-    let throwback_corner_wall_0 = corner_wall_0.transform(s);
-    let throwback_corner_wall_1 = corner_wall_1.transform(s);
-    let throwback_corner_wall_2 = corner_wall_2.transform(s);
+    let throwback_goal = goal.transform(S);
+    let throwback_side_ramps_lower = side_ramps_lower.transform(S);
+    let throwback_side_ramps_upper = side_ramps_upper.transform(S);
+    let throwback_back_ramps_lower = back_ramps_lower.transform(S);
+    let throwback_back_ramps_upper = back_ramps_upper.transform(S);
+    let throwback_corner_ramps_lower = corner_ramps_lower.transform(S);
+    let throwback_corner_ramps_upper = corner_ramps_upper.transform(S);
+    let throwback_corner_wall_0 = corner_wall_0.transform(S);
+    let throwback_corner_wall_1 = corner_wall_1.transform(S);
+    let throwback_corner_wall_2 = corner_wall_2.transform(S);
 
     let field_mesh = Mesh::combine(&[
         &throwback_corner_ramps_lower,

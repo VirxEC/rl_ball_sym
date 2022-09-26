@@ -18,8 +18,9 @@ fn load_soccar_throwback_benchmark(c: &mut Criterion) {
 }
 
 fn get_ball_prediction_struct_with_time_benchmark(c: &mut Criterion) {
-    let (game, ball) = load_soccar();
+    let (game, mut ball) = load_soccar();
     let time = 8.;
+    ball.velocity.z = f32::EPSILON;
 
     c.bench_with_input(BenchmarkId::new("get_ball_prediction_struct_for_time", time), &time, |b, time| {
         b.iter(|| ball.get_ball_prediction_struct_for_time(black_box(&game), time))
@@ -27,25 +28,29 @@ fn get_ball_prediction_struct_with_time_benchmark(c: &mut Criterion) {
 }
 
 fn get_ball_prediction_struct_benchmark(c: &mut Criterion) {
-    let (game, ball) = load_soccar();
+    let (game, mut ball) = load_soccar();
+    ball.velocity.z = f32::EPSILON;
 
     c.bench_function("get_ball_prediction/soccar", |b| b.iter(|| ball.get_ball_prediction_struct(black_box(&game))));
 }
 
 fn get_ball_prediction_struct_hoops_benchmark(c: &mut Criterion) {
-    let (game, ball) = load_hoops();
+    let (game, mut ball) = load_hoops();
+    ball.velocity.z = f32::EPSILON;
 
     c.bench_function("get_ball_prediction/hoops", |b| b.iter(|| ball.get_ball_prediction_struct(black_box(&game))));
 }
 
 fn get_ball_prediction_struct_dropshot(c: &mut Criterion) {
-    let (game, ball) = load_dropshot();
+    let (game, mut ball) = load_dropshot();
+    ball.velocity.z = f32::EPSILON;
 
     c.bench_function("get_ball_prediction/dropshot", |b| b.iter(|| ball.get_ball_prediction_struct(black_box(&game))));
 }
 
 fn get_ball_prediction_struct_throwback(c: &mut Criterion) {
-    let (game, ball) = load_soccar_throwback();
+    let (game, mut ball) = load_soccar_throwback();
+    ball.velocity.z = f32::EPSILON;
 
     c.bench_function("get_ball_prediction/throwback", |b| b.iter(|| ball.get_ball_prediction_struct(black_box(&game))));
 }

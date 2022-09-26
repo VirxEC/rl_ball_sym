@@ -2,16 +2,47 @@
 
 use super::geometry::Tri;
 use crate::linear_algebra::math::dot;
+use byteorder::{LittleEndian, ReadBytesExt};
 use glam::{Mat3A, Vec3A};
+use std::io::Cursor;
 
 /// A collection of inter-connected triangles.
 #[derive(Clone, Debug, Default)]
-pub struct Mesh {
+pub(crate) struct Mesh {
     ids: Vec<usize>,
     vertices: Vec<f32>,
 }
 
 impl Mesh {
+    #[must_use]
+    pub fn from_bytes(ids_dat: &[u8], vertices_dat: &[u8]) -> Mesh {
+        let ids = {
+            let ids_len = ids_dat.len() / 4;
+            let mut ids_cursor = Cursor::new(ids_dat);
+
+            (0..ids_len)
+                .map(|_| match ids_cursor.read_u32::<LittleEndian>() {
+                    Ok(id) => id as usize,
+                    Err(e) => panic!("Problem parsing ***_ids.dat: {:?}", e),
+                })
+                .collect::<Vec<_>>()
+        };
+
+        let vertices = {
+            let vertices_len = vertices_dat.len() / 4;
+            let mut vertices_cursor = Cursor::new(vertices_dat);
+
+            (0..vertices_len)
+                .map(|_| match vertices_cursor.read_f32::<LittleEndian>() {
+                    Ok(vertex) => vertex,
+                    Err(e) => panic!("Problem parsing ***_vertices.dat: {:?}", e),
+                })
+                .collect::<Vec<_>>()
+        };
+
+        Mesh::from(ids, vertices)
+    }
+
     #[must_use]
     #[inline]
     /// Create a new Mesh from a list of ids and vertices.

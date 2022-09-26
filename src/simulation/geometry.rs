@@ -2,7 +2,7 @@
 
 use crate::linear_algebra::math::dot;
 use glam::{Mat3A, Vec3A};
-use std::ops::Add;
+use std::{array::IntoIter, ops::Add};
 
 #[must_use]
 /// Find the distance between a ray and a point.
@@ -13,63 +13,60 @@ pub fn distance_between(start: Vec3A, dir: Vec3A, p: Vec3A) -> f32 {
 
 /// A triangle made from 3 points.
 #[derive(Clone, Copy, Debug, Default)]
-pub struct Tri {
-    p: [Vec3A; 3],
+pub(crate) struct Tri([Vec3A; 3]);
+
+impl IntoIterator for Tri {
+    type Item = Vec3A;
+    type IntoIter = IntoIter<Vec3A, 3>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
 }
 
 impl Tri {
     #[must_use]
     #[inline]
+    #[allow(dead_code)]
     /// Get one of the points of the triangle. Panics if the index is out of bounds.
+    ///
+    /// Used in tests.
     pub const fn get_point(&self, i: usize) -> Vec3A {
-        self.p[i]
+        self.0[i]
     }
 
     #[must_use]
     #[inline]
     /// Create a new triangle from 3 points
     pub const fn from_points(p0: Vec3A, p1: Vec3A, p2: Vec3A) -> Self {
-        Self { p: [p0, p1, p2] }
-    }
-
-    #[must_use]
-    #[inline]
-    /// Create a new triangle from a slice of points
-    pub const fn from_array(p: [Vec3A; 3]) -> Self {
-        Self { p }
-    }
-
-    #[must_use]
-    #[inline]
-    /// Create a new triangle from a slice of points
-    pub const fn from_slice(p: &[Vec3A]) -> Self {
-        Self { p: [p[0], p[1], p[2]] }
+        Self([p0, p1, p2])
     }
 
     #[must_use]
     #[inline]
     /// Get the center of the triangle.
     pub fn center(&self) -> Vec3A {
-        (self.p[0] + self.p[1] + self.p[2]) / 3.
+        (self.0[0] + self.0[1] + self.0[2]) / 3.
     }
 
     #[must_use]
     /// Get the normal of the triangle.
     pub fn unit_normal(&self) -> Vec3A {
-        (self.p[1] - self.p[0]).cross(self.p[2] - self.p[0]).normalize()
+        (self.0[1] - self.0[0]).cross(self.0[2] - self.0[0]).normalize()
     }
 
     #[allow(clippy::many_single_char_names)]
     #[must_use]
     /// Check if a sphere intersects the triangle.
     pub fn intersect_sphere(&self, b: &Sphere) -> bool {
-        let e1 = self.p[1] - self.p[0];
-        let e2 = self.p[2] - self.p[1];
-        let e3 = self.p[0] - self.p[2];
+        let e1 = self.0[1] - self.0[0];
+        let e2 = self.0[2] - self.0[1];
+        let e3 = self.0[0] - self.0[2];
         let n = e3.cross(e1).normalize();
 
         let a = Mat3A::from_cols_array_2d(&[[e1.x, -e3.x, n.x], [e1.y, -e3.y, n.y], [e1.z, -e3.z, n.z]]);
-        let x = dot(a.inverse(), b.center - self.p[0]);
+        let x = dot(a.inverse(), b.center - self.0[0]);
 
         let u = x.x;
         let v = x.y;
@@ -86,9 +83,9 @@ impl Tri {
             z.abs()
         } else {
             (b.radius + 1.)
-                .min(distance_between(self.p[0], e1, b.center))
-                .min(distance_between(self.p[1], e2, b.center))
-                .min(distance_between(self.p[2], e3, b.center))
+                .min(distance_between(self.0[0], e1, b.center))
+                .min(distance_between(self.0[1], e2, b.center))
+                .min(distance_between(self.0[2], e3, b.center))
         };
 
         dist <= b.radius
@@ -99,7 +96,7 @@ impl Tri {
 // Learn more here: https://developer.nvidia.com/blog/thinking-parallel-part-i-collision-detection-gpu/
 /// An axis-aligned bounding box.
 #[derive(Clone, Copy, Debug, Default)]
-pub struct Aabb {
+pub(crate) struct Aabb {
     min: Vec3A,
     max: Vec3A,
 }
@@ -107,7 +104,10 @@ pub struct Aabb {
 impl Aabb {
     #[must_use]
     #[inline]
+    #[allow(dead_code)]
     /// Create a new AABB.
+    ///
+    /// Used in tests.
     pub const fn from_minmax(min: Vec3A, max: Vec3A) -> Self {
         Self { min, max }
     }
@@ -131,8 +131,8 @@ impl Aabb {
     /// Create an AABB from a triangle.
     pub fn from_tri(t: &Tri) -> Self {
         Self {
-            min: t.p.into_iter().reduce(Vec3A::min).unwrap(),
-            max: t.p.into_iter().reduce(Vec3A::max).unwrap(),
+            min: t.into_iter().reduce(Vec3A::min).unwrap(),
+            max: t.into_iter().reduce(Vec3A::max).unwrap(),
         }
     }
 
@@ -155,7 +155,10 @@ impl Aabb {
 
     #[must_use]
     #[inline]
+    #[allow(dead_code)]
     /// Check if a sphere intersects this AABB.
+    ///
+    /// Used in tests.
     pub fn intersect_sphere(&self, b: &Sphere) -> bool {
         let nearest = b.center.clamp(self.min, self.max);
 
@@ -212,9 +215,7 @@ mod test {
     use super::*;
     use glam::Vec3A;
 
-    const TRI: Tri = Tri {
-        p: [Vec3A::new(-1.0, 5.0, 0.0), Vec3A::new(2.0, 2.0, -3.0), Vec3A::new(5.0, 5.0, 0.0)],
-    };
+    const TRI: Tri = Tri::from_points(Vec3A::new(-1.0, 5.0, 0.0), Vec3A::new(2.0, 2.0, -3.0), Vec3A::new(5.0, 5.0, 0.0));
 
     const SPHERE: Sphere = Sphere {
         center: Vec3A::new(1.0, 0.0, 1.0),
