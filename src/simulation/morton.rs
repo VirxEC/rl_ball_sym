@@ -44,12 +44,17 @@ impl Morton {
         let u = (c - self.offset) * self.scale;
 
         // These should actually be 21 bits, but there's no u21 type and the final type is u64 (21 bits * 3 = 63 bits)
-        Self::expand3(u.x as u32) | Self::expand3(u.y as u32) << 1 | Self::expand3(u.z as u32) << 2
+        // Allowing these warnings is ok because:
+        // We have offset the values so they're all greater than 0
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        (Self::expand3(u.x as u32) | Self::expand3(u.y as u32) << 1 | Self::expand3(u.z as u32) << 2)
     }
 }
 
 #[cfg(test)]
 mod test {
+    #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+
     use super::Morton;
     use crate::simulation::geometry::Aabb;
     use glam::Vec3A;

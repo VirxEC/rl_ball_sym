@@ -50,70 +50,76 @@ impl Ball {
 
     /// Sets the default values for a soccar ball
     #[must_use]
+    #[inline]
     pub fn initialize_soccar() -> Self {
-        let mut ball = Self {
+        Self {
             radius: Self::SOCCAR_RADIUS,
             collision_radius: Self::SOCCAR_COLLISION_RADIUS,
+            moi: Self::calculate_moi(Self::SOCCAR_RADIUS),
+            location: Self::default_height(Self::SOCCAR_COLLISION_RADIUS),
             ..Default::default()
-        };
-
-        ball.initialize();
-
-        ball
+        }
     }
 
     /// Sets the default values for a hoops ball
     #[must_use]
+    #[inline]
     pub fn initialize_hoops() -> Self {
-        let mut ball = Self {
+        Self {
             radius: Self::HOOPS_RADIUS,
             collision_radius: Self::HOOPS_COLLISION_RADIUS,
+            moi: Self::calculate_moi(Self::HOOPS_RADIUS),
+            location: Self::default_height(Self::HOOPS_COLLISION_RADIUS),
             ..Default::default()
-        };
-
-        ball.initialize();
-
-        ball
+        }
     }
 
     /// Sets the default values for a dropshot ball
     #[must_use]
+    #[inline]
     pub fn initialize_dropshot() -> Self {
-        let mut ball = Self {
+        Self {
             radius: Self::DROPSHOT_RADIUS,
             collision_radius: Self::DROPSHOT_COLLISION_RADIUS,
+            moi: Self::calculate_moi(Self::DROPSHOT_RADIUS),
+            location: Self::default_height(Self::DROPSHOT_COLLISION_RADIUS),
             ..Default::default()
-        };
-
-        ball.initialize();
-
-        ball
+        }
     }
 
     /// Set a custom radius for the ball
     pub fn set_radius(&mut self, radius: f32, collision_radius: f32) {
+        debug_assert!(radius > 0.);
+        debug_assert!(collision_radius > 0.);
         self.radius = radius;
         self.collision_radius = collision_radius;
-        self.calculate_moi();
+        self.moi = Self::calculate_moi(radius);
     }
 
-    /// Sets a value location and calculates the moi
-    fn initialize(&mut self) {
-        self.location.z = 1.1 * self.collision_radius;
-        self.calculate_moi();
+    /// Calculates the default ball height based on the collision radius (arbitrary)
+    #[must_use]
+    #[inline]
+    fn default_height(collision_radius: f32) -> Vec3A {
+        Vec3A::new(0., 0., 1.1 * collision_radius)
     }
 
     /// Calculates the moment of inertia of the ball
-    fn calculate_moi(&mut self) {
-        self.moi = 0.4 * Self::M * self.radius * self.radius;
+    #[must_use]
+    #[inline]
+    fn calculate_moi(radius: f32) -> f32 {
+        0.4 * Self::M * radius * radius
     }
 
     /// Get the radius of the ball
+    #[must_use]
+    #[inline]
     pub fn radius(&self) -> f32 {
         self.radius
     }
 
     /// Get the collision radius of the ball
+    #[must_use]
+    #[inline]
     pub fn collision_radius(&self) -> f32 {
         self.collision_radius
     }
@@ -141,38 +147,35 @@ impl Ball {
     /// `dt` - The delta time (game tick length)
     pub fn step(&mut self, game: &Game, dt: f32) {
         if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
-            match game.collision_mesh.collide(&self.hitbox()) {
-                Some(contact) => {
-                    let p = contact.start;
-                    let n = contact.direction;
+            if let Some(contact) = game.collision_mesh.collide(&self.hitbox()) {
+                let p = contact.start;
+                let n = contact.direction;
 
-                    let loc = p - self.location;
+                let loc = p - self.location;
 
-                    let m_reduced = 1. / (Self::INV_M + loc.length_squared() / self.moi);
+                let m_reduced = 1. / (Self::INV_M + loc.length_squared() / self.moi);
 
-                    let v_perp = n * self.velocity.dot(n).min(0.);
-                    let v_para = self.velocity - v_perp - loc.cross(self.angular_velocity);
+                let v_perp = n * self.velocity.dot(n).min(0.);
+                let v_para = self.velocity - v_perp - loc.cross(self.angular_velocity);
 
-                    let ratio = v_perp.length() / v_para.length().max(0.0001);
+                let ratio = v_perp.length() / v_para.length().max(0.0001);
 
-                    let j_perp = v_perp * Self::RESTITUTION_M;
-                    let j_para = -(Self::MU * ratio).min(1.) * m_reduced * v_para;
+                let j_perp = v_perp * Self::RESTITUTION_M;
+                let j_para = -(Self::MU * ratio).min(1.) * m_reduced * v_para;
 
-                    let j = j_perp + j_para;
+                let j = j_perp + j_para;
 
-                    self.angular_velocity += loc.cross(j) / self.moi;
-                    self.velocity += (j / Self::M) + (Self::DRAG * self.velocity + game.gravity) * dt;
-                    self.location += self.velocity * dt;
+                self.angular_velocity += loc.cross(j) / self.moi;
+                self.velocity = (self.velocity + j / Self::M) * (1. + Self::DRAG).powf(dt) + game.gravity * dt;
+                self.location += self.velocity * dt;
 
-                    let penetration = self.collision_radius - (self.location - p).dot(n);
-                    if penetration > 0. {
-                        self.location += n * (1.001 * penetration);
-                    }
+                let penetration = self.collision_radius - (self.location - p).dot(n);
+                if penetration > 0. {
+                    self.location += n * (1.001 * penetration);
                 }
-                None => {
-                    self.velocity += (self.velocity * Self::DRAG + game.gravity) * dt;
-                    self.location += self.velocity * dt;
-                }
+            } else {
+                self.velocity = self.velocity * (1. + Self::DRAG).powf(dt) + game.gravity * dt;
+                self.location += self.velocity * dt;
             }
 
             self.angular_velocity *= (Self::W_MAX * self.angular_velocity.length_recip()).min(1.);
@@ -182,20 +185,28 @@ impl Ball {
         self.time += dt;
     }
 
+    /// Simulate the ball for at least the given amount of time
     #[inline]
-    /// Simulate the ball for a given amount of time
-    pub fn get_ball_prediction_struct_for_time(self, game: &Game, time: &f32) -> BallPrediction {
-        self.get_ball_prediction_struct_for_slices(game, (time / Self::SIMULATION_DT).round() as usize)
+    #[must_use]
+    pub fn get_ball_prediction_struct_for_time(self, game: &Game, time: f32) -> BallPrediction {
+        debug_assert!(time >= 0.);
+        // Ignoring these warnings is ok because:
+        // We are rounding up to the nearest integer so no truncation will occur
+        // We are making sure that the minimum possible value is 0 so no sign loss will occur
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        self.get_ball_prediction_struct_for_slices(game, (time / Self::SIMULATION_DT).ceil() as usize)
     }
 
+    /// Simulate the ball for the standard amount of time (6 seconds)
     #[inline]
-    /// Simulate the ball for the stand amount of time
+    #[must_use]
     pub fn get_ball_prediction_struct(self, game: &Game) -> BallPrediction {
         self.get_ball_prediction_struct_for_slices(game, Self::STANDARD_NUM_SLICES)
     }
 
-    #[inline]
     /// Simulate the ball for a given amount of ticks
+    #[inline]
+    #[must_use]
     pub fn get_ball_prediction_struct_for_slices(mut self, game: &Game, num_slices: usize) -> BallPrediction {
         (0..num_slices)
             .map(|_| {
@@ -237,9 +248,10 @@ mod test {
 
         let (game, ball) = load_soccar();
 
-        let prediction = ball.get_ball_prediction_struct_for_time(&game, &REQUESTED_TIME);
+        let prediction = ball.get_ball_prediction_struct_for_time(&game, REQUESTED_TIME);
 
-        let predicted_slices = (REQUESTED_TIME / Ball::SIMULATION_DT).round() as usize;
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let predicted_slices = (REQUESTED_TIME / Ball::SIMULATION_DT).ceil().max(0.) as usize;
 
         assert_eq!(prediction.len(), predicted_slices);
     }

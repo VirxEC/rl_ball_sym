@@ -4,7 +4,7 @@ use super::{
     geometry::{Aabb, Ray, Sphere, Tri},
     morton::Morton,
 };
-use std::boxed::Box;
+use std::{boxed::Box, convert::Into};
 
 /// A leaf in the BVH.
 #[derive(Clone, Copy, Debug)]
@@ -87,15 +87,16 @@ pub(crate) struct Bvh {
     pub root: BvhNode,
 }
 
+#[inline]
 fn global_aabb(boxes: &[Aabb]) -> Aabb {
-    boxes.iter().fold(boxes[0], |a, b| a + *b)
+    boxes.iter().copied().fold(boxes[0], |a, b| a + b)
 }
 
 impl Bvh {
     #[must_use]
     /// Creates a new BVH from a list of primitives.
     pub fn from(primitives: &[Tri]) -> Self {
-        let boxes: Vec<Aabb> = primitives.iter().map(|primitive| primitive.into()).collect();
+        let boxes: Vec<Aabb> = primitives.iter().map(Into::into).collect();
         let global_box = global_aabb(&boxes);
         let morton = Morton::from(global_box);
 
@@ -197,7 +198,7 @@ impl Bvh {
         }
 
         let mut contact_point = Ray::default();
-        let mut count = 0;
+        let mut count: i16 = 0;
 
         for tri in tris_hit {
             let p = tri.center();
@@ -211,7 +212,7 @@ impl Bvh {
             }
         }
 
-        contact_point.start /= count as f32;
+        contact_point.start /= f32::from(count);
         contact_point.direction = contact_point.direction.normalize_or_zero();
 
         Some(contact_point)
@@ -220,6 +221,8 @@ impl Bvh {
 
 #[cfg(test)]
 mod test {
+    #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+
     use super::*;
     use crate::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
     use criterion::black_box;
@@ -492,14 +495,14 @@ mod test {
         assert_eq!(ball.collision_radius as i64, 93);
 
         ball.update(
-            0.098145,
+            0.098_145,
             Vec3A::new(-2294.5247, 1684.136, 317.17673),
-            Vec3A::new(1273.7537, -39.792305, 763.2827),
+            Vec3A::new(1273.7537, -39.792_305, 763.2827),
             Vec3A::new(2.3894, -0.8755, 3.8078),
         );
 
         let time = 60.; // 1 minute, lol
-        let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, &time);
+        let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, time);
         assert_eq!(ball_prediction.len(), time as usize * 120);
 
         let iters = 20000;
@@ -567,14 +570,14 @@ mod test {
         assert_eq!(ball.collision_radius as i64, 93);
 
         ball.update(
-            0.098145,
+            0.098_145,
             Vec3A::new(-2294.5247, 1684.136, 317.17673),
-            Vec3A::new(1273.7537, -39.792305, 763.2827),
+            Vec3A::new(1273.7537, -39.792_305, 763.2827),
             Vec3A::new(2.3894, -0.8755, 3.8078),
         );
 
         let time = 60.; // 1 minute, lol
-        let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, &time);
+        let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, time);
         assert_eq!(ball_prediction.len(), time as usize * 120);
 
         let iters = 200;
@@ -744,87 +747,50 @@ mod test {
         assert_eq!(ball.collision_radius as i64, 93);
     }
 
+    fn recurse_bvhnode(node: &BvhNode, depth: usize, max_depth: &mut usize) {
+        if depth > *max_depth {
+            *max_depth = depth;
+        }
+
+        if let BvhNode::Branch(branch) = node {
+            recurse_bvhnode(&branch.left, depth + 1, max_depth);
+            recurse_bvhnode(&branch.right, depth + 1, max_depth);
+        }
+    }
+
     #[test]
     fn hierarchy_depth_throwback_soccar() {
         let (game, _) = load_soccar_throwback();
-
         let mut max_depth = 0;
 
-        fn recurse(node: &BvhNode, depth: usize, max_depth: &mut usize) {
-            if depth > *max_depth {
-                *max_depth = depth;
-            }
-
-            if let BvhNode::Branch(branch) = node {
-                recurse(&branch.left, depth + 1, max_depth);
-                recurse(&branch.right, depth + 1, max_depth);
-            }
-        }
-
-        recurse(&game.collision_mesh.root, 0, &mut max_depth);
+        recurse_bvhnode(&game.collision_mesh.root, 0, &mut max_depth);
         assert_eq!(max_depth, 14);
     }
 
     #[test]
     fn hierarchy_depth_hoops() {
         let (game, _) = load_hoops();
-
         let mut max_depth = 0;
 
-        fn recurse(node: &BvhNode, depth: usize, max_depth: &mut usize) {
-            if depth > *max_depth {
-                *max_depth = depth;
-            }
-
-            if let BvhNode::Branch(branch) = node {
-                recurse(&branch.left, depth + 1, max_depth);
-                recurse(&branch.right, depth + 1, max_depth);
-            }
-        }
-
-        recurse(&game.collision_mesh.root, 0, &mut max_depth);
+        recurse_bvhnode(&game.collision_mesh.root, 0, &mut max_depth);
         assert_eq!(max_depth, 14);
     }
 
     #[test]
     fn hierarchy_depth_soccar() {
         let (game, _) = load_soccar();
-
         let mut max_depth = 0;
 
-        fn recurse(node: &BvhNode, depth: usize, max_depth: &mut usize) {
-            if depth > *max_depth {
-                *max_depth = depth;
-            }
-
-            if let BvhNode::Branch(branch) = node {
-                recurse(&branch.left, depth + 1, max_depth);
-                recurse(&branch.right, depth + 1, max_depth);
-            }
-        }
-
-        recurse(&game.collision_mesh.root, 0, &mut max_depth);
+        recurse_bvhnode(&game.collision_mesh.root, 0, &mut max_depth);
         assert_eq!(max_depth, 13);
     }
 
     #[test]
     fn hierarchy_depth_dropshot() {
         let (game, _) = load_dropshot();
-
         let mut max_depth = 0;
 
-        fn recurse(node: &BvhNode, depth: usize, max_depth: &mut usize) {
-            if depth > *max_depth {
-                *max_depth = depth;
-            }
-
-            if let BvhNode::Branch(branch) = node {
-                recurse(&branch.left, depth + 1, max_depth);
-                recurse(&branch.right, depth + 1, max_depth);
-            }
-        }
-
-        recurse(&game.collision_mesh.root, 0, &mut max_depth);
+        recurse_bvhnode(&game.collision_mesh.root, 0, &mut max_depth);
         assert_eq!(max_depth, 12);
     }
 }

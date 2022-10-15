@@ -1,10 +1,10 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
-//! rl_ball_sym is a Rust implementation of a simulation of the Rocket League ball inside it's field.
+//! `rl_ball_sym` is a Rust implementation of a simulation of the Rocket League ball inside it's field.
 //! It loads the real geometry from the game and simulates the ball's movement in nanoseconds.
 //!
-//! ## Example: ultra_basic
+//! ## Example: `ultra_basic`
 //!
 //! ```
 //! use rl_ball_sym::{load_soccar, BallPrediction, Vec3A};
@@ -50,10 +50,10 @@ macro_rules! include_mesh {
 /// Returns a Game object with a standard soccer field and soccer ball.
 #[must_use]
 pub fn load_soccer() -> (Game, Ball) {
-    let soccer_corner = include_mesh!("../assets/soccar/soccar_corner_ids.bin", "../assets/soccar/soccar_corner_vertices.bin");
-    let soccer_goal = include_mesh!("../assets/soccar/soccar_goal_ids.bin", "../assets/soccar/soccar_goal_vertices.bin");
-    let soccer_ramps_0 = include_mesh!("../assets/soccar/soccar_ramps_0_ids.bin", "../assets/soccar/soccar_ramps_0_vertices.bin");
-    let soccer_ramps_1 = include_mesh!("../assets/soccar/soccar_ramps_1_ids.bin", "../assets/soccar/soccar_ramps_1_vertices.bin");
+    let soccer_corner = include_mesh!("../assets/soccer/soccer_corner_ids.bin", "../assets/soccer/soccer_corner_vertices.bin");
+    let soccer_goal = include_mesh!("../assets/soccer/soccer_goal_ids.bin", "../assets/soccer/soccer_goal_vertices.bin");
+    let soccer_ramps_0 = include_mesh!("../assets/soccer/soccer_ramps_0_ids.bin", "../assets/soccer/soccer_ramps_0_vertices.bin");
+    let soccer_ramps_1 = include_mesh!("../assets/soccer/soccer_ramps_1_ids.bin", "../assets/soccer/soccer_ramps_1_vertices.bin");
 
     let collision_mesh = initialize_soccer(&soccer_corner, &soccer_goal, &soccer_ramps_0, &soccer_ramps_1);
 
@@ -91,9 +91,9 @@ pub fn load_dropshot() -> (Game, Ball) {
     (Game::new(collision_mesh), Ball::initialize_dropshot())
 }
 
-/// Returns a Game object with throwback stadium and a standard soccar ball.
+/// Returns a Game object with throwback stadium and a standard soccer ball.
 #[must_use]
-pub fn load_soccar_throwback() -> (Game, Ball) {
+pub fn load_soccer_throwback() -> (Game, Ball) {
     let back_ramps_lower = include_mesh!(
         "../assets/throwback/throwback_back_ramps_lower_ids.bin",
         "../assets/throwback/throwback_back_ramps_lower_vertices.bin"
@@ -147,4 +147,11 @@ pub fn load_soccar_throwback() -> (Game, Ball) {
     let collision_mesh = initialize_throwback(params);
 
     (Game::new(collision_mesh), Ball::initialize_soccar())
+}
+
+/// Returns a Game object with throwback stadium and a standard soccar ball.
+#[must_use]
+#[inline]
+pub fn load_soccar_throwback() -> (Game, Ball) {
+    load_soccer_throwback()
 }

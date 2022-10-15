@@ -15,7 +15,7 @@ fn predict_custom_soccar() {
     let time = 8.;
     ball.velocity.z = -100.;
 
-    let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, &time);
+    let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, time);
     assert_eq!(ball_prediction.len(), 960);
 }
 

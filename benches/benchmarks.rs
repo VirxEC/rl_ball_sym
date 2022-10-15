@@ -23,7 +23,7 @@ fn get_ball_prediction_struct_with_time_benchmark(c: &mut Criterion) {
     ball.velocity.z = f32::EPSILON;
 
     c.bench_with_input(BenchmarkId::new("get_ball_prediction_struct_for_time", time), &time, |b, time| {
-        b.iter(|| ball.get_ball_prediction_struct_for_time(black_box(&game), time))
+        b.iter(|| ball.get_ball_prediction_struct_for_time(black_box(&game), *time))
     });
 }
 

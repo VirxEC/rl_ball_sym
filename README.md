@@ -23,3 +23,19 @@ For example, to run the example `basic.rs`:
 ```bat
 cargo run --example basic
 ```
+
+## Performance numbers
+
+Numbers are from a system running Ubuntu 22.04.1 with a Ryzen 9 5900X with 3600MHz CL18 RAM.
+
+Numbers _will_ vary depending on your system.
+
++ `load_soccer`: Loads 8028 triangles, executes in around `910µs`
++ `load_hoops`: Loads 15732 triangles, executes in around `1.82ms`
++ `load_dropshot`: Loads 3616 triangles, executes in around `410µs`
++ `load_soccer_throwback`: Loads 9272 triangles, executes in around `1.16ms`
++ `get_ball_prediction_struct_for_time`: Soccer + 8 seconds, executes in around `140µs`
++ `get_ball_prediction`: Soccer + 6 seconds, executes in around `110µs`
++ `get_ball_prediction`: Hoops + 6 seconds, executes in around `200µs`
++ `get_ball_prediction`: Dropshot + 6 seconds, executes in around `90µs`
++ `get_ball_prediction`: Soccer + Throwback Stadium + 6 seconds, executes in around `110µs`

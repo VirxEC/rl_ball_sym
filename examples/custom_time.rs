@@ -53,8 +53,8 @@ fn get_output(ball_location: Vec3A, ball_velocity: Vec3A, ball_angular_velocity:
     // generate the ball prediction struct for 12 seconds into the future
     // it generates 120 slices per second
     let prediction_time = 12.;
-    let ball_prediction: BallPrediction = ball.get_ball_prediction_struct_for_time(game, &prediction_time);
-    assert_eq!(ball_prediction.len(), (120. * prediction_time).round() as usize);
+    let ball_prediction: BallPrediction = ball.get_ball_prediction_struct_for_time(game, prediction_time);
+    assert_eq!(ball_prediction.len(), (120. * prediction_time).ceil() as usize);
 
     // ball is not modified, it stays the same!
     assert_eq!(ball.time, time);

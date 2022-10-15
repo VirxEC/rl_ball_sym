@@ -1,6 +1,6 @@
 [package]
 name = "rl_ball_sym"
-version = "2.2.1"
+version = "2.3.0"
 authors = ["VirxEC"]
 edition = "2021"
 description = "Rust implementation of ball path prediction for Rocket League; Inspired by Samuel (Chip) P. Mish's C++ utils called RLUtilities"
@@ -9,7 +9,7 @@ repository = "https://github.com/VirxEC/rl_ball_sym"
 license = "GPL-3.0-only"
 keywords = ["rocket-league", "rlbot", "physics", "simulation"]
 categories = ["science", "simulation", "mathematics"]
-include = ["src/", "assets/", "benches/"]
+include = ["src/", "assets/"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

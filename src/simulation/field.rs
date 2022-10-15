@@ -25,10 +25,10 @@ pub(crate) fn initialize_soccer(soccer_corner: &Mesh, soccer_goal: &Mesh, soccer
     // NOTE: Use Mat3A::from_diagonal(Vec3A::splat(SCALE)) here, when when from_diagonal is const-ified.
     const S: Mat3A = Mat3A::from_cols_array(&[SCALE, 0., 0., 0., SCALE, 0., 0., 0., SCALE]);
 
-    let soccar_corner = soccer_corner.transform(S);
-    let soccar_goal = soccer_goal.transform(S);
-    let soccar_ramps_0 = soccer_ramps_0.transform(S);
-    let soccar_ramps_1 = soccer_ramps_1.transform(S);
+    let soccar_corner_tf = soccer_corner.transform(S);
+    let soccar_goal_tf = soccer_goal.transform(S);
+    let soccar_ramps_0_tf = soccer_ramps_0.transform(S);
+    let soccar_ramps_1_tf = soccer_ramps_1.transform(S);
 
     let floor = quad(Vec3A::ZERO, Vec3A::new(4096., 0., 0.), Vec3A::new(0., 5500., 0.));
     let ceiling = quad(Vec3A::new(0., 0., 2048.), Vec3A::new(-4096., 0., 0.), Vec3A::new(0., 5120., 0.));
@@ -38,16 +38,16 @@ pub(crate) fn initialize_soccer(soccer_corner: &Mesh, soccer_goal: &Mesh, soccer
     ];
 
     let field_mesh = Mesh::combine(&[
-        &soccar_corner,
-        &soccar_corner.transform(FLIP_X),
-        &soccar_corner.transform(FLIP_Y),
-        &soccar_corner.transform(FLIP_X.dot(FLIP_Y)),
-        &soccar_goal.translate(Vec3A::new(0., -5120., 0.)),
-        &soccar_goal.translate(Vec3A::new(0., -5120., 0.)).transform(FLIP_Y),
-        &soccar_ramps_0,
-        &soccar_ramps_0.transform(FLIP_X),
-        &soccar_ramps_1,
-        &soccar_ramps_1.transform(FLIP_X),
+        &soccar_corner_tf,
+        &soccar_corner_tf.transform(FLIP_X),
+        &soccar_corner_tf.transform(FLIP_Y),
+        &soccar_corner_tf.transform(FLIP_X.dot(FLIP_Y)),
+        &soccar_goal_tf.translate(Vec3A::new(0., -5120., 0.)),
+        &soccar_goal_tf.translate(Vec3A::new(0., -5120., 0.)).transform(FLIP_Y),
+        &soccar_ramps_0_tf,
+        &soccar_ramps_0_tf.transform(FLIP_X),
+        &soccar_ramps_1_tf,
+        &soccar_ramps_1_tf.transform(FLIP_X),
         &floor,
         &ceiling,
         &side_walls[0],
@@ -114,20 +114,18 @@ pub(crate) fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim:
 pub(crate) fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
     const SCALE: f32 = 0.393;
     const Z_OFFSET: f32 = -207.565;
-
-    let q = axis_to_rotation(Vec3A::new(0., 0., FRAC_PI_6));
-
     // NOTE: Use Mat3A::from_diagonal(Vec3A::splat(SCALE)) here, when when from_diagonal is const-ified.
     const S: Mat3A = Mat3A::from_cols_array(&[SCALE, 0., 0., 0., SCALE, 0., 0., 0., SCALE]);
-
+    const Z: Vec3A = Vec3A::new(0., 0., 1010.);
     const DZ: Vec3A = Vec3A::new(0., 0., Z_OFFSET);
+
+    let q = axis_to_rotation(Vec3A::new(0., 0., FRAC_PI_6));
 
     let floor = quad(Vec3A::new(0., 0., 2.), Vec3A::new(10000., 0., 0.), Vec3A::new(0., 7000., 0.));
     let ceiling = quad(Vec3A::new(0., 0., 2020.), Vec3A::new(-10000., 0., 0.), Vec3A::new(0., 7000., 0.));
 
     let mut p = Vec3A::new(0., 11683.6 * SCALE, 2768.64 * SCALE - Z_OFFSET);
     let mut x = Vec3A::new(5000., 0., 0.);
-    const Z: Vec3A = Vec3A::new(0., 0., 1010.);
     let r = axis_to_rotation(Vec3A::new(0., 0., FRAC_PI_3));
 
     let walls = (0..6)

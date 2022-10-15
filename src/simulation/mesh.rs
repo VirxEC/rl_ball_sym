@@ -53,17 +53,16 @@ impl Mesh {
     #[must_use]
     /// Combine different meshes all into one
     pub fn combine(other_meshes: &[&Self]) -> Self {
-        let mut id_offset = 0;
-
         let n_ids = other_meshes.iter().map(|mesh| mesh.ids.len()).sum();
         let mut ids: Vec<usize> = Vec::with_capacity(n_ids);
+        let mut id_offset = 0;
 
         for m in other_meshes {
             ids.extend(m.ids.iter().map(|id| id + id_offset));
             id_offset += m.vertices.len() / 3;
         }
 
-        let vertices: Vec<f32> = other_meshes.iter().flat_map(|m| &m.vertices).cloned().collect();
+        let vertices: Vec<f32> = other_meshes.iter().flat_map(|m| &m.vertices).copied().collect();
 
         Self { ids, vertices }
     }
