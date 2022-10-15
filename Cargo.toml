@@ -36,4 +36,5 @@ lto = "fat"
 
 [[bench]]
 name = "benchmarks"
+path = "benches/benchmarks.rs"
 harness = false
