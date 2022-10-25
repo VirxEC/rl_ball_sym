@@ -23,7 +23,7 @@ impl Mesh {
             (0..ids_len)
                 .map(|_| match ids_cursor.read_u32::<LittleEndian>() {
                     Ok(id) => id as usize,
-                    Err(e) => panic!("Problem parsing ***_ids.dat: {:?}", e),
+                    Err(e) => panic!("Problem parsing ***_ids.dat: {e:?}"),
                 })
                 .collect::<Vec<_>>()
         };
@@ -35,7 +35,7 @@ impl Mesh {
             (0..vertices_len)
                 .map(|_| match vertices_cursor.read_f32::<LittleEndian>() {
                     Ok(vertex) => vertex,
-                    Err(e) => panic!("Problem parsing ***_vertices.dat: {:?}", e),
+                    Err(e) => panic!("Problem parsing ***_vertices.dat: {e:?}"),
                 })
                 .collect::<Vec<_>>()
         };

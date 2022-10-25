@@ -3,7 +3,7 @@ use crate::linear_algebra::{
     mat::MatrixExt,
     math::{axis_to_rotation, dot},
 };
-use glam::{Mat3A, Vec3A};
+use glam::{Mat3A, Vec3A, Vec3};
 use std::f32::consts::{FRAC_PI_3, FRAC_PI_6};
 
 const FLIP_X: Mat3A = Mat3A::from_cols_array_2d(&[[-1., 0., 0.], [0., 1., 0.], [0., 0., 1.]]);
@@ -21,9 +21,7 @@ fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
 /// Get a BVH generated from the given soccar field meshes.
 pub(crate) fn initialize_soccer(soccer_corner: &Mesh, soccer_goal: &Mesh, soccer_ramps_0: &Mesh, soccer_ramps_1: &Mesh) -> Bvh {
     const SCALE: f32 = 100.;
-
-    // NOTE: Use Mat3A::from_diagonal(Vec3A::splat(SCALE)) here, when when from_diagonal is const-ified.
-    const S: Mat3A = Mat3A::from_cols_array(&[SCALE, 0., 0., 0., SCALE, 0., 0., 0., SCALE]);
+    const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
 
     let soccar_corner_tf = soccer_corner.transform(S);
     let soccar_goal_tf = soccer_goal.transform(S);
@@ -63,8 +61,7 @@ pub(crate) fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim:
     const SCALE: f32 = 0.9;
     const Y_OFFSET: f32 = 431.664;
 
-    // NOTE: Use Mat3A::from_diagonal(Vec3A::splat(SCALE)) here, when when from_diagonal is const-ified.
-    const S: Mat3A = Mat3A::from_cols_array(&[SCALE, 0., 0., 0., SCALE, 0., 0., 0., SCALE]);
+    const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
 
     const DY: Vec3A = Vec3A::new(0., Y_OFFSET, 0.);
 
@@ -114,8 +111,7 @@ pub(crate) fn initialize_hoops(hoops_corner: &Mesh, hoops_net: &Mesh, hoops_rim:
 pub(crate) fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
     const SCALE: f32 = 0.393;
     const Z_OFFSET: f32 = -207.565;
-    // NOTE: Use Mat3A::from_diagonal(Vec3A::splat(SCALE)) here, when when from_diagonal is const-ified.
-    const S: Mat3A = Mat3A::from_cols_array(&[SCALE, 0., 0., 0., SCALE, 0., 0., 0., SCALE]);
+    const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
     const Z: Vec3A = Vec3A::new(0., 0., 1010.);
     const DZ: Vec3A = Vec3A::new(0., 0., Z_OFFSET);
 
@@ -182,9 +178,7 @@ pub(crate) fn initialize_throwback(
     }: InitializeThrowbackParams<'_>,
 ) -> Bvh {
     const SCALE: f32 = 100.;
-
-    // NOTE: Use Mat3A::from_diagonal(Vec3A::splat(SCALE)) here, when when from_diagonal is const-ified.
-    const S: Mat3A = Mat3A::from_cols_array(&[SCALE, 0., 0., 0., SCALE, 0., 0., 0., SCALE]);
+    const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
 
     let floor = quad(Vec3A::ZERO, Vec3A::new(4096.6, 0., 0.), Vec3A::new(0., 6910., 0.));
     let ceiling = quad(Vec3A::new(0., 0., 2048.), Vec3A::new(-4096.6, 0., 0.), Vec3A::new(0., 6910., 0.));

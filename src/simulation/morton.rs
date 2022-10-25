@@ -76,20 +76,20 @@ mod test {
         let code_x = Morton::expand3(u.x as u32);
         dbg!(code_x);
         dbg!(format!("{:b}", u.x as u32));
-        dbg!(format!("{:b}", code_x));
-        assert_eq!(format!("{:b}", code_x), "1000001001001001001001"); // 001000001001001001001001
+        dbg!(format!("{code_x:b}"));
+        assert_eq!(format!("{code_x:b}"), "1000001001001001001001"); // 001000001001001001001001
 
         let code_y = Morton::expand3(u.y as u32) << 1;
         dbg!(code_y);
         dbg!(format!("{:b}", u.y as u32));
-        dbg!(format!("{:b}", code_y));
-        assert_eq!(format!("{:b}", code_y), "10000000010010000000010"); // 010000000010010000000010
+        dbg!(format!("{code_y:b}"));
+        assert_eq!(format!("{code_y:b}"), "10000000010010000000010"); // 010000000010010000000010
 
         let code_z = Morton::expand3(u.z as u32) << 2;
         dbg!(code_z);
         dbg!(format!("{:b}", u.z as u32));
-        dbg!(format!("{:b}", code_z));
-        assert_eq!(format!("{:b}", code_z), "100100000000000000000000000100");
+        dbg!(format!("{code_z:b}"));
+        assert_eq!(format!("{code_z:b}"), "100100000000000000000000000100");
 
         let code = code_z | code_y | code_x;
         dbg!(&code); // 610317903

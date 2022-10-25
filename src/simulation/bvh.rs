@@ -133,13 +133,13 @@ impl Bvh {
 
     #[must_use]
     /// Returns a Vec of the triangles intersecting with the `query_object`.
-    pub fn intersect(&self, query_object: &Sphere) -> Vec<Tri> /*ReArr<Tri, 4>*/ {
-        let query_box: Aabb = query_object.into();
+    pub fn intersect(&self, query_object: &Sphere) -> Vec<Tri> {
+        const STACK: ReArr<&BvhNode, 8> = rearr![];
 
+        let query_box: Aabb = query_object.into();
         let mut hits = Vec::with_capacity(4);
 
         // Allocate traversal stack from thread-local memory
-        const STACK: ReArr<&BvhNode, 8> = rearr![];
         let mut stack = STACK;
 
         // Traverse nodes starting from the root.
