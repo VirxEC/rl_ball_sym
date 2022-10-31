@@ -200,23 +200,25 @@ impl Bvh {
             return None;
         }
 
-        let (mut contact_point, count) = tris_hit
-            .iter()
-            .fold((Ray::default(), 0.), |(mut contact_point, mut count), tri| {
-                let p = tri.center();
-                let n = tri.unit_normal();
+        let (mut contact_point, count) = tris_hit.iter().fold((Ray::default(), 0u16), |(mut contact_point, mut count), tri| {
+            let p = tri.center();
+            let n = tri.unit_normal();
 
-                let separation = (s.center - p).dot(n);
-                if separation <= s.radius {
-                    count += 1.;
-                    contact_point.start += s.center - n * separation;
-                    contact_point.direction += n * (s.radius - separation);
-                }
+            let separation = (s.center - p).dot(n);
+            if separation <= s.radius {
+                count += 1;
+                contact_point.start += s.center - n * separation;
+                contact_point.direction += n * (s.radius - separation);
+            }
 
-                (contact_point, count)
-            });
+            (contact_point, count)
+        });
 
-        contact_point.start /= count;
+        if count == 0 {
+            return None;
+        }
+
+        contact_point.start /= f32::from(count);
         contact_point.direction = contact_point.direction.normalize_or_zero();
 
         Some(contact_point)
