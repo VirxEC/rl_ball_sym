@@ -1,5 +1,9 @@
 use rand::Rng;
-use rl_ball_sym::{load_soccar, Ball, BallPrediction, Game, Vec3A};
+#[cfg(feature = "compression")]
+use rl_ball_sym::compressed::load_soccar;
+#[cfg(all(feature = "uncompressed", not(feature = "compression")))]
+use rl_ball_sym::load_soccar;
+use rl_ball_sym::{Ball, BallPrediction, Game, Vec3A};
 use std::sync::RwLock;
 
 // RwLock's can only have one reader, but they can have multiple writers enabling safe parallel access to the data once it's been initilized

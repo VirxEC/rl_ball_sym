@@ -40,13 +40,13 @@ impl Mesh {
                 .collect::<Vec<_>>()
         };
 
-        Mesh::from(ids, vertices)
+        Mesh::new(ids, vertices)
     }
 
     #[must_use]
     #[inline]
     /// Create a new Mesh from a list of ids and vertices.
-    pub const fn from(ids: Vec<usize>, vertices: Vec<f32>) -> Self {
+    pub const fn new(ids: Vec<usize>, vertices: Vec<f32>) -> Self {
         Self { ids, vertices }
     }
 

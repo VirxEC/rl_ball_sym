@@ -3,7 +3,7 @@ use crate::linear_algebra::{
     mat::MatrixExt,
     math::{axis_to_rotation, dot},
 };
-use glam::{Mat3A, Vec3A, Vec3};
+use glam::{Mat3A, Vec3, Vec3A};
 use std::f32::consts::{FRAC_PI_3, FRAC_PI_6};
 
 const FLIP_X: Mat3A = Mat3A::from_cols_array_2d(&[[-1., 0., 0.], [0., 1., 0.], [0., 0., 1.]]);
@@ -11,7 +11,7 @@ const FLIP_Y: Mat3A = Mat3A::from_cols_array_2d(&[[1., 0., 0.], [0., -1., 0.], [
 
 #[inline]
 fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
-    Mesh::from(
+    Mesh::new(
         vec![0, 1, 3, 1, 2, 3],
         [p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2].iter().flat_map(Vec3A::to_array).collect(),
     )

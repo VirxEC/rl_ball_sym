@@ -59,7 +59,7 @@ impl Tri {
     #[allow(clippy::many_single_char_names)]
     #[must_use]
     /// Check if a sphere intersects the triangle.
-    pub fn intersect_sphere(&self, b: &Sphere) -> bool {
+    pub fn intersect_sphere(&self, b: Sphere) -> bool {
         let e1 = self.0[1] - self.0[0];
         let e2 = self.0[2] - self.0[1];
         let e3 = self.0[0] - self.0[2];
@@ -129,7 +129,7 @@ impl Aabb {
     #[must_use]
     #[inline]
     /// Create an AABB from a triangle.
-    pub fn from_tri(t: &Tri) -> Self {
+    pub fn from_tri(t: Tri) -> Self {
         Self {
             min: t.into_iter().reduce(Vec3A::min).unwrap(),
             max: t.into_iter().reduce(Vec3A::max).unwrap(),
@@ -139,7 +139,7 @@ impl Aabb {
     #[must_use]
     #[inline]
     /// Create an AABB from a sphere
-    pub fn from_sphere(s: &Sphere) -> Self {
+    pub fn from_sphere(s: Sphere) -> Self {
         Self {
             min: s.center - s.radius,
             max: s.center + s.radius,
@@ -181,13 +181,13 @@ impl Add for Aabb {
 impl From<&'_ Tri> for Aabb {
     #[inline]
     fn from(value: &'_ Tri) -> Self {
-        Self::from_tri(value)
+        Self::from_tri(*value)
     }
 }
 
-impl From<&'_ Sphere> for Aabb {
+impl From<Sphere> for Aabb {
     #[inline]
-    fn from(value: &'_ Sphere) -> Self {
+    fn from(value: Sphere) -> Self {
         Self::from_sphere(value)
     }
 }
@@ -249,7 +249,7 @@ mod test {
                 radius: 0.5,
             };
 
-            assert!(TRI.intersect_sphere(&sphere));
+            assert!(TRI.intersect_sphere(sphere));
         }
         {
             let sphere = Sphere {
@@ -257,7 +257,7 @@ mod test {
                 radius: 0.5,
             };
 
-            assert!(TRI.intersect_sphere(&sphere));
+            assert!(TRI.intersect_sphere(sphere));
         }
     }
 
@@ -269,7 +269,7 @@ mod test {
                 radius: 1.0,
             };
 
-            assert!(!TRI.intersect_sphere(&sphere));
+            assert!(!TRI.intersect_sphere(sphere));
         }
         {
             let sphere = Sphere {
@@ -277,7 +277,7 @@ mod test {
                 radius: 1.0,
             };
 
-            assert!(!TRI.intersect_sphere(&sphere));
+            assert!(!TRI.intersect_sphere(sphere));
         }
     }
 

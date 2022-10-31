@@ -133,7 +133,7 @@ impl Bvh {
 
     #[must_use]
     /// Returns a Vec of the triangles intersecting with the `query_object`.
-    pub fn intersect(&self, query_object: &Sphere) -> Vec<Tri> {
+    pub fn intersect(&self, query_object: Sphere) -> Vec<Tri> {
         const STACK: ReArr<&BvhNode, 8> = rearr![];
 
         let query_box: Aabb = query_object.into();
@@ -194,28 +194,29 @@ impl Bvh {
     #[must_use]
     /// Returns the calculated ray-intersection of the given Sphere and the BVH.
     /// Returns None if no intersecting objects were found in the BVH.
-    pub fn collide(&self, s: &Sphere) -> Option<Ray> {
+    pub fn collide(&self, s: Sphere) -> Option<Ray> {
         let tris_hit = self.intersect(s);
         if tris_hit.is_empty() {
             return None;
         }
 
-        let mut contact_point = Ray::default();
-        let mut count: i16 = 0;
+        let (mut contact_point, count) = tris_hit
+            .iter()
+            .fold((Ray::default(), 0.), |(mut contact_point, mut count), tri| {
+                let p = tri.center();
+                let n = tri.unit_normal();
 
-        for tri in tris_hit {
-            let p = tri.center();
-            let n = tri.unit_normal();
+                let separation = (s.center - p).dot(n);
+                if separation <= s.radius {
+                    count += 1.;
+                    contact_point.start += s.center - n * separation;
+                    contact_point.direction += n * (s.radius - separation);
+                }
 
-            let separation = (s.center - p).dot(n);
-            if separation <= s.radius {
-                count += 1;
-                contact_point.start += s.center - n * separation;
-                contact_point.direction += n * (s.radius - separation);
-            }
-        }
+                (contact_point, count)
+            });
 
-        contact_point.start /= f32::from(count);
+        contact_point.start /= count;
         contact_point.direction = contact_point.direction.normalize_or_zero();
 
         Some(contact_point)
@@ -339,7 +340,7 @@ mod test {
                 center: Vec3A::new(0., 0., 1022.),
                 radius: 100.,
             };
-            let hits = bvh.intersect(&sphere);
+            let hits = bvh.intersect(sphere);
             assert_eq!(hits.len(), 0);
         }
         {
@@ -348,7 +349,7 @@ mod test {
                 center: Vec3A::new(4096. / 2., 5120. / 2., 100.),
                 radius: 100.,
             };
-            let hits = bvh.intersect(&sphere);
+            let hits = bvh.intersect(sphere);
 
             assert_eq!(hits.len(), 1);
             let p0 = hits[0].get_point(0);
@@ -370,7 +371,7 @@ mod test {
                 center: Vec3A::ZERO,
                 radius: 100.,
             };
-            let hits = bvh.intersect(&sphere);
+            let hits = bvh.intersect(sphere);
 
             assert_eq!(hits.len(), 2);
         }
@@ -380,7 +381,7 @@ mod test {
                 center: Vec3A::new(4096., 5120., 0.),
                 radius: 100.,
             };
-            let hits = bvh.intersect(&sphere);
+            let hits = bvh.intersect(sphere);
 
             assert_eq!(hits.len(), 5);
         }
@@ -399,7 +400,7 @@ mod test {
                 radius: 100.,
             };
 
-            let ray = bvh.collide(&sphere);
+            let ray = bvh.collide(sphere);
 
             assert!(ray.is_none());
         }
@@ -410,7 +411,7 @@ mod test {
                 radius: 100.,
             };
 
-            let ray = bvh.collide(&sphere);
+            let ray = bvh.collide(sphere);
 
             assert!(ray.is_some());
             let ray = ray.unwrap();
@@ -428,7 +429,7 @@ mod test {
                 radius: 100.,
             };
 
-            let ray = bvh.collide(&sphere);
+            let ray = bvh.collide(sphere);
 
             assert!(ray.is_some());
             let ray = ray.unwrap();
@@ -446,7 +447,7 @@ mod test {
                 radius: 100.,
             };
 
-            let ray = bvh.collide(&sphere);
+            let ray = bvh.collide(sphere);
 
             assert!(ray.is_some());
             let ray = ray.unwrap();
@@ -471,7 +472,7 @@ mod test {
                 radius: 93.15,
             };
 
-            let ray = bvh.collide(&sphere);
+            let ray = bvh.collide(sphere);
 
             assert!(ray.is_some());
             let ray = ray.unwrap();

@@ -1,4 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+#[cfg(feature = "compression")]
+use rl_ball_sym::compressed;
 use rl_ball_sym::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
 
 fn load_soccar_benchmark(c: &mut Criterion) {
@@ -15,6 +17,26 @@ fn load_dropshot_benchmark(c: &mut Criterion) {
 
 fn load_soccar_throwback_benchmark(c: &mut Criterion) {
     c.bench_function("load_soccar_throwback", |b| b.iter(load_soccar_throwback));
+}
+
+#[cfg(feature = "compression")]
+fn compressed_load_soccar_benchmark(c: &mut Criterion) {
+    c.bench_function("compressed_load_soccar", |b| b.iter(compressed::load_soccar));
+}
+
+#[cfg(feature = "compression")]
+fn compressed_load_hoops_benchmark(c: &mut Criterion) {
+    c.bench_function("compressed_load_hoops", |b| b.iter(compressed::load_hoops));
+}
+
+#[cfg(feature = "compression")]
+fn compressed_load_dropshot_benchmark(c: &mut Criterion) {
+    c.bench_function("compressed_load_dropshot", |b| b.iter(compressed::load_dropshot));
+}
+
+#[cfg(feature = "compression")]
+fn compressed_load_soccar_throwback_benchmark(c: &mut Criterion) {
+    c.bench_function("compressed_load_soccar_throwback", |b| b.iter(compressed::load_soccar_throwback));
 }
 
 fn get_ball_prediction_struct_with_time_benchmark(c: &mut Criterion) {
@@ -57,6 +79,13 @@ fn get_ball_prediction_struct_throwback(c: &mut Criterion) {
 
 criterion_group!(init, load_soccar_benchmark, load_hoops_benchmark, load_dropshot_benchmark, load_soccar_throwback_benchmark,);
 criterion_group!(
+    compressed_init,
+    compressed_load_soccar_benchmark,
+    compressed_load_hoops_benchmark,
+    compressed_load_dropshot_benchmark,
+    compressed_load_soccar_throwback_benchmark,
+);
+criterion_group!(
     ball_prediction,
     get_ball_prediction_struct_with_time_benchmark,
     get_ball_prediction_struct_benchmark,
@@ -64,4 +93,4 @@ criterion_group!(
     get_ball_prediction_struct_dropshot,
     get_ball_prediction_struct_throwback
 );
-criterion_main!(init, ball_prediction);
+criterion_main!(init, compressed_init, ball_prediction);

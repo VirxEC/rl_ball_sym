@@ -1,4 +1,8 @@
-use rl_ball_sym::{load_soccar, BallPrediction, Vec3A};
+#[cfg(feature = "compression")]
+use rl_ball_sym::compressed::load_soccar;
+#[cfg(all(feature = "uncompressed", not(feature = "compression")))]
+use rl_ball_sym::load_soccar;
+use rl_ball_sym::{BallPrediction, Vec3A};
 
 fn main() {
     // load a standard soccer match

@@ -147,7 +147,7 @@ impl Ball {
     /// `dt` - The delta time (game tick length)
     pub fn step(&mut self, game: &Game, dt: f32) {
         if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
-            if let Some(contact) = game.collision_mesh.collide(&self.hitbox()) {
+            if let Some(contact) = game.collision_mesh.collide(self.hitbox()) {
                 let p = contact.start;
                 let n = contact.direction;
 

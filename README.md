@@ -39,3 +39,10 @@ Numbers _will_ vary depending on your system.
 + `get_ball_prediction`: Hoops + 6 seconds, executes in around `200µs`
 + `get_ball_prediction`: Dropshot + 6 seconds, executes in around `90µs`
 + `get_ball_prediction`: Soccer + Throwback Stadium + 6 seconds, executes in around `110µs`
+
+## Features
+
+ - `uncompressed`: Default feature. Enables the loading of uncompressed binary field data, which is faster but increases the size of the final binary.
+ - `compression`: Nightly only - Minimize the size of the produced binaries by compressing the binary field data at compile time. Will slightly slow down `load_x()` functions. 
+ - `stable-compression`: Does the same as `compression` using the same crate, but available for use in stable Rust.
+ - `fast-math`: Enables the `fast-math` feature in the [`glam`](https://crates.io/crates/glam) crate.

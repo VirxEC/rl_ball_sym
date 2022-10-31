@@ -1,6 +1,6 @@
 [package]
 name = "rl_ball_sym"
-version = "2.3.2"
+version = "2.4.0"
 authors = ["VirxEC"]
 edition = "2021"
 description = "Rust implementation of ball path prediction for Rocket League; Inspired by Samuel (Chip) P. Mish's C++ utils called RLUtilities"
@@ -22,18 +22,26 @@ byteorder = "1"
 glam = "0.22.0"
 radsort = "0.1.0"
 combo_vec = "0.4.1"
+include-flate = { version = "0.1.4", optional = true }
 
 [features]
+default = ["uncompressed"]
+uncompressed = []
+compression = ["include-flate"]
+stable-compression = ["compression", "include-flate/stable"]
 fast-math = ["glam/fast-math"]
+
+[package.metadata.docs.rs]
+all-features = true
 
 [profile.release]
 codegen-units = 1
-lto = "fat"
+lto = true
 panic = "abort"
 
 [profile.bench]
 codegen-units = 1
-lto = "fat"
+lto = true
 
 [[bench]]
 name = "benchmarks"

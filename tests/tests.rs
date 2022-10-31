@@ -1,4 +1,8 @@
-use rl_ball_sym::{glam::Vec3A, load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
+#[cfg(feature = "compression")]
+use rl_ball_sym::compressed::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
+#[cfg(all(feature = "uncompressed", not(feature = "compression")))]
+use rl_ball_sym::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
+use rl_ball_sym::glam::Vec3A;
 
 #[test]
 fn init() {
