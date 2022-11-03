@@ -182,10 +182,11 @@ impl Bvh {
                 }
             }
 
-            match stack.pop() {
-                Some(n) => node = n,
-                None => break,
-            }
+            let Some(next_node) = stack.pop() else {
+                break;
+            };
+
+            node = next_node;
         }
 
         hits

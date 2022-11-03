@@ -78,6 +78,7 @@ fn get_ball_prediction_struct_throwback(c: &mut Criterion) {
 }
 
 criterion_group!(init, load_soccar_benchmark, load_hoops_benchmark, load_dropshot_benchmark, load_soccar_throwback_benchmark,);
+#[cfg(feature = "compression")]
 criterion_group!(
     compressed_init,
     compressed_load_soccar_benchmark,
@@ -93,4 +94,9 @@ criterion_group!(
     get_ball_prediction_struct_dropshot,
     get_ball_prediction_struct_throwback
 );
+
+#[cfg(not(feature = "compression"))]
+criterion_main!(init, ball_prediction);
+
+#[cfg(feature = "compression")]
 criterion_main!(init, compressed_init, ball_prediction);
