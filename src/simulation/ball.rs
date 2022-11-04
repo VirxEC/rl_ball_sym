@@ -48,6 +48,21 @@ impl Ball {
     const SIMULATION_DT: f32 = 1. / 120.;
     const STANDARD_NUM_SLICES: usize = 720;
 
+    #[must_use]
+    #[inline]
+    /// Ball::default(), but const
+    pub const fn const_default() -> Self {
+        Self {
+            time: 0.,
+            location: Vec3A::ZERO,
+            velocity: Vec3A::ZERO,
+            angular_velocity: Vec3A::ZERO,
+            radius: 0.,
+            collision_radius: 0.,
+            moi: 0.,
+        }
+    }
+
     /// Sets the default values for a soccar ball
     #[must_use]
     #[inline]
@@ -113,14 +128,14 @@ impl Ball {
     /// Get the radius of the ball
     #[must_use]
     #[inline]
-    pub fn radius(&self) -> f32 {
+    pub const fn radius(&self) -> f32 {
         self.radius
     }
 
     /// Get the collision radius of the ball
     #[must_use]
     #[inline]
-    pub fn collision_radius(&self) -> f32 {
+    pub const fn collision_radius(&self) -> f32 {
         self.collision_radius
     }
 
