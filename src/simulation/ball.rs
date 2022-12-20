@@ -50,7 +50,7 @@ impl Ball {
 
     #[must_use]
     #[inline]
-    /// Ball::default(), but const
+    /// `Ball::default()`, but const
     pub const fn const_default() -> Self {
         Self {
             time: 0.,
