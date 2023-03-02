@@ -7,10 +7,10 @@
 //! ## Example: `ultra_basic`
 //!
 //! ```
-//! use rl_ball_sym::{load_soccar, BallPrediction, Vec3A};
+//! use rl_ball_sym::{load_standard, BallPrediction, Vec3A};
 //!
-//! // load a standard soccer match
-//! let (game, mut ball) = load_soccar();
+//! // load a standard standard match
+//! let (game, mut ball) = load_standard();
 //!
 //! // the current state of the ball in the game
 //! ball.update(0., Vec3A::new(0., 0., 200.), Vec3A::new(0., 0., -0.1), Vec3A::new(0., 0., 0.));
@@ -35,7 +35,7 @@ pub mod simulation;
 mod uncompressed;
 
 pub use crate::simulation::{
-    ball::{Ball, BallPrediction},
+    ball::{Ball, Predictions},
     game::Game,
 };
 pub use glam::Vec3A;

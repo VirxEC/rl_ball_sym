@@ -1,7 +1,7 @@
 //! Tools for compressing the binary field data at compile time and lazy-static decompressing it at runtime.
 
 use crate::simulation::{
-    field::{initialize_dropshot, initialize_hoops, initialize_soccer, initialize_throwback, InitializeThrowbackParams},
+    field::{initialize_dropshot, initialize_hoops, initialize_standard, initialize_throwback, InitializeThrowbackParams},
     mesh::Mesh,
 };
 use crate::{Ball, Game};
@@ -18,28 +18,23 @@ macro_rules! include_mesh {
     };
 }
 
-/// Returns a Game object with a standard soccer field and soccer ball.
+/// Returns a Game object with a standard standard field and standard ball.
 #[must_use]
-pub fn load_soccer() -> (Game, Ball) {
-    let soccer_corner = include_mesh!("assets/soccer/soccer_corner_ids.bin", "assets/soccer/soccer_corner_vertices.bin");
-    let soccer_goal = include_mesh!("assets/soccer/soccer_goal_ids.bin", "assets/soccer/soccer_goal_vertices.bin");
-    let soccer_ramps_0 = include_mesh!("assets/soccer/soccer_ramps_0_ids.bin", "assets/soccer/soccer_ramps_0_vertices.bin");
-    let soccer_ramps_1 = include_mesh!("assets/soccer/soccer_ramps_1_ids.bin", "assets/soccer/soccer_ramps_1_vertices.bin");
+#[cfg(feature = "standard")]
+pub fn load_standard() -> (Game, Ball) {
+    let standard_corner = include_mesh!("assets/standard/standard_corner_ids.bin", "assets/standard/standard_corner_vertices.bin");
+    let standard_goal = include_mesh!("assets/standard/standard_goal_ids.bin", "assets/standard/standard_goal_vertices.bin");
+    let standard_ramps_0 = include_mesh!("assets/standard/standard_ramps_0_ids.bin", "assets/standard/standard_ramps_0_vertices.bin");
+    let standard_ramps_1 = include_mesh!("assets/standard/standard_ramps_1_ids.bin", "assets/standard/standard_ramps_1_vertices.bin");
 
-    let collision_mesh = initialize_soccer(&soccer_corner, &soccer_goal, &soccer_ramps_0, &soccer_ramps_1);
+    let collision_mesh = initialize_standard(&standard_corner, &standard_goal, &standard_ramps_0, &standard_ramps_1);
 
-    (Game::new(collision_mesh), Ball::initialize_soccar())
-}
-
-/// Returns a Game object with a standard soccar field and soccar ball.
-#[must_use]
-#[inline]
-pub fn load_soccar() -> (Game, Ball) {
-    load_soccer()
+    (Game::new(collision_mesh), Ball::initialize_standard())
 }
 
 /// Returns a Game object with a standard hoops field and hoops ball.
 #[must_use]
+#[cfg(feature = "hoops")]
 pub fn load_hoops() -> (Game, Ball) {
     let hoops_corner = include_mesh!("assets/hoops/hoops_corner_ids.bin", "assets/hoops/hoops_corner_vertices.bin");
     let hoops_net = include_mesh!("assets/hoops/hoops_net_ids.bin", "assets/hoops/hoops_net_vertices.bin");
@@ -54,6 +49,7 @@ pub fn load_hoops() -> (Game, Ball) {
 
 /// Returns a Game object with a standard dropshot field and dropshot ball.
 #[must_use]
+#[cfg(feature = "dropshot")]
 pub fn load_dropshot() -> (Game, Ball) {
     let dropshot = include_mesh!("assets/dropshot/dropshot_ids.bin", "assets/dropshot/dropshot_vertices.bin");
 
@@ -62,9 +58,10 @@ pub fn load_dropshot() -> (Game, Ball) {
     (Game::new(collision_mesh), Ball::initialize_dropshot())
 }
 
-/// Returns a Game object with throwback stadium and a standard soccer ball.
+/// Returns a Game object with throwback stadium and a standard standard ball.
 #[must_use]
-pub fn load_soccer_throwback() -> (Game, Ball) {
+#[cfg(feature = "throwback")]
+pub fn load_standard_throwback() -> (Game, Ball) {
     let back_ramps_lower = include_mesh!(
         "assets/throwback/throwback_back_ramps_lower_ids.bin",
         "assets/throwback/throwback_back_ramps_lower_vertices.bin"
@@ -108,12 +105,5 @@ pub fn load_soccer_throwback() -> (Game, Ball) {
     };
     let collision_mesh = initialize_throwback(params);
 
-    (Game::new(collision_mesh), Ball::initialize_soccar())
-}
-
-/// Returns a Game object with throwback stadium and a standard soccar ball.
-#[must_use]
-#[inline]
-pub fn load_soccar_throwback() -> (Game, Ball) {
-    load_soccer_throwback()
+    (Game::new(collision_mesh), Ball::initialize_standard())
 }

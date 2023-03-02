@@ -231,7 +231,7 @@ mod test {
     #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 
     use super::*;
-    use crate::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
+    use crate::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
     use criterion::black_box;
     use glam::Vec3A;
     use rand::Rng;
@@ -485,8 +485,8 @@ mod test {
     }
 
     #[test]
-    fn basic_predict_soccar() {
-        let (game, mut ball) = load_soccar();
+    fn basic_predict_standard() {
+        let (game, mut ball) = load_standard();
 
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
@@ -561,7 +561,7 @@ mod test {
 
     #[test]
     fn basic_predict_throwback() {
-        let (game, mut ball) = load_soccar_throwback();
+        let (game, mut ball) = load_standard_throwback();
 
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
@@ -639,8 +639,8 @@ mod test {
     }
 
     #[test]
-    fn gamemode_soccar() {
-        let (game, ball) = load_soccar();
+    fn gamemode_standard() {
+        let (game, ball) = load_standard();
 
         // test all the default values to make sure they're proper
 
@@ -723,8 +723,8 @@ mod test {
     }
 
     #[test]
-    fn gamemode_throwback_soccar() {
-        let (game, ball) = load_soccar_throwback();
+    fn gamemode_throwback_standard() {
+        let (game, ball) = load_standard_throwback();
 
         // test all the default values to make sure they're proper
 
@@ -766,8 +766,8 @@ mod test {
     }
 
     #[test]
-    fn hierarchy_depth_throwback_soccar() {
-        let (game, _) = load_soccar_throwback();
+    fn hierarchy_depth_throwback_standard() {
+        let (game, _) = load_standard_throwback();
         let mut max_depth = 0;
 
         recurse_bvhnode(&game.collision_mesh.root, 0, &mut max_depth);
@@ -784,8 +784,8 @@ mod test {
     }
 
     #[test]
-    fn hierarchy_depth_soccar() {
-        let (game, _) = load_soccar();
+    fn hierarchy_depth_standard() {
+        let (game, _) = load_standard();
         let mut max_depth = 0;
 
         recurse_bvhnode(&game.collision_mesh.root, 0, &mut max_depth);

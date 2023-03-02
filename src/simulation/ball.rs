@@ -23,7 +23,7 @@ pub struct Ball {
 }
 
 /// Collection of Balls representing future predictions based on field geometry
-pub type BallPrediction = Vec<Ball>;
+pub type Predictions = Vec<Ball>;
 
 impl Ball {
     const RESTITUTION: f32 = 0.6;
@@ -35,10 +35,10 @@ impl Ball {
 
     const M: f32 = 30.;
 
-    const SOCCAR_RADIUS: f32 = 91.25;
+    const STANDARD_RADIUS: f32 = 91.25;
     const HOOPS_RADIUS: f32 = 91.25;
     const DROPSHOT_RADIUS: f32 = 100.45;
-    const SOCCAR_COLLISION_RADIUS: f32 = 93.15;
+    const STANDARD_COLLISION_RADIUS: f32 = 93.15;
     const HOOPS_COLLISION_RADIUS: f32 = 93.15;
     const DROPSHOT_COLLISION_RADIUS: f32 = 103.6;
 
@@ -63,15 +63,15 @@ impl Ball {
         }
     }
 
-    /// Sets the default values for a soccar ball
+    /// Sets the default values for a standard ball
     #[must_use]
     #[inline]
-    pub fn initialize_soccar() -> Self {
+    pub fn initialize_standard() -> Self {
         Self {
-            radius: Self::SOCCAR_RADIUS,
-            collision_radius: Self::SOCCAR_COLLISION_RADIUS,
-            moi: Self::calculate_moi(Self::SOCCAR_RADIUS),
-            location: Self::default_height(Self::SOCCAR_COLLISION_RADIUS),
+            radius: Self::STANDARD_RADIUS,
+            collision_radius: Self::STANDARD_COLLISION_RADIUS,
+            moi: Self::calculate_moi(Self::STANDARD_RADIUS),
+            location: Self::default_height(Self::STANDARD_COLLISION_RADIUS),
             ..Default::default()
         }
     }
@@ -203,7 +203,7 @@ impl Ball {
     /// Simulate the ball for at least the given amount of time
     #[inline]
     #[must_use]
-    pub fn get_ball_prediction_struct_for_time(self, game: &Game, time: f32) -> BallPrediction {
+    pub fn get_ball_prediction_struct_for_time(self, game: &Game, time: f32) -> Predictions {
         debug_assert!(time >= 0.);
         // Ignoring these warnings is ok because:
         // We are rounding up to the nearest integer so no truncation will occur
@@ -215,14 +215,14 @@ impl Ball {
     /// Simulate the ball for the standard amount of time (6 seconds)
     #[inline]
     #[must_use]
-    pub fn get_ball_prediction_struct(self, game: &Game) -> BallPrediction {
+    pub fn get_ball_prediction_struct(self, game: &Game) -> Predictions {
         self.get_ball_prediction_struct_for_slices(game, Self::STANDARD_NUM_SLICES)
     }
 
     /// Simulate the ball for a given amount of ticks
     #[inline]
     #[must_use]
-    pub fn get_ball_prediction_struct_for_slices(mut self, game: &Game, num_slices: usize) -> BallPrediction {
+    pub fn get_ball_prediction_struct_for_slices(mut self, game: &Game, num_slices: usize) -> Predictions {
         (0..num_slices)
             .map(|_| {
                 self.step(game, Self::SIMULATION_DT);
@@ -235,11 +235,11 @@ impl Ball {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::load_soccar;
+    use crate::load_standard;
 
     #[test]
     fn check_standard_num_slices() {
-        let (game, ball) = load_soccar();
+        let (game, ball) = load_standard();
 
         let prediction = ball.get_ball_prediction_struct(&game);
 
@@ -250,7 +250,7 @@ mod test {
     fn check_custom_num_slices() {
         const REQUESTED_SLICES: usize = 200;
 
-        let (game, ball) = load_soccar();
+        let (game, ball) = load_standard();
 
         let prediction = ball.get_ball_prediction_struct_for_slices(&game, REQUESTED_SLICES);
 
@@ -261,7 +261,7 @@ mod test {
     fn check_num_slices_for_time() {
         const REQUESTED_TIME: f32 = 8.0;
 
-        let (game, ball) = load_soccar();
+        let (game, ball) = load_standard();
 
         let prediction = ball.get_ball_prediction_struct_for_time(&game, REQUESTED_TIME);
 

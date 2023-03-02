@@ -1,13 +1,16 @@
+use once_cell::sync::Lazy;
 use rand::Rng;
-#[cfg(feature = "compression")]
-use rl_ball_sym::compressed::load_soccar;
-#[cfg(all(feature = "uncompressed", not(feature = "compression")))]
-use rl_ball_sym::load_soccar;
-use rl_ball_sym::{Ball, BallPrediction, Game, Vec3A};
+use rl_ball_sym::{Ball, Game, Predictions, Vec3A};
 use std::sync::RwLock;
 
-// RwLock's can only have one reader, but they can have multiple writers enabling safe parallel access to the data once it's been initilized
-static GAME: RwLock<Option<(Game, Ball)>> = RwLock::new(None);
+#[cfg(feature = "compression")]
+use rl_ball_sym::compressed::load_standard;
+#[cfg(all(feature = "uncompressed", not(feature = "compression")))]
+use rl_ball_sym::load_standard;
+
+// We only need to initialize everything once,
+// and OnceCell's Lazy type is perfect for this
+static GAME: RwLock<Lazy<(Game, Ball)>> = RwLock::new(Lazy::new(load_standard));
 
 fn main() {
     let mut rng = rand::thread_rng();
@@ -26,37 +29,19 @@ fn main() {
 }
 
 fn get_output(ball_location: Vec3A, ball_velocity: Vec3A, ball_angular_velocity: Vec3A, time: f32) {
-    let read_lock = {
-        let read_lock = GAME.read().expect("game lock poisoned");
-
-        if read_lock.as_ref().is_some() {
-            // return the read lock with the game data
-            read_lock
-        } else {
-            // drop the read lock so we can grab the write lock
-            drop(read_lock);
-            // grab the write lock
-            let mut write_lock = GAME.write().expect("game lock poisoned");
-            // load a standard soccer match
-            *write_lock = Some(load_soccar());
-            // drop the write lock so we can read the game data
-            drop(write_lock);
-            // grab the read lock again
-            GAME.read().expect("game lock poisoned")
-        }
-    };
+    let reader = GAME.read().expect("game lock poisoned");
 
     // Game is too complex and can't implement Copy, so the type of the variable game is &Game
-    // Since we have to reference Game to avoid cloning it, we need to hold read_lock until the end of the function
-    // Ball does implement Copy though, so we copy the basic ball data we got when we called load_soccar
-    let (game, mut ball) = read_lock.as_ref().unwrap();
+    // Since we have to reference Game to avoid cloning it, we need to hold reader until the end of the function
+    // Ball does implement Copy though, so we copy the basic ball data we got when we called load_standard
+    let (game, mut ball) = (&reader.0, reader.1);
 
     ball.update(time, ball_location, ball_velocity, ball_angular_velocity);
 
     // generate the ball prediction struct
     // this is a list of 720 slices
     // it goes 6 seconds into the future with 120 slices per second
-    let ball_prediction: BallPrediction = ball.get_ball_prediction_struct(game);
+    let ball_prediction: Predictions = ball.get_ball_prediction_struct(game);
     assert_eq!(ball_prediction.len(), 720);
 
     // ball is not modified, it stays the same!

@@ -30,15 +30,15 @@ Numbers are from a system running Ubuntu 22.04.1 with a Ryzen 9 5900X with 3600M
 
 Numbers _will_ vary depending on your system.
 
-+ `load_soccer`: Loads 8028 triangles, executes in around `910µs`
++ `load_standard`: Loads 8028 triangles, executes in around `910µs`
 + `load_hoops`: Loads 15732 triangles, executes in around `1.82ms`
 + `load_dropshot`: Loads 3616 triangles, executes in around `410µs`
-+ `load_soccer_throwback`: Loads 9272 triangles, executes in around `1.16ms`
-+ `get_ball_prediction_struct_for_time`: Soccer + 8 seconds, executes in around `140µs`
-+ `get_ball_prediction`: Soccer + 6 seconds, executes in around `110µs`
++ `load_standard_throwback`: Loads 9272 triangles, executes in around `1.16ms`
++ `get_ball_prediction_struct_for_time`: standard + 8 seconds, executes in around `140µs`
++ `get_ball_prediction`: standard + 6 seconds, executes in around `110µs`
 + `get_ball_prediction`: Hoops + 6 seconds, executes in around `200µs`
 + `get_ball_prediction`: Dropshot + 6 seconds, executes in around `90µs`
-+ `get_ball_prediction`: Soccer + Throwback Stadium + 6 seconds, executes in around `110µs`
++ `get_ball_prediction`: standard + Throwback Stadium + 6 seconds, executes in around `110µs`
 
 ## Features
 

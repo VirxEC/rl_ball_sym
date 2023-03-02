@@ -18,15 +18,15 @@ fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
 }
 
 #[must_use]
-/// Get a BVH generated from the given soccar field meshes.
-pub(crate) fn initialize_soccer(soccer_corner: &Mesh, soccer_goal: &Mesh, soccer_ramps_0: &Mesh, soccer_ramps_1: &Mesh) -> Bvh {
+/// Get a BVH generated from the given standard field meshes.
+pub(crate) fn initialize_standard(standard_corner: &Mesh, standard_goal: &Mesh, standard_ramps_0: &Mesh, standard_ramps_1: &Mesh) -> Bvh {
     const SCALE: f32 = 100.;
     const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
 
-    let soccar_corner_tf = soccer_corner.transform(S);
-    let soccar_goal_tf = soccer_goal.transform(S);
-    let soccar_ramps_0_tf = soccer_ramps_0.transform(S);
-    let soccar_ramps_1_tf = soccer_ramps_1.transform(S);
+    let standard_corner_tf = standard_corner.transform(S);
+    let standard_goal_tf = standard_goal.transform(S);
+    let standard_ramps_0_tf = standard_ramps_0.transform(S);
+    let standard_ramps_1_tf = standard_ramps_1.transform(S);
 
     let floor = quad(Vec3A::ZERO, Vec3A::new(4096., 0., 0.), Vec3A::new(0., 5500., 0.));
     let ceiling = quad(Vec3A::new(0., 0., 2048.), Vec3A::new(-4096., 0., 0.), Vec3A::new(0., 5120., 0.));
@@ -36,16 +36,16 @@ pub(crate) fn initialize_soccer(soccer_corner: &Mesh, soccer_goal: &Mesh, soccer
     ];
 
     let field_mesh = Mesh::combine(&[
-        &soccar_corner_tf,
-        &soccar_corner_tf.transform(FLIP_X),
-        &soccar_corner_tf.transform(FLIP_Y),
-        &soccar_corner_tf.transform(FLIP_X.dot(FLIP_Y)),
-        &soccar_goal_tf.translate(Vec3A::new(0., -5120., 0.)),
-        &soccar_goal_tf.translate(Vec3A::new(0., -5120., 0.)).transform(FLIP_Y),
-        &soccar_ramps_0_tf,
-        &soccar_ramps_0_tf.transform(FLIP_X),
-        &soccar_ramps_1_tf,
-        &soccar_ramps_1_tf.transform(FLIP_X),
+        &standard_corner_tf,
+        &standard_corner_tf.transform(FLIP_X),
+        &standard_corner_tf.transform(FLIP_Y),
+        &standard_corner_tf.transform(FLIP_X.dot(FLIP_Y)),
+        &standard_goal_tf.translate(Vec3A::new(0., -5120., 0.)),
+        &standard_goal_tf.translate(Vec3A::new(0., -5120., 0.)).transform(FLIP_Y),
+        &standard_ramps_0_tf,
+        &standard_ramps_0_tf.transform(FLIP_X),
+        &standard_ramps_1_tf,
+        &standard_ramps_1_tf.transform(FLIP_X),
         &floor,
         &ceiling,
         &side_walls[0],

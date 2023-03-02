@@ -1,12 +1,12 @@
 #[cfg(feature = "compression")]
-use rl_ball_sym::compressed::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
+use rl_ball_sym::compressed::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
 use rl_ball_sym::glam::Vec3A;
 #[cfg(all(feature = "uncompressed", not(feature = "compression")))]
-use rl_ball_sym::{load_dropshot, load_hoops, load_soccar, load_soccar_throwback};
+use rl_ball_sym::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
 
 #[test]
 fn init() {
-    let (game, mut ball) = load_soccar();
+    let (game, mut ball) = load_standard();
     ball.location.z = 1900.;
 
     let ball_prediction_struct = ball.get_ball_prediction_struct(&game);
@@ -14,8 +14,8 @@ fn init() {
 }
 
 #[test]
-fn predict_custom_soccar() {
-    let (game, mut ball) = load_soccar();
+fn predict_custom_standard() {
+    let (game, mut ball) = load_standard();
     let time = 8.;
     ball.velocity.z = -100.;
 
@@ -24,8 +24,8 @@ fn predict_custom_soccar() {
 }
 
 #[test]
-fn predict_soccar() {
-    let (game, mut ball) = load_soccar();
+fn predict_standard() {
+    let (game, mut ball) = load_standard();
     ball.velocity.z = -100.;
 
     let ball_prediction = ball.get_ball_prediction_struct(&game);
@@ -51,8 +51,8 @@ fn predict_dropshot() {
 }
 
 #[test]
-fn predict_throwback_soccar() {
-    let (game, mut ball) = load_soccar_throwback();
+fn predict_throwback_standard() {
+    let (game, mut ball) = load_standard_throwback();
     ball.velocity.z = -100.;
 
     let ball_prediction = ball.get_ball_prediction_struct(&game);
@@ -61,7 +61,7 @@ fn predict_throwback_soccar() {
 
 #[test]
 fn check_for_nans_ball() {
-    let (game, mut ball) = load_soccar();
+    let (game, mut ball) = load_standard();
 
     ball.update(0., Vec3A::new(0., 0., 100.), Vec3A::new(0., 0., f32::EPSILON), Vec3A::ZERO);
 
