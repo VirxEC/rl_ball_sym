@@ -4,13 +4,21 @@ use super::geometry::Tri;
 use crate::linear_algebra::math::dot;
 use byteorder::{LittleEndian, ReadBytesExt};
 use glam::{Mat3A, Vec3A};
-use std::io::Cursor;
+use std::io::{Cursor, Read};
+
+#[inline]
+fn extract_f32(cursor: &mut Cursor<&[u8]>) -> f32 {
+    match cursor.read_f32::<LittleEndian>() {
+        Ok(float) => float,
+        Err(e) => panic!("Problem parsing ***_vertices.dat: {e:?}"),
+    }
+}
 
 /// A collection of inter-connected triangles.
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Mesh {
     ids: Vec<usize>,
-    vertices: Vec<f32>,
+    vertices: Vec<Vec3A>,
 }
 
 impl Mesh {
@@ -32,37 +40,41 @@ impl Mesh {
             let vertices_len = vertices_dat.len() / 4;
             let mut vertices_cursor = Cursor::new(vertices_dat);
 
-            (0..vertices_len)
-                .map(|_| match vertices_cursor.read_f32::<LittleEndian>() {
-                    Ok(vertex) => vertex,
-                    Err(e) => panic!("Problem parsing ***_vertices.dat: {e:?}"),
+            (0..vertices_len / 3)
+                .map(|_| {
+                    Vec3A::new(
+                        extract_f32(vertices_cursor.by_ref()),
+                        extract_f32(vertices_cursor.by_ref()),
+                        extract_f32(vertices_cursor.by_ref()),
+                    )
                 })
                 .collect::<Vec<_>>()
         };
 
-        Mesh::new(ids, vertices)
+        Mesh { ids, vertices }
     }
 
     #[must_use]
     #[inline]
     /// Create a new Mesh from a list of ids and vertices.
-    pub const fn new(ids: Vec<usize>, vertices: Vec<f32>) -> Self {
+    pub const fn new(ids: Vec<usize>, vertices: Vec<Vec3A>) -> Self {
         Self { ids, vertices }
     }
 
     #[must_use]
     /// Combine different meshes all into one
-    pub fn combine(other_meshes: &[&Self]) -> Self {
-        let n_ids = other_meshes.iter().map(|mesh| mesh.ids.len()).sum();
-        let mut ids: Vec<usize> = Vec::with_capacity(n_ids);
+    pub fn combine<const N: usize>(other_meshes: [Self; N]) -> Self {
+        let (n_ids, n_verts) = other_meshes.iter().fold((0, 0), |(n_ids, n_verts), m| (n_ids + m.ids.len(), n_verts + m.vertices.len()));
         let mut id_offset = 0;
 
-        for m in other_meshes {
-            ids.extend(m.ids.iter().map(|id| id + id_offset));
-            id_offset += m.vertices.len() / 3;
-        }
-
-        let vertices: Vec<f32> = other_meshes.iter().flat_map(|m| &m.vertices).copied().collect();
+        let (ids, vertices) = other_meshes
+            .into_iter()
+            .fold((Vec::with_capacity(n_ids), Vec::with_capacity(n_verts)), |(mut ids, mut vertices), m| {
+                ids.extend(m.ids.into_iter().map(|id| id + id_offset));
+                id_offset += m.vertices.len();
+                vertices.extend(m.vertices);
+                (ids, vertices)
+            });
 
         Self { ids, vertices }
     }
@@ -70,15 +82,14 @@ impl Mesh {
     #[must_use]
     /// Transform the mesh by the given matrix.
     pub fn transform(&self, a: Mat3A) -> Self {
-        debug_assert_eq!(self.vertices.len() % 3, 0);
         debug_assert_eq!(self.ids.len() % 3, 0);
 
-        let vertices = self.vertices.chunks(3).flat_map(|vertex| dot(a, Vec3A::from_slice(vertex)).to_array()).collect();
+        let vertices = self.vertices.iter().map(|&vertex| dot(a, vertex)).collect::<Vec<_>>();
 
         // for transformations that flip things
         // inside-out, change triangle winding
         let ids = if a.determinant() < 0. {
-            self.ids.chunks(3).flat_map(|ids| [ids[1], ids[0], ids[2]]).collect()
+            self.ids.chunks_exact(3).flat_map(|ids| [ids[1], ids[0], ids[2]]).collect()
         } else {
             self.ids.clone()
         };
@@ -87,28 +98,22 @@ impl Mesh {
     }
 
     #[must_use]
+    #[inline]
     /// Translate the mesh by the given vector.
     pub fn translate(&self, p: Vec3A) -> Self {
-        debug_assert_eq!(self.vertices.len() % 3, 0);
-
-        let vertices = self.vertices.chunks(3).flat_map(|vertex| (Vec3A::from_slice(vertex) + p).to_array()).collect();
-
-        Self { ids: self.ids.clone(), vertices }
+        Self {
+            ids: self.ids.clone(),
+            vertices: self.vertices.iter().map(|&vertex| vertex + p).collect(),
+        }
     }
 
     #[must_use]
     /// Convert the mesh to a list of triangles.
-    pub fn to_triangles(&self) -> Vec<Tri> {
+    pub fn into_triangles(self) -> Vec<Tri> {
         debug_assert_eq!(self.ids.len() % 3, 0);
 
-        (0..self.ids.len() / 3).map(|i| self.triangle_from_index(i)).collect()
-    }
-
-    fn triangle_from_index(&self, i: usize) -> Tri {
-        let mut points = (0..3).map(|j| {
-            let id = self.ids[i * 3 + j] * 3;
-            Vec3A::new(self.vertices[id], self.vertices[id + 1], self.vertices[id + 2])
-        });
-        Tri::from_points(points.next().unwrap(), points.next().unwrap(), points.next().unwrap())
+        (0..self.ids.len() / 3)
+            .map(|i| Tri::from_points_iter((0..3).map(|j| self.vertices[self.ids[i * 3 + j]])))
+            .collect()
     }
 }

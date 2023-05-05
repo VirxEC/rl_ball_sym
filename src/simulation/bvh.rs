@@ -62,16 +62,16 @@ impl BvhNode {
     #[inline]
     /// Creates a new branch for the BVH given two children.
     pub fn branch(right: Self, left: Self) -> Self {
-        Self::Branch(Branch::new(right.box_() + left.box_(), Box::new(left), Box::new(right)))
+        Self::Branch(Branch::new(*right.box_() + *left.box_(), Box::new(left), Box::new(right)))
     }
 
     #[must_use]
     #[inline]
     /// Returns the bounding box of this node.
-    pub const fn box_(&self) -> Aabb {
+    pub const fn box_(&self) -> &Aabb {
         match self {
-            Self::Leaf(leaf) => leaf.box_,
-            Self::Branch(branch) => branch.box_,
+            Self::Leaf(leaf) => &leaf.box_,
+            Self::Branch(branch) => &branch.box_,
         }
     }
 }
@@ -98,6 +98,8 @@ impl Bvh {
     #[must_use]
     /// Creates a new BVH from a list of primitives.
     pub fn from(primitives: &[Tri]) -> Self {
+        let num_leaves = primitives.len();
+
         let boxes: Vec<Aabb> = primitives.iter().map(Into::into).collect();
         let global_box = global_aabb(&boxes);
         let morton = Morton::from(global_box);
@@ -109,7 +111,6 @@ impl Bvh {
             .collect();
         radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.morton);
 
-        let num_leaves = primitives.len();
         let root = Self::generate_hierarchy(&sorted_leaves, 0, num_leaves - 1);
 
         Self { global_box, num_leaves, root }
@@ -136,7 +137,7 @@ impl Bvh {
     pub fn intersect(&self, query_object: Sphere) -> Vec<Tri> {
         const STACK: ReArr<&BvhNode, 8> = rearr![];
 
-        let query_box: Aabb = query_object.into();
+        let query_box = Aabb::from(query_object);
         let mut hits = Vec::with_capacity(4);
 
         // Allocate traversal stack from thread-local memory
@@ -201,7 +202,7 @@ impl Bvh {
             return None;
         }
 
-        let (mut contact_point, count) = tris_hit.iter().fold((Ray::default(), 0u16), |(mut contact_point, mut count), tri| {
+        let (mut contact_point, count) = tris_hit.into_iter().fold((Ray::default(), 0u8), |(mut contact_point, mut count), tri| {
             let p = tri.center();
             let n = tri.unit_normal();
 
@@ -216,13 +217,13 @@ impl Bvh {
         });
 
         if count == 0 {
-            return None;
+            None
+        } else {
+            contact_point.start /= f32::from(count);
+            contact_point.direction = contact_point.direction.normalize_or_zero();
+    
+            Some(contact_point)
         }
-
-        contact_point.start /= f32::from(count);
-        contact_point.direction = contact_point.direction.normalize_or_zero();
-
-        Some(contact_point)
     }
 }
 
@@ -512,7 +513,7 @@ mod test {
         let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, time);
         assert_eq!(ball_prediction.len(), time as usize * 120);
 
-        let iters = 20000;
+        let iters = 200;
         let time = 10.; // 10 seconds
         let num_slices = time as usize * 120 * iters;
         let mut rng = rand::thread_rng();

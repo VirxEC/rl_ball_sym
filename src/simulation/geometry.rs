@@ -1,6 +1,5 @@
 //! Various geometrical objects and tools.
 
-use crate::linear_algebra::math::dot;
 use glam::{Mat3A, Vec3A};
 use std::{array::IntoIter, ops::Add};
 
@@ -38,9 +37,17 @@ impl Tri {
 
     #[must_use]
     #[inline]
+    #[allow(dead_code)]
     /// Create a new triangle from 3 points
     pub const fn from_points(p0: Vec3A, p1: Vec3A, p2: Vec3A) -> Self {
         Self([p0, p1, p2])
+    }
+
+    #[must_use]
+    #[inline]
+    /// Create a new triangle from an iterator that must be of 3 points
+    pub fn from_points_iter(mut iter: impl Iterator<Item = Vec3A>) -> Self {
+        Self([iter.next().unwrap(), iter.next().unwrap(), iter.next().unwrap()])
     }
 
     #[must_use]
@@ -59,14 +66,14 @@ impl Tri {
     #[allow(clippy::many_single_char_names)]
     #[must_use]
     /// Check if a sphere intersects the triangle.
-    pub fn intersect_sphere(&self, b: Sphere) -> bool {
+    pub fn intersect_sphere(&self, obj: Sphere) -> bool {
         let e1 = self.0[1] - self.0[0];
         let e2 = self.0[2] - self.0[1];
         let e3 = self.0[0] - self.0[2];
         let n = e3.cross(e1).normalize();
 
-        let a = Mat3A::from_cols_array_2d(&[[e1.x, -e3.x, n.x], [e1.y, -e3.y, n.y], [e1.z, -e3.z, n.z]]);
-        let x = dot(a.inverse(), b.center - self.0[0]);
+        let a: Mat3A = Mat3A::from_cols(e1, -e3, n);
+        let x = a.inverse() * (obj.center - self.0[0]);
 
         let u = x.x;
         let v = x.y;
@@ -82,13 +89,13 @@ impl Tri {
         let dist = if (0. ..=1.).contains(&u) && (0. ..=1.).contains(&v) && (0. ..=1.).contains(&w) {
             z.abs()
         } else {
-            (b.radius + 1.)
-                .min(distance_between(self.0[0], e1, b.center))
-                .min(distance_between(self.0[1], e2, b.center))
-                .min(distance_between(self.0[2], e3, b.center))
+            (obj.radius + 1.)
+                .min(distance_between(self.0[0], e1, obj.center))
+                .min(distance_between(self.0[1], e2, obj.center))
+                .min(distance_between(self.0[2], e3, obj.center))
         };
 
-        dist <= b.radius
+        dist <= obj.radius
     }
 }
 

@@ -7,7 +7,7 @@
 //! ## Example: `ultra_basic`
 //!
 //! ```
-//! use rl_ball_sym::{load_standard, BallPrediction, Vec3A};
+//! use rl_ball_sym::{load_standard, Predictions, Vec3A};
 //!
 //! // load a standard standard match
 //! let (game, mut ball) = load_standard();
@@ -18,7 +18,7 @@
 //! // generate the ball prediction struct
 //! // this is a list of 720 slices
 //! // it goes 6 seconds into the future with 120 slices per second
-//! let ball_prediction: BallPrediction = ball.get_ball_prediction_struct(&game);
+//! let ball_prediction: Predictions = ball.get_ball_prediction_struct(&game);
 //! assert_eq!(ball_prediction.len(), 720);
 //!
 //! // ball is not modified, it stays the same!

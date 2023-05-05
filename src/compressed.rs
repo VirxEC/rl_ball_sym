@@ -42,7 +42,7 @@ pub fn load_hoops() -> (Game, Ball) {
     let hoops_ramps_0 = include_mesh!("assets/hoops/hoops_ramps_0_ids.bin", "assets/hoops/hoops_ramps_0_vertices.bin");
     let hoops_ramps_1 = include_mesh!("assets/hoops/hoops_ramps_1_ids.bin", "assets/hoops/hoops_ramps_1_vertices.bin");
 
-    let collision_mesh = initialize_hoops(&hoops_corner, &hoops_net, &hoops_rim, &hoops_ramps_0, &hoops_ramps_1);
+    let collision_mesh = initialize_hoops(hoops_corner, &hoops_net, &hoops_rim, hoops_ramps_0, hoops_ramps_1);
 
     (Game::new(collision_mesh), Ball::initialize_hoops())
 }
@@ -92,16 +92,16 @@ pub fn load_standard_throwback() -> (Game, Ball) {
     );
 
     let params = InitializeThrowbackParams {
-        back_ramps_lower: &back_ramps_lower,
-        back_ramps_upper: &back_ramps_upper,
-        corner_ramps_lower: &corner_ramps_lower,
-        corner_ramps_upper: &corner_ramps_upper,
-        corner_wall_0: &corner_wall_0,
-        corner_wall_1: &corner_wall_1,
-        corner_wall_2: &corner_wall_2,
-        goal: &goal,
-        side_ramps_lower: &side_ramps_lower,
-        side_ramps_upper: &side_ramps_upper,
+        back_ramps_lower,
+        back_ramps_upper,
+        corner_ramps_lower,
+        corner_ramps_upper,
+        corner_wall_0,
+        corner_wall_1,
+        corner_wall_2,
+        goal,
+        side_ramps_lower,
+        side_ramps_upper,
     };
     let collision_mesh = initialize_throwback(params);
 
