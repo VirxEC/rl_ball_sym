@@ -4,3 +4,4 @@ ball_prediction.json
 Cargo.lock
 *.svg
 perf*
+*.dump

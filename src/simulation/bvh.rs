@@ -196,21 +196,21 @@ impl Bvh {
     #[must_use]
     /// Returns the calculated ray-intersection of the given Sphere and the BVH.
     /// Returns None if no intersecting objects were found in the BVH.
-    pub fn collide(&self, s: Sphere) -> Option<Ray> {
-        let tris_hit = self.intersect(s);
+    pub fn collide(&self, obj: Sphere) -> Option<Ray> {
+        let tris_hit = self.intersect(obj);
         if tris_hit.is_empty() {
             return None;
         }
 
         let (mut contact_point, count) = tris_hit.into_iter().fold((Ray::default(), 0u8), |(mut contact_point, mut count), tri| {
-            let p = tri.center();
-            let n = tri.unit_normal();
+            let point = tri.center();
+            let normal = tri.unit_normal();
 
-            let separation = (s.center - p).dot(n);
-            if separation <= s.radius {
+            let separation = (obj.center - point).dot(normal);
+            if separation <= obj.radius {
                 count += 1;
-                contact_point.start += s.center - n * separation;
-                contact_point.direction += n * (s.radius - separation);
+                contact_point.start += obj.center - normal * separation;
+                contact_point.direction += normal * (obj.radius - separation);
             }
 
             (contact_point, count)
@@ -221,7 +221,7 @@ impl Bvh {
         } else {
             contact_point.start /= f32::from(count);
             contact_point.direction = contact_point.direction.normalize_or_zero();
-    
+
             Some(contact_point)
         }
     }
