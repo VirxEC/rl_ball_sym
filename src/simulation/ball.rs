@@ -205,9 +205,9 @@ impl Ball {
             self.angular_velocity *= (Self::W_MAX * self.angular_velocity.length_recip()).min(1.);
             self.velocity *= (Self::V_MAX * self.velocity.length_recip()).min(1.);
 
-            round_vec_bullet(&mut self.location, 0.01 * (1. / 50.));
-            round_vec_bullet(&mut self.velocity, 0.01 * (1. / 50.));
-            round_vec_bullet(&mut self.angular_velocity, 0.00001);
+            round_vec_bullet(&mut self.location, 50., 0.01 * (1. / 50.));
+            round_vec_bullet(&mut self.velocity, 50., 0.01 * (1. / 50.));
+            round_vec_bullet(&mut self.angular_velocity, 1., 0.00001);
         }
     }
 

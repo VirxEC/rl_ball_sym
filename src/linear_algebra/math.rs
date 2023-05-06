@@ -1,8 +1,8 @@
 use glam::{Mat3A, Vec3A};
 
 /// Round a vector to a given precision
-pub fn round_vec_bullet(vec: &mut Vec3A, precision: f32) {
-    *vec = (*vec / 50. / precision).round() * precision * 50.;
+pub fn round_vec_bullet(vec: &mut Vec3A, scale: f32, precision: f32) {
+    *vec = (*vec / scale / precision).round() * precision * scale;
 }
 
 #[must_use]
