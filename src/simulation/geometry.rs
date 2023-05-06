@@ -1,7 +1,10 @@
 //! Various geometrical objects and tools.
 
 use glam::{Mat3A, Vec3A};
-use std::{array::IntoIter, ops::Add};
+use std::{
+    array::IntoIter,
+    ops::{Add, AddAssign},
+};
 
 #[must_use]
 /// Find the distance between a ray and a point.
@@ -53,13 +56,13 @@ impl Tri {
     #[must_use]
     #[inline]
     /// Get the center of the triangle.
-    pub fn center(&self) -> Vec3A {
+    pub fn center(self) -> Vec3A {
         (self.0[0] + self.0[1] + self.0[2]) / 3.
     }
 
     #[must_use]
     /// Get the normal of the triangle.
-    pub fn unit_normal(&self) -> Vec3A {
+    pub fn unit_normal(self) -> Vec3A {
         (self.0[1] - self.0[0]).cross(self.0[2] - self.0[0]).normalize()
     }
 
@@ -115,7 +118,7 @@ impl Aabb {
     /// Create a new AABB.
     ///
     /// Used in tests.
-    pub const fn from_minmax(min: Vec3A, max: Vec3A) -> Self {
+    pub const fn new(min: Vec3A, max: Vec3A) -> Self {
         Self { min, max }
     }
 
@@ -156,7 +159,7 @@ impl Aabb {
     #[must_use]
     #[inline]
     /// Check if another AABB intersects this one.
-    pub fn intersect_self(&self, b: &Self) -> bool {
+    pub fn intersect_self(self, b: &Self) -> bool {
         self.min.cmple(b.max).all() && self.max.cmpge(b.min).all()
     }
 
@@ -206,6 +209,21 @@ pub struct Ray {
     pub start: Vec3A,
     /// Direction the ray is pointing.
     pub direction: Vec3A,
+}
+
+impl AddAssign<Ray> for Ray {
+    #[inline]
+    fn add_assign(&mut self, rhs: Ray) {
+        self.start += rhs.start;
+        self.direction += rhs.direction;
+    }
+}
+
+impl Ray {
+    #[inline]
+    pub fn new(start: Vec3A, direction: Vec3A) -> Self {
+        Self { start, direction }
+    }
 }
 
 /// A Sphere-like object.

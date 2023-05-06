@@ -202,28 +202,30 @@ impl Bvh {
             return None;
         }
 
-        let (mut contact_point, count) = tris_hit.into_iter().fold((Ray::default(), 0u8), |(mut contact_point, mut count), tri| {
-            let point = tri.center();
-            let normal = tri.unit_normal();
-
+        let mut contact_points = tris_hit.into_iter().map(|tri| (tri.center(), tri.unit_normal())).flat_map(|(point, normal)| {
             let separation = (obj.center - point).dot(normal);
             if separation <= obj.radius {
-                count += 1;
-                contact_point.start += obj.center - normal * separation;
-                contact_point.direction += normal * (obj.radius - separation);
+                Some(Ray::new(obj.center - normal * separation, normal * (obj.radius - separation)))
+            } else {
+                None
             }
-
-            (contact_point, count)
         });
 
-        if count == 0 {
-            None
-        } else {
-            contact_point.start /= f32::from(count);
-            contact_point.direction = contact_point.direction.normalize_or_zero();
+        let Some(mut contact_point) = contact_points.next() else {
+            return None;
+        };
 
-            Some(contact_point)
+        let mut count = 1.;
+
+        for point in contact_points {
+            count += 1.;
+            contact_point += point;
         }
+
+        contact_point.start /= count;
+        contact_point.direction = contact_point.direction.normalize_or_zero();
+
+        Some(contact_point)
     }
 }
 
@@ -247,12 +249,12 @@ mod test {
     #[test]
     fn global_bounding_box() {
         let bounding_boxes = vec![
-            Aabb::from_minmax(Vec3A::new(MIN_X, 0.0, 0.0), Vec3A::ZERO),
-            Aabb::from_minmax(Vec3A::new(0.0, MIN_Y, 0.0), Vec3A::ZERO),
-            Aabb::from_minmax(Vec3A::new(0.0, 0.0, MIN_Z), Vec3A::ZERO),
-            Aabb::from_minmax(Vec3A::ZERO, Vec3A::new(MAX_X, 0.0, 0.0)),
-            Aabb::from_minmax(Vec3A::ZERO, Vec3A::new(0.0, MAX_Y, 0.0)),
-            Aabb::from_minmax(Vec3A::ZERO, Vec3A::new(0.0, 0.0, MAX_Z)),
+            Aabb::new(Vec3A::new(MIN_X, 0.0, 0.0), Vec3A::ZERO),
+            Aabb::new(Vec3A::new(0.0, MIN_Y, 0.0), Vec3A::ZERO),
+            Aabb::new(Vec3A::new(0.0, 0.0, MIN_Z), Vec3A::ZERO),
+            Aabb::new(Vec3A::ZERO, Vec3A::new(MAX_X, 0.0, 0.0)),
+            Aabb::new(Vec3A::ZERO, Vec3A::new(0.0, MAX_Y, 0.0)),
+            Aabb::new(Vec3A::ZERO, Vec3A::new(0.0, 0.0, MAX_Z)),
         ];
 
         let global = global_aabb(&bounding_boxes);
@@ -268,8 +270,8 @@ mod test {
     #[test]
     fn global_bounding_box_min() {
         let bounding_boxes = vec![
-            Aabb::from_minmax(Vec3A::new(MIN_X, MIN_Y, MIN_Z), Vec3A::new(MIN_X, MIN_Y, MIN_Z)),
-            Aabb::from_minmax(Vec3A::new(MIN_X, MIN_Y, MIN_Z), Vec3A::new(MIN_X, MIN_Y, MIN_Z)),
+            Aabb::new(Vec3A::new(MIN_X, MIN_Y, MIN_Z), Vec3A::new(MIN_X, MIN_Y, MIN_Z)),
+            Aabb::new(Vec3A::new(MIN_X, MIN_Y, MIN_Z), Vec3A::new(MIN_X, MIN_Y, MIN_Z)),
         ];
         let global = global_aabb(&bounding_boxes);
 
@@ -284,8 +286,8 @@ mod test {
     #[test]
     fn global_bounding_box_max() {
         let bounding_boxes = vec![
-            Aabb::from_minmax(Vec3A::new(MAX_X, MAX_Y, MAX_Z), Vec3A::new(MAX_X, MAX_Y, MAX_Z)),
-            Aabb::from_minmax(Vec3A::new(MAX_X, MAX_Y, MAX_Z), Vec3A::new(MAX_X, MAX_Y, MAX_Z)),
+            Aabb::new(Vec3A::new(MAX_X, MAX_Y, MAX_Z), Vec3A::new(MAX_X, MAX_Y, MAX_Z)),
+            Aabb::new(Vec3A::new(MAX_X, MAX_Y, MAX_Z), Vec3A::new(MAX_X, MAX_Y, MAX_Z)),
         ];
         let global = global_aabb(&bounding_boxes);
 

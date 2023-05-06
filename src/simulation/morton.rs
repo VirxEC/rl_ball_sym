@@ -61,11 +61,11 @@ mod test {
 
     #[test]
     fn morton() {
-        let global_box = Aabb::from_minmax(Vec3A::new(-4096., -5120., 0.), Vec3A::new(4096., 5120., 2044.));
+        let global_box = Aabb::new(Vec3A::new(-4096., -5120., 0.), Vec3A::new(4096., 5120., 2044.));
 
         let morton = Morton::from(global_box);
 
-        let box_ = Aabb::from_minmax(Vec3A::new(-4095., -5119., 1.), Vec3A::new(-4094., -5118., 2.));
+        let box_ = Aabb::new(Vec3A::new(-4095., -5119., 1.), Vec3A::new(-4094., -5118., 2.));
 
         // let code = morton.get_code(&box_);
         let c = (box_.min() + box_.max()) / 2.;

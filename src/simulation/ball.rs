@@ -194,7 +194,7 @@ impl Ball {
 
                 let penetration = self.collision_radius - (self.location - p).dot(n);
                 if penetration > 0. {
-                    self.location += n * (1.001 * penetration);
+                    self.location += 1.001 * penetration * n;
                 }
             } else {
                 self.velocity *= (1. - Self::DRAG).powf(dt);
