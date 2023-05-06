@@ -220,7 +220,7 @@ impl Bvh {
             None
         } else {
             contact_point.start /= f32::from(count);
-            contact_point.direction = contact_point.direction.normalize_or_zero();
+            contact_point.direction = contact_point.direction.normalize();
 
             Some(contact_point)
         }

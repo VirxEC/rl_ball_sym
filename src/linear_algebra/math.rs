@@ -1,5 +1,10 @@
 use glam::{Mat3A, Vec3A};
 
+/// Round a vector to a given precision
+pub fn round_vec_bullet(vec: &mut Vec3A, precision: f32) {
+    *vec = (*vec / 50. / precision).round() * precision * 50.;
+}
+
 #[must_use]
 #[inline]
 /// Convert an axis-angle vector to a rotation matrix.

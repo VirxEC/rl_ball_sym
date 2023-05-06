@@ -1,6 +1,9 @@
 //! Tools for simulation a Rocket League ball.
 
-use crate::simulation::{game::Game, geometry::Sphere};
+use crate::{
+    linear_algebra::math::round_vec_bullet,
+    simulation::{game::Game, geometry::Sphere},
+};
 use glam::Vec3A;
 
 /// Represents the game's ball
@@ -27,13 +30,15 @@ pub type Predictions = Vec<Ball>;
 
 impl Ball {
     const RESTITUTION: f32 = 0.6;
-    const DRAG: f32 = -0.0305;
+    const DRAG: f32 = 0.03;
     const MU: f32 = 2.;
 
     const V_MAX: f32 = 6000.;
     const W_MAX: f32 = 6.;
 
     const M: f32 = 30.;
+    const INV_M: f32 = 1. / 30.;
+    const RESTITUTION_M: f32 = -(1. + Self::RESTITUTION) * Self::M;
 
     const STANDARD_RADIUS: f32 = 91.25;
     const HOOPS_RADIUS: f32 = 91.25;
@@ -41,9 +46,6 @@ impl Ball {
     const STANDARD_COLLISION_RADIUS: f32 = 93.15;
     const HOOPS_COLLISION_RADIUS: f32 = 93.15;
     const DROPSHOT_COLLISION_RADIUS: f32 = 103.6;
-
-    const INV_M: f32 = 1. / 30.;
-    const RESTITUTION_M: f32 = -(1. + Self::RESTITUTION) * Self::M;
 
     const SIMULATION_DT: f32 = 1. / 120.;
     const STANDARD_NUM_SLICES: usize = 720;
@@ -161,6 +163,8 @@ impl Ball {
     ///
     /// `dt` - The delta time (game tick length)
     pub fn step(&mut self, game: &Game, dt: f32) {
+        self.time += dt;
+
         if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
             if let Some(contact) = game.collision_mesh.collide(self.hitbox()) {
                 let p = contact.start;
@@ -180,24 +184,31 @@ impl Ball {
 
                 let j = j_perp + j_para;
 
-                self.angular_velocity += loc.cross(j) / self.moi;
-                self.velocity = (self.velocity + j / Self::M) * (1. + Self::DRAG).powf(dt) + game.gravity * dt;
+                self.velocity *= (1. - Self::DRAG).powf(dt);
+                self.velocity += game.gravity * dt;
+                self.velocity += j * Self::INV_M;
+
                 self.location += self.velocity * dt;
+
+                self.angular_velocity += loc.cross(j) / self.moi;
 
                 let penetration = self.collision_radius - (self.location - p).dot(n);
                 if penetration > 0. {
                     self.location += n * (1.001 * penetration);
                 }
             } else {
-                self.velocity = self.velocity * (1. + Self::DRAG).powf(dt) + game.gravity * dt;
+                self.velocity *= (1. - Self::DRAG).powf(dt);
+                self.velocity += game.gravity * dt;
                 self.location += self.velocity * dt;
             }
 
             self.angular_velocity *= (Self::W_MAX * self.angular_velocity.length_recip()).min(1.);
             self.velocity *= (Self::V_MAX * self.velocity.length_recip()).min(1.);
-        }
 
-        self.time += dt;
+            round_vec_bullet(&mut self.location, 0.01 * (1. / 50.));
+            round_vec_bullet(&mut self.velocity, 0.01 * (1. / 50.));
+            round_vec_bullet(&mut self.angular_velocity, 0.00001);
+        }
     }
 
     /// Simulate the ball for at least the given amount of time
