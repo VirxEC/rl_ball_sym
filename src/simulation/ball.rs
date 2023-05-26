@@ -37,7 +37,7 @@ impl Ball {
     const W_MAX: f32 = 6.;
 
     const M: f32 = 30.;
-    const INV_M: f32 = 1. / 30.;
+    const INV_M: f32 = 1. / Self::M;
     const RESTITUTION_M: f32 = -(1. + Self::RESTITUTION) * Self::M;
 
     const STANDARD_RADIUS: f32 = 91.25;

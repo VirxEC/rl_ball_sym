@@ -8,10 +8,7 @@ use std::io::{Cursor, Read};
 
 #[inline]
 fn extract_f32(cursor: &mut Cursor<&[u8]>) -> f32 {
-    match cursor.read_f32::<LittleEndian>() {
-        Ok(float) => float,
-        Err(e) => panic!("Problem parsing ***_vertices.dat: {e:?}"),
-    }
+    cursor.read_f32::<LittleEndian>().unwrap_or_else(|e| panic!("Problem parsing ***_vertices.dat: {e:?}"))
 }
 
 /// A collection of inter-connected triangles.
