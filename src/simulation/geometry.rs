@@ -71,7 +71,6 @@ impl Tri {
     /// Check if a sphere intersects the triangle.
     pub fn intersect_sphere(&self, obj: Sphere) -> bool {
         let e1 = self.0[1] - self.0[0];
-        let e2 = self.0[2] - self.0[1];
         let e3 = self.0[0] - self.0[2];
         let n = e3.cross(e1).normalize();
 
@@ -94,7 +93,7 @@ impl Tri {
         } else {
             (obj.radius + 1.)
                 .min(distance_between(self.0[0], e1, obj.center))
-                .min(distance_between(self.0[1], e2, obj.center))
+                .min(distance_between(self.0[1], self.0[2] - self.0[1], obj.center))
                 .min(distance_between(self.0[2], e3, obj.center))
         };
 

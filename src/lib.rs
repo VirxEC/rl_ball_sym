@@ -25,6 +25,7 @@
 //! assert_eq!(ball.time, 0.);
 //! ```
 
+/// The `rl_ball_sym` crate uses the `glam` crate for SIMD-accelerated linear algebra.
 pub extern crate glam;
 
 #[cfg(feature = "compression")]
