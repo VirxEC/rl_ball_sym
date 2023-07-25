@@ -60,11 +60,19 @@ fn main() -> io::Result<()> {
     }
 
     let last_cball = cballs.last().unwrap();
-    let last_ball = *ball.get_ball_prediction_struct_for_time(&game, last_cball.time - ball.time).last().unwrap();
+    let last_ball = *ball
+        .get_ball_prediction_struct_for_time(&game, last_cball.time - ball.time)
+        .last()
+        .unwrap();
 
     println!("Advanced to time {}, aimed for {}:", last_ball.time, last_cball.time);
     println!("{}", last_ball.location - last_cball.location);
-    println!("{}, {}: {}", last_ball.velocity, last_cball.velocity, last_ball.velocity - last_cball.velocity);
+    println!(
+        "{}, {}: {}",
+        last_ball.velocity,
+        last_cball.velocity,
+        last_ball.velocity - last_cball.velocity
+    );
     println!("{}", last_ball.angular_velocity - last_cball.angular_velocity);
 
     Ok(())

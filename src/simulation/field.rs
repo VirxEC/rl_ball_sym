@@ -11,12 +11,20 @@ const FLIP_Y: Mat3A = Mat3A::from_cols(Vec3A::X, Vec3A::NEG_Y, Vec3A::Z);
 
 #[inline]
 fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
-    Mesh::new(vec![0, 1, 3, 1, 2, 3], vec![p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2])
+    Mesh::new(
+        vec![0, 1, 3, 1, 2, 3],
+        vec![p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2],
+    )
 }
 
 #[must_use]
 /// Get a BVH generated from the given standard field meshes.
-pub(crate) fn initialize_standard(standard_corner: &Mesh, standard_goal: &Mesh, standard_ramps_0: &Mesh, standard_ramps_1: &Mesh) -> Bvh {
+pub(crate) fn initialize_standard(
+    standard_corner: &Mesh,
+    standard_goal: &Mesh,
+    standard_ramps_0: &Mesh,
+    standard_ramps_1: &Mesh,
+) -> Bvh {
     const SCALE: f32 = 100.;
     const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
 
@@ -26,10 +34,22 @@ pub(crate) fn initialize_standard(standard_corner: &Mesh, standard_goal: &Mesh, 
     let standard_ramps_1_tf = standard_ramps_1.transform(S);
 
     let floor = quad(Vec3A::ZERO, Vec3A::new(4096., 0., 0.), Vec3A::new(0., 5500., 0.));
-    let ceiling = quad(Vec3A::new(0., 0., 2048.), Vec3A::new(-4096., 0., 0.), Vec3A::new(0., 5120., 0.));
+    let ceiling = quad(
+        Vec3A::new(0., 0., 2048.),
+        Vec3A::new(-4096., 0., 0.),
+        Vec3A::new(0., 5120., 0.),
+    );
     let [side_wall_0, side_wall_1] = [
-        quad(Vec3A::new(4096., 0., 1024.), Vec3A::new(0., -5120., 0.), Vec3A::new(0., 0., 1024.)),
-        quad(Vec3A::new(-4096., 0., 1024.), Vec3A::new(0., 5120., 0.), Vec3A::new(0., 0., 1024.)),
+        quad(
+            Vec3A::new(4096., 0., 1024.),
+            Vec3A::new(0., -5120., 0.),
+            Vec3A::new(0., 0., 1024.),
+        ),
+        quad(
+            Vec3A::new(-4096., 0., 1024.),
+            Vec3A::new(0., 5120., 0.),
+            Vec3A::new(0., 0., 1024.),
+        ),
     ];
 
     let field_mesh = Mesh::combine([
@@ -54,7 +74,13 @@ pub(crate) fn initialize_standard(standard_corner: &Mesh, standard_goal: &Mesh, 
 
 #[must_use]
 /// Get a BVH generated from the given hoops field meshes.
-pub(crate) fn initialize_hoops(hoops_corner: Mesh, hoops_net: &Mesh, hoops_rim: &Mesh, hoops_ramps_0: Mesh, hoops_ramps_1: Mesh) -> Bvh {
+pub(crate) fn initialize_hoops(
+    hoops_corner: Mesh,
+    hoops_net: &Mesh,
+    hoops_rim: &Mesh,
+    hoops_ramps_0: Mesh,
+    hoops_ramps_1: Mesh,
+) -> Bvh {
     const SCALE: f32 = 0.9;
     const Y_OFFSET: f32 = 431.664;
 
@@ -67,16 +93,36 @@ pub(crate) fn initialize_hoops(hoops_corner: Mesh, hoops_net: &Mesh, hoops_rim: 
 
     let floor = quad(Vec3A::ZERO, Vec3A::new(2966., 0., 0.), Vec3A::new(0., 3581., 0.));
 
-    let ceiling = quad(Vec3A::new(0., 0., 1820.), Vec3A::new(-2966., 0., 0.), Vec3A::new(0., 3581., 0.));
+    let ceiling = quad(
+        Vec3A::new(0., 0., 1820.),
+        Vec3A::new(-2966., 0., 0.),
+        Vec3A::new(0., 3581., 0.),
+    );
 
     let [side_wall_0, side_wall_1] = [
-        quad(Vec3A::new(2966., 0., 910.), Vec3A::new(0., -3581., 0.), Vec3A::new(0., 0., 910.)),
-        quad(Vec3A::new(-2966., 0., 910.), Vec3A::new(0., 3581., 0.), Vec3A::new(0., 0., 910.)),
+        quad(
+            Vec3A::new(2966., 0., 910.),
+            Vec3A::new(0., -3581., 0.),
+            Vec3A::new(0., 0., 910.),
+        ),
+        quad(
+            Vec3A::new(-2966., 0., 910.),
+            Vec3A::new(0., 3581., 0.),
+            Vec3A::new(0., 0., 910.),
+        ),
     ];
 
     let [back_wall_0, back_wall_1] = [
-        quad(Vec3A::new(0., 0., 1024.), Vec3A::new(0., -5120., 0.), Vec3A::new(0., 0., 1024.)),
-        quad(Vec3A::new(0., 0., 1024.), Vec3A::new(0., 5120., 0.), Vec3A::new(0., 0., 1024.)),
+        quad(
+            Vec3A::new(0., 0., 1024.),
+            Vec3A::new(0., -5120., 0.),
+            Vec3A::new(0., 0., 1024.),
+        ),
+        quad(
+            Vec3A::new(0., 0., 1024.),
+            Vec3A::new(0., 5120., 0.),
+            Vec3A::new(0., 0., 1024.),
+        ),
     ];
 
     let field_mesh = Mesh::combine([
@@ -112,10 +158,14 @@ pub(crate) fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
     const Z: Vec3A = Vec3A::new(0., 0., 1010.);
     const DZ: Vec3A = Vec3A::new(0., 0., Z_OFFSET);
 
-    let q = axis_to_rotation(Vec3A::new(0., 0., FRAC_PI_6));
+    let q = axis_to_rotation(Vec3A::new(0., 0., FRAC_PI_6)).transpose();
 
     let floor = quad(Vec3A::new(0., 0., 2.), Vec3A::new(10000., 0., 0.), Vec3A::new(0., 7000., 0.));
-    let ceiling = quad(Vec3A::new(0., 0., 2020.), Vec3A::new(-10000., 0., 0.), Vec3A::new(0., 7000., 0.));
+    let ceiling = quad(
+        Vec3A::new(0., 0., 2020.),
+        Vec3A::new(-10000., 0., 0.),
+        Vec3A::new(0., 7000., 0.),
+    );
 
     let mut p = Vec3A::new(0., 11683.6 * SCALE, 2768.64 * SCALE - Z_OFFSET);
     let mut x = Vec3A::new(5000., 0., 0.);
@@ -178,14 +228,34 @@ pub(crate) fn initialize_throwback(
     const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
 
     let floor = quad(Vec3A::ZERO, Vec3A::new(4096.6, 0., 0.), Vec3A::new(0., 6910., 0.));
-    let ceiling = quad(Vec3A::new(0., 0., 2048.), Vec3A::new(-4096.6, 0., 0.), Vec3A::new(0., 6910., 0.));
+    let ceiling = quad(
+        Vec3A::new(0., 0., 2048.),
+        Vec3A::new(-4096.6, 0., 0.),
+        Vec3A::new(0., 6910., 0.),
+    );
     let [side_wall_0, side_wall_1] = [
-        quad(Vec3A::new(4096.6, 0., 1024.), Vec3A::new(0., -6910., 0.), Vec3A::new(0., 0., 1024.)),
-        quad(Vec3A::new(-4096.6, 0., 1024.), Vec3A::new(0., 6910., 0.), Vec3A::new(0., 0., 1024.)),
+        quad(
+            Vec3A::new(4096.6, 0., 1024.),
+            Vec3A::new(0., -6910., 0.),
+            Vec3A::new(0., 0., 1024.),
+        ),
+        quad(
+            Vec3A::new(-4096.6, 0., 1024.),
+            Vec3A::new(0., 6910., 0.),
+            Vec3A::new(0., 0., 1024.),
+        ),
     ];
     let [back_wall_0, back_wall_1] = [
-        quad(Vec3A::new(0., 6910., 1024.), Vec3A::new(4096., 0., 0.), Vec3A::new(0., 0., 1024.)),
-        quad(Vec3A::new(0., -6910., 1024.), Vec3A::new(-4096., 0., 0.), Vec3A::new(0., 0., 1024.)),
+        quad(
+            Vec3A::new(0., 6910., 1024.),
+            Vec3A::new(4096., 0., 0.),
+            Vec3A::new(0., 0., 1024.),
+        ),
+        quad(
+            Vec3A::new(0., -6910., 1024.),
+            Vec3A::new(-4096., 0., 0.),
+            Vec3A::new(0., 0., 1024.),
+        ),
     ];
 
     let throwback_goal = goal.transform(S);

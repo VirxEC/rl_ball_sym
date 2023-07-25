@@ -15,12 +15,20 @@ static GAME: RwLock<Lazy<(Game, Ball)>> = RwLock::new(Lazy::new(load_standard));
 fn main() {
     let mut rng = rand::thread_rng();
     let mut time = 0.;
-
-    // simulate our get_output function being called for 2 seconds - you can pretty much just ignore this.
+    
+    // Generate random inputs for our get_output function - you just ignore this
     for _ in 0..240 {
         get_output(
-            Vec3A::new(rng.gen_range(-4000.0..4000.), rng.gen_range(-5020.0..5020.), rng.gen_range(0.0..1944.)),
-            Vec3A::new(rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.)),
+            Vec3A::new(
+                rng.gen_range(-4000.0..4000.),
+                rng.gen_range(-5020.0..5020.),
+                rng.gen_range(0.0..1944.),
+            ),
+            Vec3A::new(
+                rng.gen_range(-2000.0..2000.),
+                rng.gen_range(-2000.0..2000.),
+                rng.gen_range(-2000.0..2000.),
+            ),
             Vec3A::new(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)),
             time,
         );
@@ -28,6 +36,7 @@ fn main() {
     }
 }
 
+// Run the simulation
 fn get_output(ball_location: Vec3A, ball_velocity: Vec3A, ball_angular_velocity: Vec3A, time: f32) {
     let reader = GAME.read().expect("game lock poisoned");
 

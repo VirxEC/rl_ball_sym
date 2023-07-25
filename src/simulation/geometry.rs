@@ -163,7 +163,6 @@ impl Aabb {
     }
 
     #[must_use]
-    #[inline]
     #[allow(dead_code)]
     /// Check if a sphere intersects this AABB.
     ///
@@ -187,10 +186,10 @@ impl Add for Aabb {
     }
 }
 
-impl From<&'_ Tri> for Aabb {
+impl From<Tri> for Aabb {
     #[inline]
-    fn from(value: &'_ Tri) -> Self {
-        Self::from_tri(*value)
+    fn from(value: Tri) -> Self {
+        Self::from_tri(value)
     }
 }
 
@@ -239,7 +238,11 @@ mod test {
     use super::*;
     use glam::Vec3A;
 
-    const TRI: Tri = Tri::from_points(Vec3A::new(-1.0, 5.0, 0.0), Vec3A::new(2.0, 2.0, -3.0), Vec3A::new(5.0, 5.0, 0.0));
+    const TRI: Tri = Tri::from_points(
+        Vec3A::new(-1.0, 5.0, 0.0),
+        Vec3A::new(2.0, 2.0, -3.0),
+        Vec3A::new(5.0, 5.0, 0.0),
+    );
 
     const SPHERE: Sphere = Sphere {
         center: Vec3A::new(1.0, 0.0, 1.0),

@@ -79,9 +79,6 @@ impl BvhNode {
 /// A bounding volume hierarchy.
 #[derive(Clone, Debug)]
 pub(crate) struct Bvh {
-    /// The bounding box of the entire BVH; used in tests
-    #[allow(dead_code)]
-    global_box: Aabb,
     /// The number of leaves that the BVH has; used in tests
     #[allow(dead_code)]
     num_leaves: usize,
@@ -100,20 +97,21 @@ impl Bvh {
     pub fn from(primitives: &[Tri]) -> Self {
         let num_leaves = primitives.len();
 
-        let boxes: Vec<Aabb> = primitives.iter().map(Into::into).collect();
+        let boxes: Vec<Aabb> = primitives.iter().copied().map(Into::into).collect();
         let global_box = global_aabb(&boxes);
         let morton = Morton::from(global_box);
 
-        let mut sorted_leaves: Vec<Leaf> = boxes
-            .into_iter()
-            .enumerate()
-            .map(|(i, box_)| Leaf::new(primitives[i], box_, morton.get_code(box_)))
+        let mut sorted_leaves: Vec<Leaf> = primitives
+            .iter()
+            .copied()
+            .zip(boxes)
+            .map(|(primitive, box_)| Leaf::new(primitive, box_, morton.get_code(box_)))
             .collect();
         radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.morton);
 
         let root = Self::generate_hierarchy(&sorted_leaves, 0, num_leaves - 1);
 
-        Self { global_box, num_leaves, root }
+        Self { num_leaves, root }
     }
 
     fn generate_hierarchy(sorted_leaves: &[Leaf], first: usize, last: usize) -> BvhNode {
@@ -202,14 +200,18 @@ impl Bvh {
             return None;
         }
 
-        let mut contact_points = tris_hit.into_iter().map(|tri| (tri.center(), tri.unit_normal())).flat_map(|(point, normal)| {
-            let separation = (obj.center - point).dot(normal);
-            if separation <= obj.radius {
-                Some(Ray::new(obj.center - normal * separation, normal * (obj.radius - separation)))
-            } else {
-                None
-            }
-        });
+        let mut contact_points =
+            tris_hit
+                .into_iter()
+                .map(|tri| (tri.center(), tri.unit_normal()))
+                .filter_map(|(point, normal)| {
+                    let separation = (obj.center - point).dot(normal);
+                    if separation <= obj.radius {
+                        Some(Ray::new(obj.center - normal * separation, normal * (obj.radius - separation)))
+                    } else {
+                        None
+                    }
+                });
 
         let Some(mut contact_point) = contact_points.next() else {
             return None;
@@ -325,7 +327,10 @@ mod test {
             Vec3A::new(4096.0, 5120.0, 0.0),
             Vec3A::new(4096.0, 5120.0, 2044.0),
         ];
-        VERT_MAP.iter().map(|map| Tri::from_points(verts[map[0]], verts[map[1]], verts[map[2]])).collect()
+        VERT_MAP
+            .iter()
+            .map(|map| Tri::from_points(verts[map[0]], verts[map[1]], verts[map[2]]))
+            .collect()
     }
 
     #[test]
@@ -524,13 +529,21 @@ mod test {
         let mut y_locs = Vec::with_capacity(num_slices);
         let mut z_locs = Vec::with_capacity(num_slices);
 
-        dbg!(game.collision_mesh.global_box);
+        dbg!(game.collision_mesh.root.box_());
 
         for _ in 0..iters {
             ball.update(
                 0.,
-                Vec3A::new(rng.gen_range(-3200.0..3200.), rng.gen_range(-4500.0..4500.), rng.gen_range(100.0..1900.)),
-                Vec3A::new(rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.)),
+                Vec3A::new(
+                    rng.gen_range(-3200.0..3200.),
+                    rng.gen_range(-4500.0..4500.),
+                    rng.gen_range(100.0..1900.),
+                ),
+                Vec3A::new(
+                    rng.gen_range(-2000.0..2000.),
+                    rng.gen_range(-2000.0..2000.),
+                    rng.gen_range(-2000.0..2000.),
+                ),
                 Vec3A::new(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)),
             );
 
@@ -552,14 +565,14 @@ mod test {
         dbg!(*z_locs.iter().min().unwrap());
         dbg!(*z_locs.iter().max().unwrap());
 
-        assert!(*z_locs.iter().min().unwrap() > game.collision_mesh.global_box.min().z as isize);
-        assert!(*z_locs.iter().max().unwrap() < game.collision_mesh.global_box.max().z as isize);
+        assert!(*z_locs.iter().min().unwrap() > game.collision_mesh.root.box_().min().z as isize);
+        assert!(*z_locs.iter().max().unwrap() < game.collision_mesh.root.box_().max().z as isize);
 
-        assert!(*y_locs.iter().min().unwrap() > game.collision_mesh.global_box.min().y as isize);
-        assert!(*y_locs.iter().max().unwrap() < game.collision_mesh.global_box.max().y as isize);
+        assert!(*y_locs.iter().min().unwrap() > game.collision_mesh.root.box_().min().y as isize);
+        assert!(*y_locs.iter().max().unwrap() < game.collision_mesh.root.box_().max().y as isize);
 
-        assert!(*x_locs.iter().min().unwrap() > game.collision_mesh.global_box.min().x as isize);
-        assert!(*x_locs.iter().max().unwrap() < game.collision_mesh.global_box.max().x as isize);
+        assert!(*x_locs.iter().min().unwrap() > game.collision_mesh.root.box_().min().x as isize);
+        assert!(*x_locs.iter().max().unwrap() < game.collision_mesh.root.box_().max().x as isize);
     }
 
     #[test]
@@ -599,13 +612,21 @@ mod test {
         let mut y_locs = Vec::with_capacity(num_slices);
         let mut z_locs = Vec::with_capacity(num_slices);
 
-        dbg!(game.collision_mesh.global_box);
+        dbg!(game.collision_mesh.root.box_());
 
         for _ in 0..iters {
             ball.update(
                 0.,
-                Vec3A::new(rng.gen_range(-3900.0..3900.), rng.gen_range(-5000.0..5000.), rng.gen_range(100.0..1900.)),
-                Vec3A::new(rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.), rng.gen_range(-2000.0..2000.)),
+                Vec3A::new(
+                    rng.gen_range(-3900.0..3900.),
+                    rng.gen_range(-5000.0..5000.),
+                    rng.gen_range(100.0..1900.),
+                ),
+                Vec3A::new(
+                    rng.gen_range(-2000.0..2000.),
+                    rng.gen_range(-2000.0..2000.),
+                    rng.gen_range(-2000.0..2000.),
+                ),
                 Vec3A::new(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)),
             );
 
@@ -631,14 +652,14 @@ mod test {
         dbg!(*z_locs.iter().min().unwrap());
         dbg!(*z_locs.iter().max().unwrap());
 
-        assert!(*z_locs.iter().min().unwrap() > game.collision_mesh.global_box.min().z as isize);
-        assert!(*z_locs.iter().max().unwrap() < game.collision_mesh.global_box.max().z as isize);
+        assert!(*z_locs.iter().min().unwrap() > game.collision_mesh.root.box_().min().z as isize);
+        assert!(*z_locs.iter().max().unwrap() < game.collision_mesh.root.box_().max().z as isize);
 
-        assert!(*y_locs.iter().min().unwrap() > game.collision_mesh.global_box.min().y as isize);
-        assert!(*y_locs.iter().max().unwrap() < game.collision_mesh.global_box.max().y as isize);
+        assert!(*y_locs.iter().min().unwrap() > game.collision_mesh.root.box_().min().y as isize);
+        assert!(*y_locs.iter().max().unwrap() < game.collision_mesh.root.box_().max().y as isize);
 
-        assert!(*x_locs.iter().min().unwrap() > game.collision_mesh.global_box.min().x as isize);
-        assert!(*x_locs.iter().max().unwrap() < game.collision_mesh.global_box.max().x as isize);
+        assert!(*x_locs.iter().min().unwrap() > game.collision_mesh.root.box_().min().x as isize);
+        assert!(*x_locs.iter().max().unwrap() < game.collision_mesh.root.box_().max().x as isize);
     }
 
     #[test]

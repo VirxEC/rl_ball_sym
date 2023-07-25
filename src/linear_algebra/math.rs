@@ -37,6 +37,9 @@ mod test {
     #[test]
     fn test_dot() {
         assert_eq!(dot(MAT, VEC), RES);
-        assert_eq!(dot(MAT, VEC), Vec3A::new(VEC.dot(MAT.x_axis), VEC.dot(MAT.y_axis), VEC.dot(MAT.z_axis)));
+        assert_eq!(
+            dot(MAT, VEC),
+            Vec3A::new(VEC.dot(MAT.x_axis), VEC.dot(MAT.y_axis), VEC.dot(MAT.z_axis))
+        );
     }
 }

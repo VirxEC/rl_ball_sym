@@ -22,10 +22,22 @@ macro_rules! include_mesh {
 #[must_use]
 #[cfg(feature = "standard")]
 pub fn load_standard() -> (Game, Ball) {
-    let standard_corner = include_mesh!("assets/standard/standard_corner_ids.bin", "assets/standard/standard_corner_vertices.bin");
-    let standard_goal = include_mesh!("assets/standard/standard_goal_ids.bin", "assets/standard/standard_goal_vertices.bin");
-    let standard_ramps_0 = include_mesh!("assets/standard/standard_ramps_0_ids.bin", "assets/standard/standard_ramps_0_vertices.bin");
-    let standard_ramps_1 = include_mesh!("assets/standard/standard_ramps_1_ids.bin", "assets/standard/standard_ramps_1_vertices.bin");
+    let standard_corner = include_mesh!(
+        "assets/standard/standard_corner_ids.bin",
+        "assets/standard/standard_corner_vertices.bin"
+    );
+    let standard_goal = include_mesh!(
+        "assets/standard/standard_goal_ids.bin",
+        "assets/standard/standard_goal_vertices.bin"
+    );
+    let standard_ramps_0 = include_mesh!(
+        "assets/standard/standard_ramps_0_ids.bin",
+        "assets/standard/standard_ramps_0_vertices.bin"
+    );
+    let standard_ramps_1 = include_mesh!(
+        "assets/standard/standard_ramps_1_ids.bin",
+        "assets/standard/standard_ramps_1_vertices.bin"
+    );
 
     let collision_mesh = initialize_standard(&standard_corner, &standard_goal, &standard_ramps_0, &standard_ramps_1);
 
@@ -39,8 +51,14 @@ pub fn load_hoops() -> (Game, Ball) {
     let hoops_corner = include_mesh!("assets/hoops/hoops_corner_ids.bin", "assets/hoops/hoops_corner_vertices.bin");
     let hoops_net = include_mesh!("assets/hoops/hoops_net_ids.bin", "assets/hoops/hoops_net_vertices.bin");
     let hoops_rim = include_mesh!("assets/hoops/hoops_rim_ids.bin", "assets/hoops/hoops_rim_vertices.bin");
-    let hoops_ramps_0 = include_mesh!("assets/hoops/hoops_ramps_0_ids.bin", "assets/hoops/hoops_ramps_0_vertices.bin");
-    let hoops_ramps_1 = include_mesh!("assets/hoops/hoops_ramps_1_ids.bin", "assets/hoops/hoops_ramps_1_vertices.bin");
+    let hoops_ramps_0 = include_mesh!(
+        "assets/hoops/hoops_ramps_0_ids.bin",
+        "assets/hoops/hoops_ramps_0_vertices.bin"
+    );
+    let hoops_ramps_1 = include_mesh!(
+        "assets/hoops/hoops_ramps_1_ids.bin",
+        "assets/hoops/hoops_ramps_1_vertices.bin"
+    );
 
     let collision_mesh = initialize_hoops(hoops_corner, &hoops_net, &hoops_rim, hoops_ramps_0, hoops_ramps_1);
 
@@ -78,10 +96,22 @@ pub fn load_standard_throwback() -> (Game, Ball) {
         "assets/throwback/throwback_corner_ramps_upper_ids.bin",
         "assets/throwback/throwback_corner_ramps_upper_vertices.bin"
     );
-    let corner_wall_0 = include_mesh!("assets/throwback/throwback_corner_wall_0_ids.bin", "assets/throwback/throwback_corner_wall_0_vertices.bin");
-    let corner_wall_1 = include_mesh!("assets/throwback/throwback_corner_wall_1_ids.bin", "assets/throwback/throwback_corner_wall_1_vertices.bin");
-    let corner_wall_2 = include_mesh!("assets/throwback/throwback_corner_wall_2_ids.bin", "assets/throwback/throwback_corner_wall_2_vertices.bin");
-    let goal = include_mesh!("assets/throwback/throwback_goal_ids.bin", "assets/throwback/throwback_goal_vertices.bin");
+    let corner_wall_0 = include_mesh!(
+        "assets/throwback/throwback_corner_wall_0_ids.bin",
+        "assets/throwback/throwback_corner_wall_0_vertices.bin"
+    );
+    let corner_wall_1 = include_mesh!(
+        "assets/throwback/throwback_corner_wall_1_ids.bin",
+        "assets/throwback/throwback_corner_wall_1_vertices.bin"
+    );
+    let corner_wall_2 = include_mesh!(
+        "assets/throwback/throwback_corner_wall_2_ids.bin",
+        "assets/throwback/throwback_corner_wall_2_vertices.bin"
+    );
+    let goal = include_mesh!(
+        "assets/throwback/throwback_goal_ids.bin",
+        "assets/throwback/throwback_goal_vertices.bin"
+    );
     let side_ramps_lower = include_mesh!(
         "assets/throwback/throwback_side_ramps_lower_ids.bin",
         "assets/throwback/throwback_side_ramps_lower_vertices.bin"

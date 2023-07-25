@@ -8,7 +8,9 @@ use std::io::{Cursor, Read};
 
 #[inline]
 fn extract_f32(cursor: &mut Cursor<&[u8]>) -> f32 {
-    cursor.read_f32::<LittleEndian>().unwrap_or_else(|e| panic!("Problem parsing ***_vertices.dat: {e:?}"))
+    cursor
+        .read_f32::<LittleEndian>()
+        .unwrap_or_else(|e| panic!("Problem parsing ***_vertices.dat: {e:?}"))
 }
 
 /// A collection of inter-connected triangles.
@@ -61,17 +63,20 @@ impl Mesh {
     #[must_use]
     /// Combine different meshes all into one
     pub fn combine<const N: usize>(other_meshes: [Self; N]) -> Self {
-        let (n_ids, n_verts) = other_meshes.iter().fold((0, 0), |(n_ids, n_verts), m| (n_ids + m.ids.len(), n_verts + m.vertices.len()));
+        let (n_ids, n_verts) = other_meshes.iter().fold((0, 0), |(n_ids, n_verts), m| {
+            (n_ids + m.ids.len(), n_verts + m.vertices.len())
+        });
         let mut id_offset = 0;
 
-        let (ids, vertices) = other_meshes
-            .into_iter()
-            .fold((Vec::with_capacity(n_ids), Vec::with_capacity(n_verts)), |(mut ids, mut vertices), m| {
+        let (ids, vertices) = other_meshes.into_iter().fold(
+            (Vec::with_capacity(n_ids), Vec::with_capacity(n_verts)),
+            |(mut ids, mut vertices), m| {
                 ids.extend(m.ids.into_iter().map(|id| id + id_offset));
                 id_offset += m.vertices.len();
                 vertices.extend(m.vertices);
                 (ids, vertices)
-            });
+            },
+        );
 
         Self { ids, vertices }
     }

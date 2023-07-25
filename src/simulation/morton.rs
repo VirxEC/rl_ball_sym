@@ -43,6 +43,10 @@ impl Morton {
 
         let u = (c - self.offset) * self.scale;
 
+        debug_assert!(u.x >= 0.);
+        debug_assert!(u.y >= 0.);
+        debug_assert!(u.z >= 0.);
+
         // These should actually be 21 bits, but there's no u21 type and the final type is u64 (21 bits * 3 = 63 bits)
         // Allowing these warnings is ok because:
         // We have offset the values so they're all greater than 0

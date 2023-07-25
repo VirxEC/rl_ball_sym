@@ -2,7 +2,6 @@ use glam::Mat3A;
 
 pub(crate) trait MatrixExt {
     fn dot(&self, other: Self) -> Self;
-    fn denom(&self, other: f32) -> Self;
 }
 
 impl MatrixExt for Mat3A {
@@ -12,11 +11,6 @@ impl MatrixExt for Mat3A {
         // we have to transpose both matrices prior to multiplying them. Then,
         // transpose the final result.
         (self.transpose() * other.transpose()).transpose()
-    }
-
-    #[inline]
-    fn denom(&self, other: f32) -> Self {
-        Self::from_cols(self.x_axis / other, self.y_axis / other, self.z_axis / other)
     }
 }
 
