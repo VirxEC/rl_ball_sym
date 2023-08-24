@@ -1,9 +1,14 @@
 use glam::{Mat3A, Vec3A};
 
-#[inline]
-/// Round a vector to a given precision
-pub fn round_vec_bullet(vec: &mut Vec3A, scale: f32, precision: f32) {
-    *vec = (*vec / scale / precision).round() * precision * scale;
+pub trait Vec3AExt {
+    fn round_vec_bullet(&mut self, scale: f32, precision: f32);
+}
+
+impl Vec3AExt for Vec3A {
+    #[inline]
+    fn round_vec_bullet(&mut self, scale: f32, precision: f32) {
+        *self = (*self / scale / precision).round() * precision * scale;
+    }
 }
 
 #[must_use]

@@ -1,10 +1,12 @@
 //! Tools for simulation a Rocket League ball.
 
 use crate::{
-    linear_algebra::math::round_vec_bullet,
+    linear_algebra::math::Vec3AExt,
     simulation::{game::Game, geometry::Sphere},
 };
 use glam::{Mat3A, Vec3, Vec3A};
+
+use super::geometry::Ray;
 
 /// Represents the game's ball
 #[derive(Clone, Copy, Debug, Default)]
@@ -143,6 +145,92 @@ impl Ball {
         }
     }
 
+    fn get_delta_from_contact(&self, contact: Ray, gravity: Vec3A, dt: f32) -> (Vec3A, Vec3A) {
+        let p = contact.start;
+        let n = contact.direction;
+
+        let rel_pos = p - self.location;
+
+        // let penetration = -rel_pos.dot(n) - self.radius;
+        // dbg!(penetration);
+
+        let external_force_impluse = gravity * dt;
+        let vel = self.velocity + external_force_impluse + self.angular_velocity.cross(rel_pos);
+        let rel_vel = n.dot(vel);
+
+        // collision impulse
+        let (mut delta_velocity, mut delta_ang_vel, applied_impulse) = {
+            let rel_pos_cross_normal = rel_pos.cross(n);
+
+            let restitution = {
+                let vel = self.velocity + self.angular_velocity.cross(rel_pos);
+                let rel_vel = n.dot(vel);
+
+                if rel_vel.abs() < Self::VELOCITY_THRESHOLD {
+                    0.
+                } else {
+                    (Self::RESTITUTION * -rel_vel).max(0.)
+                }
+            };
+
+            // let positional_error = if penetration > 0. {
+            //     0.
+            // } else {
+            //     -penetration * Self::ERP2 / Self::SIMULATION_DT
+            // };
+
+            // let penetration_impulse = positional_error * Self::M;
+            // dbg!(penetration_impulse);
+            let velocity_error = restitution - rel_vel;
+            let velocity_impulse = velocity_error * Self::M;
+
+            let angular_component = self.inv_inertia_tensor * rel_pos_cross_normal;
+
+            let impulse_magnitude = velocity_impulse.clamp(0., 1e10);
+            let linear_component = n * Self::INV_M;
+
+            (
+                linear_component * impulse_magnitude,
+                angular_component * impulse_magnitude,
+                impulse_magnitude,
+            )
+        };
+
+        // friction impulse
+        {
+            let mut lateral_friction_dir = vel - n * rel_vel;
+            let lat_rel_vel = lateral_friction_dir.length_squared();
+
+            let (jac_diag_ab_inv, rel_pos_cross_normal, angular_component) = if lat_rel_vel > f32::EPSILON {
+                lateral_friction_dir /= lat_rel_vel.sqrt();
+
+                let torque_axis = rel_pos.cross(lateral_friction_dir);
+                let angular_component = self.inv_inertia_tensor * torque_axis;
+
+                let denom = Self::INV_M + lateral_friction_dir.dot(angular_component.cross(rel_pos));
+                (1. / denom, torque_axis, angular_component)
+            } else {
+                (Self::M, Vec3A::ZERO, Vec3A::ZERO)
+            };
+
+            let rel_vel = lateral_friction_dir.dot(self.velocity + external_force_impluse)
+                + rel_pos_cross_normal.dot(self.angular_velocity);
+            let velocity_error = -rel_vel;
+            let velocity_impulse = velocity_error * jac_diag_ab_inv;
+
+            if applied_impulse > 0. {
+                let limit = Self::FRICTION * applied_impulse;
+                let impulse_magnitude = velocity_impulse.clamp(-limit, limit);
+                let linear_component = lateral_friction_dir * Self::INV_M;
+
+                delta_velocity += linear_component * impulse_magnitude;
+                delta_ang_vel += angular_component * impulse_magnitude;
+            }
+        }
+
+        (delta_velocity + external_force_impluse, delta_ang_vel)
+    }
+
     /// Simulate the ball for one game tick
     ///
     /// `dt` - The delta time (game tick length)
@@ -151,84 +239,10 @@ impl Ball {
 
         if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
             if let Some(contact) = game.collision_mesh.collide(self.hitbox()) {
-                let p = contact.start;
-                let n = contact.direction;
-
                 self.velocity *= (1. - Self::DRAG).powf(dt);
-                let rel_pos = p - self.location;
+                let (delta_velocity, delta_ang_vel) = self.get_delta_from_contact(contact, game.gravity, dt);
 
-                // let penetration = -rel_pos.dot(n) - self.radius;
-                // dbg!(penetration);
-
-                let total_force = game.gravity * Self::M;
-                let external_force_impluse = total_force * Self::INV_M * dt;
-                let vel = self.velocity + external_force_impluse + self.angular_velocity.cross(rel_pos);
-                let rel_vel = n.dot(vel);
-
-                let rel_pos_cross_normal = rel_pos.cross(n);
-
-                let restitution = {
-                    let vel = self.velocity + self.angular_velocity.cross(rel_pos);
-                    let rel_vel = n.dot(vel);
-
-                    if rel_vel.abs() < Self::VELOCITY_THRESHOLD {
-                        0.
-                    } else {
-                        (Self::RESTITUTION * -rel_vel).max(0.)
-                    }
-                };
-
-                // let positional_error = if penetration > 0. {
-                //     0.
-                // } else {
-                //     -penetration * Self::ERP2 / Self::SIMULATION_DT
-                // };
-
-                // let penetration_impulse = positional_error * Self::M;
-                // dbg!(penetration_impulse);
-                let velocity_error = restitution - rel_vel;
-                let velocity_impulse = velocity_error * Self::M;
-
-                let angular_component = self.inv_inertia_tensor * rel_pos_cross_normal;
-
-                let applied_impulse = velocity_impulse.clamp(0., 1e10);
-                let linear_component = n * Self::INV_M;
-
-                let mut delta_velocity = linear_component * applied_impulse;
-                let mut delta_ang_vel = angular_component * applied_impulse;
-
-                let mut lateral_friction_dir = vel - n * rel_vel;
-                let lat_rel_vel = lateral_friction_dir.length_squared();
-
-                let (jac_diag_ab_inv, rel_pos_cross_normal, angular_component) = if lat_rel_vel > f32::EPSILON {
-                    lateral_friction_dir /= lat_rel_vel.sqrt();
-
-                    let torque_axis = rel_pos.cross(lateral_friction_dir);
-                    let angular_component = self.inv_inertia_tensor * torque_axis;
-
-                    let denom = Self::INV_M + lateral_friction_dir.dot(angular_component.cross(rel_pos));
-                    (1. / denom, torque_axis, angular_component)
-                } else {
-                    (Self::M, Vec3A::ZERO, Vec3A::ZERO)
-                };
-
-                {
-                    let rel_vel = lateral_friction_dir.dot(self.velocity + external_force_impluse)
-                        + rel_pos_cross_normal.dot(self.angular_velocity);
-                    let velocity_error = -rel_vel;
-                    let velocity_impulse = velocity_error * jac_diag_ab_inv;
-
-                    if applied_impulse > 0. {
-                        let limit = Self::FRICTION * applied_impulse;
-                        let applied_impulse = velocity_impulse.clamp(-limit, limit);
-                        let linear_component = lateral_friction_dir * Self::INV_M;
-
-                        delta_velocity += linear_component * applied_impulse;
-                        delta_ang_vel += angular_component * applied_impulse;
-                    }
-                }
-
-                self.velocity += delta_velocity + external_force_impluse;
+                self.velocity += delta_velocity;
                 self.angular_velocity += delta_ang_vel;
             } else {
                 self.velocity *= (1. - Self::DRAG).powf(dt);
@@ -236,12 +250,12 @@ impl Ball {
             }
 
             self.location += self.velocity * dt;
-            self.angular_velocity *= (Self::W_MAX * self.angular_velocity.length_recip()).min(1.);
-            self.velocity *= (Self::V_MAX * self.velocity.length_recip()).min(1.);
+            self.angular_velocity = self.angular_velocity.clamp_length_max(Self::W_MAX);
+            self.velocity = self.velocity.clamp_length_max(Self::V_MAX);
 
-            round_vec_bullet(&mut self.location, 50., 0.01 * (1. / 50.));
-            round_vec_bullet(&mut self.velocity, 50., 0.01 * (1. / 50.));
-            round_vec_bullet(&mut self.angular_velocity, 1., 0.00001);
+            self.location.round_vec_bullet(50., 0.0002);
+            self.velocity.round_vec_bullet(50., 0.0002);
+            self.angular_velocity.round_vec_bullet(1., 0.00001);
         }
     }
 
