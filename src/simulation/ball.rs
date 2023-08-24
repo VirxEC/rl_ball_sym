@@ -146,25 +146,19 @@ impl Ball {
     }
 
     fn get_delta_from_contact(&self, contact: Ray, gravity: Vec3A, dt: f32) -> (Vec3A, Vec3A) {
-        let p = contact.start;
-        let n = contact.direction;
-
-        let rel_pos = p - self.location;
-
-        // let penetration = -rel_pos.dot(n) - self.radius;
-        // dbg!(penetration);
+        let rel_pos = contact.start - self.location;
 
         let external_force_impluse = gravity * dt;
         let vel = self.velocity + external_force_impluse + self.angular_velocity.cross(rel_pos);
-        let rel_vel = n.dot(vel);
+        let rel_vel = contact.direction.dot(vel);
 
         // collision impulse
         let (mut delta_velocity, mut delta_ang_vel, applied_impulse) = {
-            let rel_pos_cross_normal = rel_pos.cross(n);
+            let rel_pos_cross_normal = rel_pos.cross(contact.direction);
 
             let restitution = {
                 let vel = self.velocity + self.angular_velocity.cross(rel_pos);
-                let rel_vel = n.dot(vel);
+                let rel_vel = contact.direction.dot(vel);
 
                 if rel_vel.abs() < Self::VELOCITY_THRESHOLD {
                     0.
@@ -172,6 +166,9 @@ impl Ball {
                     (Self::RESTITUTION * -rel_vel).max(0.)
                 }
             };
+
+            // let penetration = -rel_pos.dot(n) - self.radius;
+            // dbg!(penetration);
 
             // let positional_error = if penetration > 0. {
             //     0.
@@ -187,7 +184,7 @@ impl Ball {
             let angular_component = self.inv_inertia_tensor * rel_pos_cross_normal;
 
             let impulse_magnitude = velocity_impulse.clamp(0., 1e10);
-            let linear_component = n * Self::INV_M;
+            let linear_component = contact.direction * Self::INV_M;
 
             (
                 linear_component * impulse_magnitude,
@@ -198,7 +195,7 @@ impl Ball {
 
         // friction impulse
         {
-            let mut lateral_friction_dir = vel - n * rel_vel;
+            let mut lateral_friction_dir = vel - contact.direction * rel_vel;
             let lat_rel_vel = lateral_friction_dir.length_squared();
 
             let (jac_diag_ab_inv, rel_pos_cross_normal, angular_component) = if lat_rel_vel > f32::EPSILON {
@@ -240,10 +237,10 @@ impl Ball {
         if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
             if let Some(contact) = game.collision_mesh.collide(self.hitbox()) {
                 self.velocity *= (1. - Self::DRAG).powf(dt);
-                let (delta_velocity, delta_ang_vel) = self.get_delta_from_contact(contact, game.gravity, dt);
+                let (dt_velocity, dt_ang_vel) = self.get_delta_from_contact(contact, game.gravity, dt);
 
-                self.velocity += delta_velocity;
-                self.angular_velocity += delta_ang_vel;
+                self.velocity += dt_velocity;
+                self.angular_velocity += dt_ang_vel;
             } else {
                 self.velocity *= (1. - Self::DRAG).powf(dt);
                 self.velocity += game.gravity * dt;
