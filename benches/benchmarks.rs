@@ -1,4 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use glam::Vec3A;
 #[cfg(feature = "compression")]
 use rl_ball_sym::compressed;
 use rl_ball_sym::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
@@ -41,10 +42,12 @@ fn compressed_load_standard_throwback_benchmark(c: &mut Criterion) {
     });
 }
 
+const BALL_VEL: Vec3A = Vec3A::new(600., 1550., 0.);
+
 fn get_ball_prediction_struct_with_time_benchmark(c: &mut Criterion) {
     let (game, mut ball) = load_standard();
     let time = 8.;
-    ball.velocity.z = f32::EPSILON;
+    ball.velocity = BALL_VEL;
 
     c.bench_with_input(
         BenchmarkId::new("get_ball_prediction_struct_for_time", time),
@@ -55,7 +58,7 @@ fn get_ball_prediction_struct_with_time_benchmark(c: &mut Criterion) {
 
 fn get_ball_prediction_struct_benchmark(c: &mut Criterion) {
     let (game, mut ball) = load_standard();
-    ball.velocity.z = f32::EPSILON;
+    ball.velocity = BALL_VEL;
 
     c.bench_function("get_ball_prediction/standard", |b| {
         b.iter(|| ball.get_ball_prediction_struct(black_box(&game)))
@@ -64,7 +67,7 @@ fn get_ball_prediction_struct_benchmark(c: &mut Criterion) {
 
 fn get_ball_prediction_struct_hoops_benchmark(c: &mut Criterion) {
     let (game, mut ball) = load_hoops();
-    ball.velocity.z = f32::EPSILON;
+    ball.velocity = BALL_VEL;
 
     c.bench_function("get_ball_prediction/hoops", |b| {
         b.iter(|| ball.get_ball_prediction_struct(black_box(&game)))
@@ -73,7 +76,7 @@ fn get_ball_prediction_struct_hoops_benchmark(c: &mut Criterion) {
 
 fn get_ball_prediction_struct_dropshot(c: &mut Criterion) {
     let (game, mut ball) = load_dropshot();
-    ball.velocity.z = f32::EPSILON;
+    ball.velocity = BALL_VEL;
 
     c.bench_function("get_ball_prediction/dropshot", |b| {
         b.iter(|| ball.get_ball_prediction_struct(black_box(&game)))
@@ -82,7 +85,7 @@ fn get_ball_prediction_struct_dropshot(c: &mut Criterion) {
 
 fn get_ball_prediction_struct_throwback(c: &mut Criterion) {
     let (game, mut ball) = load_standard_throwback();
-    ball.velocity.z = f32::EPSILON;
+    ball.velocity = BALL_VEL;
 
     c.bench_function("get_ball_prediction/throwback", |b| {
         b.iter(|| ball.get_ball_prediction_struct(black_box(&game)))

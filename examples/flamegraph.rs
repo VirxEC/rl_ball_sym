@@ -13,7 +13,12 @@ fn main() {
 
     // we only need to call load_standard once!
     for _ in 0..6000 {
-        ball.update(0., Vec3A::new(0., 0., 200.), Vec3A::new(0., 0., -0.1), Vec3A::new(0., 0., 0.));
+        ball.update(
+            0.,
+            Vec3A::new(0., 0., 200.),
+            Vec3A::new(600., 1550., -1200.),
+            Vec3A::new(0., 0., 0.),
+        );
         black_box(ball.get_ball_prediction_struct_for_time(&game, 60.));
     }
 }

@@ -15,7 +15,7 @@ static GAME: RwLock<Lazy<(Game, Ball)>> = RwLock::new(Lazy::new(load_standard));
 fn main() {
     let mut rng = rand::thread_rng();
     let mut time = 0.;
-    
+
     // Generate random inputs for our get_output function - you just ignore this
     for _ in 0..240 {
         get_output(

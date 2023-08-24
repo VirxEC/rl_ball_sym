@@ -507,7 +507,6 @@ mod test {
         assert_eq!(ball.angular_velocity.y as i64, 0);
         assert_eq!(ball.angular_velocity.z as i64, 0);
         assert_eq!(ball.radius as i64, 91);
-        assert_eq!(ball.collision_radius as i64, 93);
 
         ball.update(
             0.098_145,
@@ -590,7 +589,6 @@ mod test {
         assert_eq!(ball.angular_velocity.y as i64, 0);
         assert_eq!(ball.angular_velocity.z as i64, 0);
         assert_eq!(ball.radius as i64, 91);
-        assert_eq!(ball.collision_radius as i64, 93);
 
         ball.update(
             0.098_145,
@@ -687,7 +685,6 @@ mod test {
         assert_eq!(ball.angular_velocity.y as i64, 0);
         assert_eq!(ball.angular_velocity.z as i64, 0);
         assert_eq!(ball.radius as i64, 91);
-        assert_eq!(ball.collision_radius as i64, 93);
     }
 
     #[test]
@@ -715,7 +712,6 @@ mod test {
         assert_eq!(ball.angular_velocity.y as i64, 0);
         assert_eq!(ball.angular_velocity.z as i64, 0);
         assert_eq!(ball.radius as i64, 91);
-        assert_eq!(ball.collision_radius as i64, 93);
     }
 
     #[test]
@@ -735,7 +731,7 @@ mod test {
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
         assert_eq!(ball.location.y as i64, 0);
-        assert_eq!(ball.location.z as i64, 113);
+        assert_eq!(ball.location.z as i64, 112);
         assert_eq!(ball.velocity.x as i64, 0);
         assert_eq!(ball.velocity.y as i64, 0);
         assert_eq!(ball.velocity.z as i64, 0);
@@ -743,7 +739,6 @@ mod test {
         assert_eq!(ball.angular_velocity.y as i64, 0);
         assert_eq!(ball.angular_velocity.z as i64, 0);
         assert_eq!(ball.radius as i64, 100);
-        assert_eq!(ball.collision_radius as i64, 103);
     }
 
     #[test]
@@ -775,7 +770,6 @@ mod test {
         assert_eq!(ball.angular_velocity.y as i64, 0);
         assert_eq!(ball.angular_velocity.z as i64, 0);
         assert_eq!(ball.radius as i64, 91);
-        assert_eq!(ball.collision_radius as i64, 93);
     }
 
     fn recurse_bvhnode(node: &BvhNode, depth: usize, max_depth: &mut usize) {

@@ -8,6 +8,7 @@ use rl_ball_sym::load_standard;
 fn main() {
     // load a standard standard match
     let (game, mut ball) = load_standard();
+    dbg!(ball.location);
 
     // the current state of the ball in the game
     ball.update(0., Vec3A::new(0., 0., 200.), Vec3A::new(0., 0., -0.1), Vec3A::new(0., 0., 0.));
