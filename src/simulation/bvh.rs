@@ -206,7 +206,7 @@ impl Bvh {
                 .map(|tri| (tri.center(), tri.unit_normal()))
                 .filter_map(|(point, normal)| {
                     let separation = (obj.center - point).dot(normal);
-                    if separation <= obj.radius {
+                    if separation < obj.radius {
                         Some(Ray::new(obj.center - normal * separation, normal * (obj.radius - separation)))
                     } else {
                         None
@@ -225,7 +225,7 @@ impl Bvh {
         }
 
         contact_point.start /= count;
-        contact_point.direction = contact_point.direction.normalize_or_zero();
+        contact_point.direction = contact_point.direction.normalize();
 
         Some(contact_point)
     }
@@ -485,10 +485,7 @@ mod test {
 
             let ray = bvh.collide(sphere);
 
-            assert!(ray.is_some());
-            let ray = ray.unwrap();
-            assert!(ray.direction.is_finite());
-            assert!(ray.start.is_finite());
+            assert!(ray.is_none());
         }
     }
 

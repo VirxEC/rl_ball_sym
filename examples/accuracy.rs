@@ -51,8 +51,9 @@ fn main() -> io::Result<()> {
         ball.step(&game, 1. / 120.);
         let vel_diff = ball.velocity - cball.velocity;
 
-        if vel_diff.length_squared() > 0. {
+        if vel_diff.length_squared() > 0.01 {
             println!("First difference at time {}:", ball.time);
+            dbg!(last_ball.location);
             dbg!(last_ball.location / 50.);
             dbg!(last_ball.velocity / 50.);
             println!(
@@ -67,21 +68,21 @@ fn main() -> io::Result<()> {
         }
     }
 
-    let last_cball = cballs.last().unwrap();
-    let last_ball = *ball
-        .get_ball_prediction_struct_for_time(&game, last_cball.time - ball.time)
-        .last()
-        .unwrap();
+    // let last_cball = cballs.last().unwrap();
+    // let last_ball = *ball
+    //     .get_ball_prediction_struct_for_time(&game, last_cball.time - ball.time)
+    //     .last()
+    //     .unwrap();
 
-    println!("Advanced to time {}, aimed for {}:", last_ball.time, last_cball.time);
-    println!("{}", last_ball.location - last_cball.location);
-    println!(
-        "{}, {}: {}",
-        last_ball.velocity,
-        last_cball.velocity,
-        last_ball.velocity - last_cball.velocity
-    );
-    println!("{}", last_ball.angular_velocity - last_cball.angular_velocity);
+    // println!("Advanced to time {}, aimed for {}:", last_ball.time, last_cball.time);
+    // println!("{}", last_ball.location - last_cball.location);
+    // println!(
+    //     "{}, {}: {}",
+    //     last_ball.velocity,
+    //     last_cball.velocity,
+    //     last_ball.velocity - last_cball.velocity
+    // );
+    // println!("{}", last_ball.angular_velocity - last_cball.angular_velocity);
 
     Ok(())
 }

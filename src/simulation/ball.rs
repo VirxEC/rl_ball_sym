@@ -48,7 +48,6 @@ impl Ball {
     const SIMULATION_DT: f32 = 1. / 120.;
     const STANDARD_NUM_SLICES: usize = 720;
 
-    // const ERP2: f32 = 0.8;
     const VELOCITY_THRESHOLD: f32 = 10.;
 
     #[must_use]
@@ -146,6 +145,8 @@ impl Ball {
     }
 
     fn get_delta_from_contact(&self, contact: Ray, gravity: Vec3A, dt: f32) -> (Vec3A, Vec3A) {
+        dbg!(contact);
+        dbg!(self);
         let rel_pos = contact.start - self.location;
 
         let external_force_impluse = gravity * dt;
@@ -167,17 +168,6 @@ impl Ball {
                 }
             };
 
-            // let penetration = -rel_pos.dot(n) - self.radius;
-            // dbg!(penetration);
-
-            // let positional_error = if penetration > 0. {
-            //     0.
-            // } else {
-            //     -penetration * Self::ERP2 / Self::SIMULATION_DT
-            // };
-
-            // let penetration_impulse = positional_error * Self::M;
-            // dbg!(penetration_impulse);
             let velocity_error = restitution - rel_vel;
             let velocity_impulse = velocity_error * Self::M;
 
@@ -194,7 +184,7 @@ impl Ball {
         };
 
         // friction impulse
-        {
+        if dbg!(applied_impulse) > 0. {
             let mut lateral_friction_dir = vel - contact.direction * rel_vel;
             let lat_rel_vel = lateral_friction_dir.length_squared();
 
@@ -214,15 +204,14 @@ impl Ball {
                 + rel_pos_cross_normal.dot(self.angular_velocity);
             let velocity_error = -rel_vel;
             let velocity_impulse = velocity_error * jac_diag_ab_inv;
+            dbg!(velocity_impulse);
+            let limit: f32 = Self::FRICTION * applied_impulse;
+            dbg!(limit);
+            let impulse_magnitude = velocity_impulse.clamp(-limit, limit);
+            let linear_component = lateral_friction_dir * Self::INV_M;
 
-            if applied_impulse > 0. {
-                let limit = Self::FRICTION * applied_impulse;
-                let impulse_magnitude = velocity_impulse.clamp(-limit, limit);
-                let linear_component = lateral_friction_dir * Self::INV_M;
-
-                delta_velocity += linear_component * impulse_magnitude;
-                delta_ang_vel += angular_component * impulse_magnitude;
-            }
+            delta_velocity += linear_component * impulse_magnitude;
+            delta_ang_vel += angular_component * impulse_magnitude;
         }
 
         (delta_velocity + external_force_impluse, delta_ang_vel)
@@ -236,6 +225,7 @@ impl Ball {
 
         if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
             if let Some(contact) = game.collision_mesh.collide(self.hitbox()) {
+                dbg!(self.time);
                 self.velocity *= (1. - Self::DRAG).powf(dt);
                 let (dt_velocity, dt_ang_vel) = self.get_delta_from_contact(contact, game.gravity, dt);
 
@@ -265,7 +255,7 @@ impl Ball {
         // We are rounding up to the nearest integer so no truncation will occur
         // We are making sure that the minimum possible value is 0 so no sign loss will occur
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        self.get_ball_prediction_struct_for_slices(game, (time / Self::SIMULATION_DT).ceil() as usize)
+        self.get_ball_prediction_struct_for_slices(game, (time / Self::SIMULATION_DT).round() as usize)
     }
 
     /// Simulate the ball for the standard amount of time (6 seconds)
