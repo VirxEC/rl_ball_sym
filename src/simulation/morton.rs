@@ -5,7 +5,7 @@ use glam::Vec3A;
 
 /// Basic data for generating morton codes.
 #[derive(Clone, Copy, Debug, Default)]
-pub(crate) struct Morton {
+pub struct Morton {
     offset: Vec3A,
     scale: Vec3A,
 }

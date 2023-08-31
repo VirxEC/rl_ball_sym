@@ -19,7 +19,7 @@ fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
 
 #[must_use]
 /// Get a BVH generated from the given standard field meshes.
-pub(crate) fn initialize_standard(
+pub fn initialize_standard(
     standard_corner: &Mesh,
     standard_goal: &Mesh,
     standard_ramps_0: &Mesh,
@@ -74,7 +74,7 @@ pub(crate) fn initialize_standard(
 
 #[must_use]
 /// Get a BVH generated from the given hoops field meshes.
-pub(crate) fn initialize_hoops(
+pub fn initialize_hoops(
     hoops_corner: Mesh,
     hoops_net: &Mesh,
     hoops_rim: &Mesh,
@@ -151,7 +151,7 @@ pub(crate) fn initialize_hoops(
 
 #[must_use]
 /// Get a BVH generated from the given dropshot field meshes.
-pub(crate) fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
+pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
     const SCALE: f32 = 0.393;
     const Z_OFFSET: f32 = -207.565;
     const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
@@ -195,7 +195,7 @@ pub(crate) fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
     Bvh::from(&field_mesh.into_triangles())
 }
 
-pub(crate) struct InitializeThrowbackParams {
+pub struct InitializeThrowbackParams {
     pub back_ramps_lower: Mesh,
     pub back_ramps_upper: Mesh,
     pub corner_ramps_lower: Mesh,
@@ -210,7 +210,7 @@ pub(crate) struct InitializeThrowbackParams {
 
 #[must_use]
 /// Get a BVH generated from the given throwback stadium meshes.
-pub(crate) fn initialize_throwback(
+pub fn initialize_throwback(
     InitializeThrowbackParams {
         back_ramps_lower,
         back_ramps_upper,

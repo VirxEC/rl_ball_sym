@@ -1,2 +1,2 @@
-pub(crate) mod mat;
-pub(crate) mod math;
+pub mod mat;
+pub mod math;

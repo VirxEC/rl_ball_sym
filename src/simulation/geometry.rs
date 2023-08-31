@@ -15,7 +15,7 @@ pub fn distance_between(start: Vec3A, dir: Vec3A, p: Vec3A) -> f32 {
 
 /// A triangle made from 3 points.
 #[derive(Clone, Copy, Debug, Default)]
-pub(crate) struct Tri([Vec3A; 3]);
+pub struct Tri([Vec3A; 3]);
 
 impl IntoIterator for Tri {
     type Item = Vec3A;
@@ -105,7 +105,7 @@ impl Tri {
 // Learn more here: https://developer.nvidia.com/blog/thinking-parallel-part-i-collision-detection-gpu/
 /// An axis-aligned bounding box.
 #[derive(Clone, Copy, Debug, Default)]
-pub(crate) struct Aabb {
+pub struct Aabb {
     min: Vec3A,
     max: Vec3A,
 }
@@ -209,9 +209,9 @@ pub struct Ray {
     pub direction: Vec3A,
 }
 
-impl AddAssign<Ray> for Ray {
+impl AddAssign<Self> for Ray {
     #[inline]
-    fn add_assign(&mut self, rhs: Ray) {
+    fn add_assign(&mut self, rhs: Self) {
         self.start += rhs.start;
         self.direction += rhs.direction;
     }
@@ -219,7 +219,7 @@ impl AddAssign<Ray> for Ray {
 
 impl Ray {
     #[inline]
-    pub fn new(start: Vec3A, direction: Vec3A) -> Self {
+    pub const fn new(start: Vec3A, direction: Vec3A) -> Self {
         Self { start, direction }
     }
 }

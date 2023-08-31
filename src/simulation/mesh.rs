@@ -15,14 +15,14 @@ fn extract_f32(cursor: &mut Cursor<&[u8]>) -> f32 {
 
 /// A collection of inter-connected triangles.
 #[derive(Clone, Debug, Default)]
-pub(crate) struct Mesh {
+pub struct Mesh {
     ids: Vec<usize>,
     vertices: Vec<Vec3A>,
 }
 
 impl Mesh {
     #[must_use]
-    pub fn from_bytes(ids_dat: &[u8], vertices_dat: &[u8]) -> Mesh {
+    pub fn from_bytes(ids_dat: &[u8], vertices_dat: &[u8]) -> Self {
         let ids = {
             let ids_len = ids_dat.len() / 4;
             let mut ids_cursor = Cursor::new(ids_dat);
@@ -50,7 +50,7 @@ impl Mesh {
                 .collect::<Vec<_>>()
         };
 
-        Mesh { ids, vertices }
+        Self { ids, vertices }
     }
 
     #[must_use]

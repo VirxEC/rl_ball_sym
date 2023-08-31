@@ -1,6 +1,6 @@
 use glam::Mat3A;
 
-pub(crate) trait MatrixExt {
+pub trait MatrixExt {
     fn dot(&self, other: Self) -> Self;
 }
 

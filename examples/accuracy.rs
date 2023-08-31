@@ -47,15 +47,15 @@ fn main() -> io::Result<()> {
     assert_eq!(ball.angular_velocity, cballs[0].angular_velocity);
 
     for cball in cballs[1..].iter() {
-        let last_ball = ball;
+        // let last_ball = ball;
         ball.step(&game, 1. / 120.);
         let vel_diff = ball.velocity - cball.velocity;
 
-        if vel_diff.length_squared() > 0.01 {
-            println!("First difference at time {}:", ball.time);
-            dbg!(last_ball.location);
-            dbg!(last_ball.location / 50.);
-            dbg!(last_ball.velocity / 50.);
+        if vel_diff.length_squared() != 0. {
+            println!("Difference at time {}:", ball.time);
+            // dbg!(last_ball.location);
+            // dbg!(last_ball.location / 50.);
+            // dbg!(last_ball.velocity / 50.);
             println!(
                 "{}, {}: {}",
                 ball.location / 50.,
@@ -63,7 +63,15 @@ fn main() -> io::Result<()> {
                 ball.location / 50. - cball.location / 50.
             );
             println!("{}, {}: {}", ball.velocity / 50., cball.velocity / 50., vel_diff / 50.);
-            println!("{}", ball.angular_velocity / 50. - cball.angular_velocity / 50.);
+            println!(
+                "{}, {}: {}",
+                ball.angular_velocity,
+                cball.angular_velocity,
+                ball.angular_velocity - cball.angular_velocity
+            );
+            // break;
+        }
+        if vel_diff.length_squared() > 0.01 {
             break;
         }
     }

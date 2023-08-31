@@ -4,12 +4,12 @@ use crate::{
     linear_algebra::math::Vec3AExt,
     simulation::{game::Game, geometry::Sphere},
 };
-use glam::{Mat3A, Vec3, Vec3A};
+use glam::Vec3A;
 
 use super::geometry::Ray;
 
 /// Represents the game's ball
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub struct Ball {
     /// Game time of the ball
     pub time: f32,
@@ -22,7 +22,14 @@ pub struct Ball {
     /// Size of the ball
     pub(crate) radius: f32,
     /// 1 / Moment of inertia of the ball in the form of a diagonal matrix
-    pub(crate) inv_inertia_tensor: Mat3A,
+    pub(crate) inv_inertia: f32,
+}
+
+impl Default for Ball {
+    #[inline]
+    fn default() -> Self {
+        Self::const_default()
+    }
 }
 
 /// Collection of Balls representing future predictions based on field geometry
@@ -38,7 +45,9 @@ impl Ball {
 
     const M: f32 = 30.;
     const INV_M: f32 = 1. / Self::M;
+    const DEFAULT_INERTIA: f32 = 1. / (0.4 * Self::M);
 
+    const VELOCITY_THRESHOLD: f32 = 10.;
     const CONTACT_BREAKING_THRESHOLD: f32 = 1.905;
 
     const STANDARD_RADIUS: f32 = 91.25;
@@ -48,19 +57,17 @@ impl Ball {
     const SIMULATION_DT: f32 = 1. / 120.;
     const STANDARD_NUM_SLICES: usize = 720;
 
-    const VELOCITY_THRESHOLD: f32 = 10.;
-
     #[must_use]
     #[inline]
     /// `Ball::default()`, but const
     pub const fn const_default() -> Self {
         Self {
             time: 0.,
-            location: Vec3A::ZERO,
+            location: Vec3A::Z,
             velocity: Vec3A::ZERO,
             angular_velocity: Vec3A::ZERO,
-            radius: 0.,
-            inv_inertia_tensor: Mat3A::IDENTITY,
+            radius: 1.,
+            inv_inertia: Self::DEFAULT_INERTIA,
         }
     }
 
@@ -70,7 +77,7 @@ impl Ball {
     pub fn initialize_standard() -> Self {
         Self {
             radius: Self::STANDARD_RADIUS,
-            inv_inertia_tensor: Self::get_inv_inertia_tensor(Self::STANDARD_RADIUS),
+            inv_inertia: Self::get_inv_inertia(Self::STANDARD_RADIUS),
             location: Self::default_height(Self::STANDARD_RADIUS),
             ..Default::default()
         }
@@ -82,7 +89,7 @@ impl Ball {
     pub fn initialize_hoops() -> Self {
         Self {
             radius: Self::HOOPS_RADIUS,
-            inv_inertia_tensor: Self::get_inv_inertia_tensor(Self::HOOPS_RADIUS),
+            inv_inertia: Self::get_inv_inertia(Self::HOOPS_RADIUS),
             location: Self::default_height(Self::HOOPS_RADIUS),
             ..Default::default()
         }
@@ -94,7 +101,7 @@ impl Ball {
     pub fn initialize_dropshot() -> Self {
         Self {
             radius: Self::DROPSHOT_RADIUS,
-            inv_inertia_tensor: Self::get_inv_inertia_tensor(Self::DROPSHOT_RADIUS),
+            inv_inertia: Self::get_inv_inertia(Self::DROPSHOT_RADIUS),
             location: Self::default_height(Self::DROPSHOT_RADIUS),
             ..Default::default()
         }
@@ -104,7 +111,7 @@ impl Ball {
     pub fn set_radius(&mut self, radius: f32) {
         debug_assert!(radius > 0.);
         self.radius = radius;
-        self.inv_inertia_tensor = Self::get_inv_inertia_tensor(radius);
+        self.inv_inertia = Self::get_inv_inertia(radius);
     }
 
     /// Calculates the default ball height based on the collision radius (arbitrary)
@@ -115,8 +122,8 @@ impl Ball {
     }
 
     #[inline]
-    fn get_inv_inertia_tensor(radius: f32) -> Mat3A {
-        Mat3A::from_diagonal(Vec3::splat(1. / (0.4 * Self::M * radius.powi(2))))
+    fn get_inv_inertia(radius: f32) -> f32 {
+        1. / (0.4 * Self::M * radius.powi(2))
     }
 
     /// Get the radius of the ball
@@ -145,8 +152,9 @@ impl Ball {
     }
 
     fn get_delta_from_contact(&self, contact: Ray, gravity: Vec3A, dt: f32) -> (Vec3A, Vec3A) {
-        dbg!(contact);
-        dbg!(self);
+        // dbg!(contact.start / 50.);
+        // dbg!(contact.direction);
+        // dbg!(self.location / 50.);
         let rel_pos = contact.start - self.location;
 
         let external_force_impluse = gravity * dt;
@@ -171,9 +179,9 @@ impl Ball {
             let velocity_error = restitution - rel_vel;
             let velocity_impulse = velocity_error * Self::M;
 
-            let angular_component = self.inv_inertia_tensor * rel_pos_cross_normal;
+            let angular_component = self.inv_inertia * rel_pos_cross_normal;
 
-            let impulse_magnitude = velocity_impulse.clamp(0., 1e10);
+            let impulse_magnitude = velocity_impulse.clamp(0., 5e11);
             let linear_component = contact.direction * Self::INV_M;
 
             (
@@ -182,17 +190,21 @@ impl Ball {
                 impulse_magnitude,
             )
         };
-
+        // dbg!(applied_impulse / 50.);
         // friction impulse
-        if dbg!(applied_impulse) > 0. {
+        if applied_impulse > 0. {
             let mut lateral_friction_dir = vel - contact.direction * rel_vel;
             let lat_rel_vel = lateral_friction_dir.length_squared();
 
             let (jac_diag_ab_inv, rel_pos_cross_normal, angular_component) = if lat_rel_vel > f32::EPSILON {
                 lateral_friction_dir /= lat_rel_vel.sqrt();
+                // dbg!(lateral_friction_dir);
 
+                // dbg!(rel_pos / 50.);
                 let torque_axis = rel_pos.cross(lateral_friction_dir);
-                let angular_component = self.inv_inertia_tensor * torque_axis;
+                // dbg!(torque_axis / 50.);
+                let angular_component = self.inv_inertia * torque_axis;
+                // dbg!(angular_component);
 
                 let denom = Self::INV_M + lateral_friction_dir.dot(angular_component.cross(rel_pos));
                 (1. / denom, torque_axis, angular_component)
@@ -203,10 +215,12 @@ impl Ball {
             let rel_vel = lateral_friction_dir.dot(self.velocity + external_force_impluse)
                 + rel_pos_cross_normal.dot(self.angular_velocity);
             let velocity_error = -rel_vel;
+            // dbg!(velocity_error / 50.);
+            // dbg!(jac_diag_ab_inv);
             let velocity_impulse = velocity_error * jac_diag_ab_inv;
-            dbg!(velocity_impulse);
+            // dbg!(velocity_impulse / 50.);
             let limit: f32 = Self::FRICTION * applied_impulse;
-            dbg!(limit);
+            // dbg!(limit / 50.);
             let impulse_magnitude = velocity_impulse.clamp(-limit, limit);
             let linear_component = lateral_friction_dir * Self::INV_M;
 
@@ -224,15 +238,15 @@ impl Ball {
         self.time += dt;
 
         if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
+            self.velocity *= (1. - Self::DRAG).powf(dt);
+
             if let Some(contact) = game.collision_mesh.collide(self.hitbox()) {
-                dbg!(self.time);
-                self.velocity *= (1. - Self::DRAG).powf(dt);
+                // dbg!(self.time);
                 let (dt_velocity, dt_ang_vel) = self.get_delta_from_contact(contact, game.gravity, dt);
 
                 self.velocity += dt_velocity;
                 self.angular_velocity += dt_ang_vel;
             } else {
-                self.velocity *= (1. - Self::DRAG).powf(dt);
                 self.velocity += game.gravity * dt;
             }
 
