@@ -134,17 +134,24 @@ impl Bvh {
     pub fn intersect(&self, query_object: Sphere) -> Vec<Tri> {
         const STACK: ReArr<&Branch, 8> = rearr![];
 
+        // Traverse nodes starting from the root
+        // If the node is a leaf, check for intersection
+        let mut node = match &self.root {
+            Node::Branch(branch) => branch,
+            Node::Leaf(leaf) => {
+                return if leaf.primitive.intersect_sphere(query_object) {
+                    vec![leaf.primitive]
+                } else {
+                    Vec::new()
+                };
+            }
+        };
+
         let query_box = Aabb::from(query_object);
         let mut hits = Vec::with_capacity(4);
 
         // Allocate traversal stack from thread-local memory
         let mut stack = STACK;
-
-        // Traverse nodes starting from the root.
-        let mut node = match &self.root {
-            Node::Branch(branch) => branch,
-            Node::Leaf(_) => return Vec::new(),
-        };
 
         // Check each child node for overlap.
         loop {
