@@ -22,6 +22,10 @@ fn predict_custom_standard() {
 
     let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, time);
     assert_eq!(ball_prediction.len(), 960);
+
+    for slice in ball_prediction {
+        assert!(slice.location.z > 0.);
+    }
 }
 
 #[test]
@@ -31,6 +35,10 @@ fn predict_standard() {
 
     let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
+
+    for slice in ball_prediction {
+        assert!(slice.location.z > 0.);
+    }
 }
 
 #[test]
@@ -40,6 +48,10 @@ fn predict_hoops() {
 
     let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
+
+    for slice in ball_prediction {
+        assert!(slice.location.z > 0.);
+    }
 }
 
 #[test]
@@ -49,6 +61,10 @@ fn predict_dropshot() {
 
     let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
+
+    for slice in ball_prediction {
+        assert!(slice.location.z > 0.);
+    }
 }
 
 #[test]
@@ -58,6 +74,10 @@ fn predict_throwback_standard() {
 
     let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
+
+    for slice in ball_prediction {
+        assert!(slice.location.z > 0.);
+    }
 }
 
 #[inline]

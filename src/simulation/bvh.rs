@@ -6,7 +6,7 @@ use super::{
     geometry::{Aabb, Ray, Sphere, Tri},
     morton::Morton,
 };
-use std::{boxed::Box, convert::Into};
+use std::{boxed::Box, convert::Into, ops::Add};
 
 /// A leaf in the BVH.
 #[derive(Clone, Copy, Debug)]
@@ -87,7 +87,7 @@ pub struct Bvh {
 
 #[inline]
 fn global_aabb(boxes: &[Aabb]) -> Aabb {
-    boxes.iter().copied().fold(boxes[0], |a, b| a + b)
+    boxes.iter().copied().fold(boxes[0], Add::add)
 }
 
 impl Bvh {
@@ -108,23 +108,23 @@ impl Bvh {
             .collect();
         radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.morton);
 
-        let root = Self::generate_hierarchy(&sorted_leaves, 0, num_leaves - 1);
+        let root = Self::generate_hierarchy(&sorted_leaves);
 
         Self { num_leaves, root }
     }
 
-    fn generate_hierarchy(sorted_leaves: &[Leaf], first: usize, last: usize) -> Node {
+    fn generate_hierarchy(sorted_leaves: &[Leaf]) -> Node {
         // If we're dealing with a single object, return the leaf node
-        if first == last {
-            return Node::Leaf(sorted_leaves[first]);
+        if sorted_leaves.len() == 1 {
+            return Node::Leaf(sorted_leaves[0]);
         }
 
         // Determine where to split the range
-        let split = first + ((last - first) / 2);
+        let split = sorted_leaves.len() / 2;
 
         // Process the resulting sub-ranges recursively
-        let right = Self::generate_hierarchy(sorted_leaves, first, split);
-        let left = Self::generate_hierarchy(sorted_leaves, split + 1, last);
+        let right = Self::generate_hierarchy(&sorted_leaves[..split]);
+        let left = Self::generate_hierarchy(&sorted_leaves[split..]);
 
         Node::branch(right, left)
     }
