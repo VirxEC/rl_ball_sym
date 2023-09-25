@@ -1,7 +1,6 @@
 //! Tools for creating space-efficient meshes and transforming them into a list of triangles.
 
 use super::geometry::Tri;
-use crate::linear_algebra::math::dot;
 use byteorder::{LittleEndian, ReadBytesExt};
 use glam::{Mat3A, Vec3A};
 use std::io::{Cursor, Read};
@@ -83,10 +82,11 @@ impl Mesh {
 
     #[must_use]
     /// Transform the mesh by the given matrix.
-    pub fn transform(&self, a: Mat3A) -> Self {
+    pub fn transform(&self, mut a: Mat3A) -> Self {
         debug_assert_eq!(self.ids.len() % 3, 0);
 
-        let vertices = self.vertices.iter().map(|&vertex| dot(a, vertex)).collect::<Vec<_>>();
+        a = a.transpose();
+        let vertices = self.vertices.iter().map(|&vertex| a * vertex).collect::<Vec<_>>();
 
         // for transformations that flip things
         // inside-out, change triangle winding

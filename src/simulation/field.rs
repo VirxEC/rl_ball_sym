@@ -1,8 +1,5 @@
 use super::{bvh::Bvh, mesh::Mesh};
-use crate::linear_algebra::{
-    mat::MatrixExt,
-    math::{axis_to_rotation, dot},
-};
+use crate::linear_algebra::math::z_axis_to_rotation;
 use glam::{Mat3A, Vec3, Vec3A};
 use std::f32::consts::{FRAC_PI_3, FRAC_PI_6};
 
@@ -57,7 +54,7 @@ pub fn initialize_standard(
     let field_mesh = Mesh::combine([
         standard_corner_tf.transform(FLIP_X),
         standard_corner_tf.transform(FLIP_Y),
-        standard_corner_tf.transform(FLIP_X.dot(FLIP_Y)),
+        standard_corner_tf.transform(FLIP_X * FLIP_Y),
         standard_corner_tf,
         standard_goal_tf.translate(Y_OFFSET),
         standard_goal_tf.translate(Y_OFFSET).transform(FLIP_Y),
@@ -128,7 +125,7 @@ pub fn initialize_hoops(
     let field_mesh = Mesh::combine([
         hoops_corner.transform(FLIP_X),
         hoops_corner.transform(FLIP_Y),
-        hoops_corner.transform(FLIP_X.dot(FLIP_Y)),
+        hoops_corner.transform(FLIP_X * FLIP_Y),
         hoops_corner,
         hoops_net_tf.transform(FLIP_Y),
         hoops_net_tf,
@@ -158,7 +155,7 @@ pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
     const DZ: Vec3A = Vec3A::new(0., 0., Z_OFFSET);
     const Z: Vec3A = Vec3A::new(0., 0., 1010.);
 
-    let q = axis_to_rotation(Vec3A::new(0., 0., FRAC_PI_6)).transpose();
+    let q = z_axis_to_rotation(FRAC_PI_6);
 
     let floor = quad(Vec3A::new(0., 0., 2.), Vec3A::new(10000., 0., 0.), Vec3A::new(0., 7000., 0.));
     let ceiling = quad(
@@ -169,17 +166,17 @@ pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
 
     let mut p = Vec3A::new(0., 11683.6 * SCALE, 2768.64 * SCALE - Z_OFFSET);
     let mut x = Vec3A::new(5000., 0., 0.);
-    let r = axis_to_rotation(Vec3A::new(0., 0., FRAC_PI_3));
+    let r = z_axis_to_rotation(FRAC_PI_3).transpose();
 
     let mut get_wall = || {
         let result = quad(p, x, Z);
-        p = dot(r, p);
-        x = dot(r, x);
+        p = r * p;
+        x = r * x;
         result
     };
 
     let field_mesh = Mesh::combine([
-        dropshot.transform(q.dot(S)).translate(DZ),
+        dropshot.transform(q * S).translate(DZ),
         floor,
         ceiling,
         // it is critical that this operation only happens 6 times

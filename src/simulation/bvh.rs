@@ -714,14 +714,14 @@ mod test {
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
         assert_eq!(ball.location.y as i64, 0);
-        assert_eq!(ball.location.z as i64, 102);
+        assert_eq!(ball.location.z as i64, 107);
         assert_eq!(ball.velocity.x as i64, 0);
         assert_eq!(ball.velocity.y as i64, 0);
         assert_eq!(ball.velocity.z as i64, 0);
         assert_eq!(ball.angular_velocity.x as i64, 0);
         assert_eq!(ball.angular_velocity.y as i64, 0);
         assert_eq!(ball.angular_velocity.z as i64, 0);
-        assert_eq!(ball.radius as i64, 91);
+        assert_eq!(ball.radius as i64, 96);
     }
 
     #[test]
