@@ -52,7 +52,7 @@ impl Ball {
 
     const STANDARD_RADIUS: f32 = 91.25;
     const HOOPS_RADIUS: f32 = 96.38307;
-    const DROPSHOT_RADIUS: f32 = 100.45;
+    const DROPSHOT_RADIUS: f32 = 100.2565;
 
     const SIMULATION_DT: f32 = 1. / 120.;
     const STANDARD_NUM_SLICES: usize = 720;
