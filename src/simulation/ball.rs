@@ -10,6 +10,7 @@ use super::geometry::Ray;
 
 /// Represents the game's ball
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Ball {
     /// Game time of the ball
     pub time: f32,

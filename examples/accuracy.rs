@@ -32,6 +32,12 @@ fn read_balls(file_name: &str, mut ball: Ball) -> io::Result<Vec<Ball>> {
     Ok(balls)
 }
 
+#[derive(serde::Serialize)]
+struct BallDump {
+    rocketsim: Vec<Ball>,
+    rl_ball_sym: Vec<Ball>,
+}
+
 fn main() -> io::Result<()> {
     let (game, mut ball) = load_standard();
     ball.location.z = 1800.;
@@ -39,58 +45,25 @@ fn main() -> io::Result<()> {
     ball.velocity.y = 1000.;
     ball.velocity.z = 650.;
 
-    let cballs = read_balls("examples/ball.dump", ball)?;
+    let rocketsim = read_balls("examples/ball.dump", ball)?;
 
-    assert_eq!(ball.time, cballs[0].time);
-    assert_eq!(ball.location, cballs[0].location);
-    assert_eq!(ball.velocity, cballs[0].velocity);
-    assert_eq!(ball.angular_velocity, cballs[0].angular_velocity);
+    assert_eq!(ball.time, rocketsim[0].time);
+    assert_eq!(ball.location, rocketsim[0].location);
+    assert_eq!(ball.velocity, rocketsim[0].velocity);
+    assert_eq!(ball.angular_velocity, rocketsim[0].angular_velocity);
 
-    for cball in cballs[1..].iter() {
-        // let last_ball = ball;
+    let mut rl_ball_sym = Vec::with_capacity(rocketsim.len());
+    rl_ball_sym.push(ball);
+
+    for _ in 1..rocketsim.len() {
         ball.step(&game, 1. / 120.);
-        let vel_diff = ball.velocity - cball.velocity;
-
-        if vel_diff.length_squared() != 0. {
-            println!("Difference at time {}:", ball.time);
-            // dbg!(last_ball.location);
-            // dbg!(last_ball.location / 50.);
-            // dbg!(last_ball.velocity / 50.);
-            println!(
-                "{}, {}: {}",
-                ball.location / 50.,
-                cball.location / 50.,
-                ball.location / 50. - cball.location / 50.
-            );
-            println!("{}, {}: {}", ball.velocity / 50., cball.velocity / 50., vel_diff / 50.);
-            println!(
-                "{}, {}: {}",
-                ball.angular_velocity,
-                cball.angular_velocity,
-                ball.angular_velocity - cball.angular_velocity
-            );
-            // break;
-        }
-        if vel_diff.length_squared() > 0.01 {
-            break;
-        }
+        rl_ball_sym.push(ball);
     }
 
-    // let last_cball = cballs.last().unwrap();
-    // let last_ball = *ball
-    //     .get_ball_prediction_struct_for_time(&game, last_cball.time - ball.time)
-    //     .last()
-    //     .unwrap();
-
-    // println!("Advanced to time {}, aimed for {}:", last_ball.time, last_cball.time);
-    // println!("{}", last_ball.location - last_cball.location);
-    // println!(
-    //     "{}, {}: {}",
-    //     last_ball.velocity,
-    //     last_cball.velocity,
-    //     last_ball.velocity - last_cball.velocity
-    // );
-    // println!("{}", last_ball.angular_velocity - last_cball.angular_velocity);
+    fs::write(
+        "analysis/accuracy.json",
+        serde_json::to_string(&BallDump { rocketsim, rl_ball_sym }).unwrap(),
+    )?;
 
     Ok(())
 }
