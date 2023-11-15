@@ -40,22 +40,21 @@ struct BallDump {
 
 fn main() -> io::Result<()> {
     let (game, mut ball) = load_standard();
-    ball.location.z = 1800.;
-    ball.velocity.x = 1000.;
-    ball.velocity.y = 1000.;
-    ball.velocity.z = 650.;
 
     let rocketsim = read_balls("examples/ball.dump", ball)?;
 
-    assert_eq!(ball.time, rocketsim[0].time);
-    assert_eq!(ball.location, rocketsim[0].location);
-    assert_eq!(ball.velocity, rocketsim[0].velocity);
-    assert_eq!(ball.angular_velocity, rocketsim[0].angular_velocity);
-
     let mut rl_ball_sym = Vec::with_capacity(rocketsim.len());
-    rl_ball_sym.push(ball);
+    rl_ball_sym.push(rocketsim[0]);
 
-    for _ in 1..rocketsim.len() {
+    for cball in rocketsim.iter().take(rocketsim.len() - 1).copied() {
+    // for cball in rocketsim.iter().skip(886).take(2).copied() {
+        // println!(
+        //     "Error: {}, {}, {}",
+        //     ball.location.distance(cball.location),
+        //     ball.velocity.distance(cball.velocity),
+        //     ball.angular_velocity.distance(cball.angular_velocity)
+        // );
+        ball = cball;
         ball.step(&game, 1. / 120.);
         rl_ball_sym.push(ball);
     }

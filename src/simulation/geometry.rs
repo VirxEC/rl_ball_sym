@@ -1,17 +1,10 @@
 //! Various geometrical objects and tools.
 
-use glam::{Mat3A, Vec3A};
+use glam::Vec3A;
 use std::{
     array::IntoIter,
     ops::{Add, AddAssign},
 };
-
-#[must_use]
-/// Find the distance between a ray and a point.
-pub fn distance_between(start: Vec3A, dir: Vec3A, p: Vec3A) -> f32 {
-    let u = ((p - start).dot(dir) / dir.length_squared()).clamp(0., 1.);
-    (start + dir * u - p).length()
-}
 
 /// A triangle made from 3 points.
 #[derive(Clone, Copy, Debug, Default)]
@@ -53,51 +46,213 @@ impl Tri {
         Self([iter.next().unwrap(), iter.next().unwrap(), iter.next().unwrap()])
     }
 
-    #[must_use]
-    #[inline]
-    /// Get the center of the triangle.
-    pub fn center(self) -> Vec3A {
-        (self.0[0] + self.0[1] + self.0[2]) / 3.
+    // called by SphereTriangleDetector::facecontains
+    // bool SphereTriangleDetector::pointInTriangle(const btVector3 vertices[], const btVector3& normal, btVector3* p)
+    pub fn face_contains(self, normal: Vec3A, point: Vec3A) -> bool {
+        // const btVector3* p1 = &vertices[0];
+        // const btVector3* p2 = &vertices[1];
+        // const btVector3* p3 = &vertices[2];
+
+        // btVector3 edge1(*p2 - *p1);
+        let edge1 = self.0[1] - self.0[0];
+        // btVector3 edge2(*p3 - *p2);
+        let edge2 = self.0[2] - self.0[1];
+        // btVector3 edge3(*p1 - *p3);
+        let edge3 = self.0[0] - self.0[2];
+
+        // btVector3 p1_to_p(*p - *p1);
+        let p1_to_p = point - self.0[0];
+        // btVector3 p2_to_p(*p - *p2);
+        let p2_to_p = point - self.0[1];
+        // btVector3 p3_to_p(*p - *p3);
+        let p3_to_p = point - self.0[2];
+
+        // btVector3 edge1_normal(edge1.cross(normal));
+        let edge1_normal = edge1.cross(normal);
+        // btVector3 edge2_normal(edge2.cross(normal));
+        let edge2_normal = edge2.cross(normal);
+        // btVector3 edge3_normal(edge3.cross(normal));
+        let edge3_normal = edge3.cross(normal);
+
+        // btScalar r1, r2, r3;
+        // r1 = edge1_normal.dot(p1_to_p);
+        let r1 = edge1_normal.dot(p1_to_p);
+        // r2 = edge2_normal.dot(p2_to_p);
+        let r2 = edge2_normal.dot(p2_to_p);
+        // r3 = edge3_normal.dot(p3_to_p);
+        let r3 = edge3_normal.dot(p3_to_p);
+
+        // if ((r1 > 0 && r2 > 0 && r3 > 0) ||
+        //     (r1 <= 0 && r2 <= 0 && r3 <= 0))
+        //     return true;
+        // return false;
+        (r1 > 0. && r2 > 0. && r3 > 0.) || (r1 <= 0. && r2 <= 0. && r3 <= 0.)
     }
 
-    #[must_use]
-    /// Get the normal of the triangle.
-    pub fn unit_normal(self) -> Vec3A {
-        (self.0[1] - self.0[0]).cross(self.0[2] - self.0[0]).normalize()
+    // btScalar SegmentSqrDistance(const btVector3& from, const btVector3& to, const btVector3& p, btVector3& nearest)
+    fn segment_sqr_distance(from: Vec3A, to: Vec3A, p: Vec3A, nearest: &mut Vec3A) -> f32 {
+        // btVector3 diff = p - from;
+        let mut diff = p - from;
+        // btVector3 v = to - from;
+        let v = to - from;
+        // btScalar t = v.dot(diff);
+        let mut t = v.dot(diff);
+
+        // if (t > 0)
+        if t > 0. {
+            // btScalar dotVV = v.dot(v);
+            let dot_vv = v.dot(v);
+            // if (t < dotVV)
+            if t < dot_vv {
+                // t /= dotVV;
+                t /= dot_vv;
+                // diff -= t * v;
+                diff -= t * v;
+            } else {
+                // else
+                // t = 1;
+                t = 1.;
+                // diff -= v;
+                diff -= v;
+            }
+        } else {
+            // else
+            // t = 0;
+            t = 0.;
+        }
+
+        // nearest = from + t * v;
+        *nearest = from + t * v;
+        // return diff.dot(diff);
+        diff.dot(diff)
     }
 
-    #[allow(clippy::many_single_char_names)]
     #[must_use]
     /// Check if a sphere intersects the triangle.
-    pub fn intersect_sphere(&self, obj: Sphere) -> bool {
-        let e1 = self.0[1] - self.0[0];
-        let e3 = self.0[0] - self.0[2];
-        let n = e3.cross(e1).normalize();
+    pub fn intersect_sphere(&self, obj: Sphere) -> Option<(Ray, Vec3A)> {
+        // btScalar radius = m_sphere->getRadius();
+        // btScalar radiusWithThreshold = radius + contactBreakingThreshold;
+        let radius = obj.radius - Sphere::get_contact_breaking_threshold();
+        let radius_with_threshold = obj.radius;
 
-        let a: Mat3A = Mat3A::from_cols(e1, -e3, n);
-        let x = a.inverse() * (obj.center - self.0[0]);
+        // btVector3 normal = (vertices[1] - vertices[0]).cross(vertices[2] - vertices[0]);
+        let mut normal = (self.0[1] - self.0[0]).cross(self.0[2] - self.0[0]);
 
-        let u = x.x;
-        let v = x.y;
-        let w = 1. - u - v;
-        let z = x.z;
+        // btScalar l2 = normal.length2();
+        let l2 = normal.length_squared();
+        // bool hasContact = false;
+        let mut has_contact = false;
+        // btVector3 contactPoint;
+        let mut contact_point = Vec3A::ZERO;
 
-        // if the projection of sphere's center
-        // along the triangle normal puts it inside
-        // the triangle, then we can just check
-        // the out-of-plane distance
-        // otherwise, check the distances to
-        // the closest edge of the triangle
-        let dist = if (0. ..=1.).contains(&u) && (0. ..=1.).contains(&v) && (0. ..=1.).contains(&w) {
-            z.abs()
-        } else {
-            (obj.radius + 1.)
-                .min(distance_between(self.0[0], e1, obj.center))
-                .min(distance_between(self.0[1], self.0[2] - self.0[1], obj.center))
-                .min(distance_between(self.0[2], e3, obj.center))
-        };
+        // if (l2 >= SIMD_EPSILON * SIMD_EPSILON)
+        if l2 >= f32::EPSILON.powi(2) {
+            // normal /= btSqrt(l2);
+            normal /= l2.sqrt();
 
-        dist <= obj.radius
+            // btVector3 p1ToCentre = sphereCenter - vertices[0];
+            let p1_to_center = obj.center - self.0[0];
+            // btScalar distanceFromPlane = p1ToCentre.dot(normal);
+            let mut distance_from_plane = p1_to_center.dot(normal);
+
+            // if (distanceFromPlane < btScalar(0.))
+            if distance_from_plane < 0. {
+                // triangle facing the other way
+                // distanceFromPlane *= btScalar(-1.);
+                distance_from_plane *= -1.;
+                // normal *= btScalar(-1.);
+                normal *= -1.;
+            }
+
+            // bool isInsideContactPlane = distanceFromPlane < radiusWithThreshold;
+            let is_inside_contact_plane = distance_from_plane < radius_with_threshold;
+
+            // Check for contact / intersection
+
+            // if (isInsideContactPlane)
+            if is_inside_contact_plane {
+                // if (facecontains(sphereCenter, vertices, normal))
+                if self.face_contains(normal, obj.center) {
+                    // Inside the contact wedge - touches a point on the shell plane
+                    // hasContact = true;
+                    has_contact = true;
+                    // contactPoint = sphereCenter - normal * distanceFromPlane;
+                    contact_point = obj.center - normal * distance_from_plane;
+                } else {
+                    // Could be inside one of the contact capsules
+
+                    // btScalar contactCapsuleRadiusSqr = radiusWithThreshold * radiusWithThreshold;
+                    let contact_capsule_radius_sqr = radius_with_threshold.powi(2);
+                    // btScalar minDistSqr = contactCapsuleRadiusSqr;
+                    let mut min_dist_sqr = contact_capsule_radius_sqr;
+
+                    // btVector3 nearestOnEdge;
+                    let mut nearest_on_edge = Vec3A::ZERO;
+                    // for (int i = 0; i < m_triangle->getNumEdges(); i++)
+                    for i in 0..self.0.len() {
+                        // btVector3 pa;
+                        // btVector3 pb;
+
+                        // m_triangle->getEdge(i, pa, pb);
+                        // getVertex(i, pa);
+                        let pa = self.0[i];
+                        // getVertex((i + 1) % 3, pb);
+                        let pb = self.0[(i + 1) % 3];
+
+                        // btScalar distanceSqr = SegmentSqrDistance(pa, pb, sphereCenter, nearestOnEdge);
+                        let distance_sqr = Self::segment_sqr_distance(pa, pb, obj.center, &mut nearest_on_edge);
+                        // if (distanceSqr < minDistSqr)
+                        if distance_sqr < min_dist_sqr {
+                            // Yep, we're inside a capsule, and record the capsule with smallest distance
+                            // minDistSqr = distanceSqr;
+                            min_dist_sqr = distance_sqr;
+                            // hasContact = true;
+                            has_contact = true;
+                            // contactPoint = nearestOnEdge;
+                            contact_point = nearest_on_edge;
+                        }
+                    }
+                }
+            }
+        }
+
+        // if (hasContact)
+        if has_contact {
+            // btVector3 contactToCentre = sphereCenter - contactPoint;
+            let contact_to_center = obj.center - contact_point;
+            // btScalar distanceSqr = contactToCentre.length2();
+            let distance_sqr = contact_to_center.length_squared();
+
+            // if (distanceSqr < radiusWithThreshold * radiusWithThreshold)
+            if distance_sqr < radius_with_threshold.powi(2) {
+                // if (distanceSqr > SIMD_EPSILON)
+                let (point, result_normal, depth) = if distance_sqr > f32::EPSILON {
+                    // btScalar distance = btSqrt(distanceSqr);
+                    let distance = distance_sqr.sqrt();
+                    // resultNormal = contactToCentre;
+                    // resultNormal.normalize();
+                    let result_normal = contact_to_center.normalize();
+                    // point = contactPoint;
+                    let point = contact_point;
+                    // depth = -(radius - distance);
+                    let depth = -(radius - distance);
+                    (point, result_normal, depth)
+                } else {
+                    // resultNormal = normal;
+                    let result_normal = normal;
+                    // point = contactPoint;
+                    let point = contact_point;
+                    // depth = -radius;
+                    let depth = -radius;
+                    (point, result_normal, depth)
+                };
+                // dbg!(result_normal, point / 50., depth / 50., normal);
+                return Some((Ray::new(point, result_normal, depth), normal));
+                // return true;
+            }
+        }
+
+        None
     }
 }
 
@@ -207,6 +362,8 @@ pub struct Ray {
     pub start: Vec3A,
     /// Direction the ray is pointing.
     pub direction: Vec3A,
+    /// Length of the ray.
+    pub depth: f32,
 }
 
 impl AddAssign<Self> for Ray {
@@ -214,13 +371,14 @@ impl AddAssign<Self> for Ray {
     fn add_assign(&mut self, rhs: Self) {
         self.start += rhs.start;
         self.direction += rhs.direction;
+        self.depth += rhs.depth;
     }
 }
 
 impl Ray {
     #[inline]
-    pub const fn new(start: Vec3A, direction: Vec3A) -> Self {
-        Self { start, direction }
+    pub const fn new(start: Vec3A, direction: Vec3A, depth: f32) -> Self {
+        Self { start, direction, depth }
     }
 }
 
@@ -231,6 +389,13 @@ pub struct Sphere {
     pub center: Vec3A,
     /// Radius of the sphere.
     pub radius: f32,
+}
+
+impl Sphere {
+    #[inline]
+    pub const fn get_contact_breaking_threshold() -> f32 {
+        1.905
+    }
 }
 
 #[cfg(test)]
@@ -276,7 +441,7 @@ mod test {
                 radius: 0.5,
             };
 
-            assert!(TRI.intersect_sphere(sphere));
+            assert!(TRI.intersect_sphere(sphere).is_some());
         }
         {
             let sphere = Sphere {
@@ -284,7 +449,7 @@ mod test {
                 radius: 0.5,
             };
 
-            assert!(TRI.intersect_sphere(sphere));
+            assert!(TRI.intersect_sphere(sphere).is_some());
         }
     }
 
@@ -296,7 +461,7 @@ mod test {
                 radius: 1.0,
             };
 
-            assert!(!TRI.intersect_sphere(sphere));
+            assert!(TRI.intersect_sphere(sphere).is_none());
         }
         {
             let sphere = Sphere {
@@ -304,7 +469,7 @@ mod test {
                 radius: 1.0,
             };
 
-            assert!(!TRI.intersect_sphere(sphere));
+            assert!(TRI.intersect_sphere(sphere).is_none());
         }
     }
 

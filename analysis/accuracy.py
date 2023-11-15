@@ -1,9 +1,11 @@
 import json
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 
 # run `cargo r --example accuracy --features=serde` first!
 
-with open("accuracy.json") as f:
+with open(Path(__file__).parent / "accuracy.json") as f:
     data = json.load(f)
 
 rocketsim = [[], [], [], []]
@@ -21,11 +23,16 @@ for ball in data["rl_ball_sym"]:
     rl_ball_sym[2].append(ball["velocity"])
     rl_ball_sym[3].append(ball["angular_velocity"])
 
-time_limit = 250
+start_time = 0 * 120
+# time_limit = 250
+time_limit = len(rocketsim[0])
+
+# start_time = 7 * 120
+# time_limit = 8 * 120
 
 location_diff = []
 
-for i in range(time_limit):
+for i in range(start_time, time_limit):
     location_diff.append(
         (
             (rocketsim[1][i][0] - rl_ball_sym[1][i][0]) ** 2
@@ -35,9 +42,12 @@ for i in range(time_limit):
         ** 0.5
     )
 
+    if location_diff[-1] > 0:
+        print(rl_ball_sym[0][i])
+
 velocity_diff = []
 
-for i in range(time_limit):
+for i in range(start_time, time_limit):
     velocity_diff.append(
         (
             (rocketsim[2][i][0] - rl_ball_sym[2][i][0]) ** 2
@@ -49,7 +59,7 @@ for i in range(time_limit):
 
 angular_velocity_diff = []
 
-for i in range(time_limit):
+for i in range(start_time, time_limit):
     angular_velocity_diff.append(
         (
             (rocketsim[3][i][0] - rl_ball_sym[3][i][0]) ** 2
@@ -61,9 +71,9 @@ for i in range(time_limit):
 
 ax = plt.figure().add_subplot()
 
-ax.plot(rocketsim[0][:time_limit], location_diff, label="location")
-ax.plot(rocketsim[0][:time_limit], velocity_diff, label="velocity")
-ax.plot(rocketsim[0][:time_limit], angular_velocity_diff, label="angular velocity")
+ax.plot(rocketsim[0][start_time:time_limit], location_diff, label="location")
+ax.plot(rocketsim[0][start_time:time_limit], velocity_diff, label="velocity")
+ax.plot(rocketsim[0][start_time:time_limit], angular_velocity_diff, label="angular velocity")
 
 ax.legend()
 ax.set_title("Time vs Difference")
