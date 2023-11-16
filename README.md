@@ -4,7 +4,7 @@
 
 [![forthebadge](https://forthebadge.com/images/badges/made-with-rust.svg)](https://forthebadge.com)
 
-Rust implementation of ball path prediction for Rocket League;
+Rust implementation of Rocket League's ball physics;
 Inspired by Samuel P. Mish's C++ utils called [RLUtilities](https://github.com/samuelpmish/RLUtilities)
 with improvements from [RocketSim](https://github.com/ZealanL/RocketSim)
 and other miscellaneous improvements.
