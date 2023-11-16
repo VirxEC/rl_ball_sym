@@ -2,9 +2,12 @@
 
 [![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 
-Rust implementation of ball path prediction for Rocket League; Inspired by Samuel (Chip) P. Mish's C++ utils called [RLUtilities](https://github.com/samuelpmish/RLUtilities).
+[![forthebadge](https://forthebadge.com/images/badges/made-with-rust.svg)](https://forthebadge.com)
 
-This crate also contains fixes to discovered errors stemming from the original repo.
+Rust implementation of ball path prediction for Rocket League;
+Inspired by Samuel P. Mish's C++ utils called [RLUtilities](https://github.com/samuelpmish/RLUtilities)
+with improvements from [RocketSim](https://github.com/ZealanL/RocketSim)
+and other miscellaneous improvements.
 
 ## Running
 
@@ -43,6 +46,4 @@ Numbers _will_ vary depending on your system.
 ## Features
 
  - `uncompressed`: Default feature. Enables the loading of uncompressed binary field data, which is faster but increases the size of the final binary.
- - `compression`: Nightly only - Minimize the size of the produced binaries by compressing the binary field data at compile time. Will slightly slow down `load_x()` functions. 
- - `stable-compression`: Does the same as `compression` using the same crate, but available for use in stable Rust.
- - `fast-math`: Enables the `fast-math` feature in the [`glam`](https://crates.io/crates/glam) crate.
+ - `compression`: Minimize the size of the produced binaries by compressing the binary field data at compile time. Will slightly slow down `load_x()` functions. 

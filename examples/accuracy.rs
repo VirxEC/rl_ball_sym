@@ -46,15 +46,15 @@ fn main() -> io::Result<()> {
     let mut rl_ball_sym = Vec::with_capacity(rocketsim.len());
     rl_ball_sym.push(rocketsim[0]);
 
+    ball = rocketsim[0];
     for cball in rocketsim.iter().take(rocketsim.len() - 1).copied() {
-    // for cball in rocketsim.iter().skip(886).take(2).copied() {
-        // println!(
-        //     "Error: {}, {}, {}",
-        //     ball.location.distance(cball.location),
-        //     ball.velocity.distance(cball.velocity),
-        //     ball.angular_velocity.distance(cball.angular_velocity)
-        // );
-        ball = cball;
+        // for cball in rocketsim.iter().skip(886).take(2).copied() {
+        println!(
+            "Error: {}, {}, {}",
+            ball.location.distance(cball.location),
+            ball.velocity.distance(cball.velocity),
+            ball.angular_velocity.distance(cball.angular_velocity)
+        );
         ball.step(&game, 1. / 120.);
         rl_ball_sym.push(ball);
     }

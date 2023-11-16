@@ -87,7 +87,7 @@ pub struct Bvh {
 
 #[inline]
 fn global_aabb(boxes: &[Aabb]) -> Aabb {
-    boxes.iter().copied().fold(boxes[0], Add::add)
+    boxes.iter().skip(1).copied().fold(boxes[0], Add::add)
 }
 
 impl Bvh {
@@ -130,8 +130,8 @@ impl Bvh {
     }
 
     #[must_use]
-    /// Returns a Vec of the triangles intersecting with the `query_object`.
-    pub fn intersect(&self, query_object: Sphere) -> Vec<(Ray, Vec3A)> {
+    /// Returns a Vec of the collision rays and triangle normals from the triangles intersecting with the `query_object`.
+    pub fn collide(&self, query_object: Sphere) -> Vec<(Ray, Vec3A)> {
         const STACK: ReArr<&Branch, 8> = rearr![];
 
         // Traverse nodes starting from the root
@@ -139,11 +139,10 @@ impl Bvh {
         let mut node = match &self.root {
             Node::Branch(branch) => branch,
             Node::Leaf(leaf) => {
-                return if let Some(info) = leaf.primitive.intersect_sphere(query_object) {
-                    vec![info]
-                } else {
-                    Vec::new()
-                };
+                return leaf
+                    .primitive
+                    .intersect_sphere(query_object)
+                    .map_or_else(Vec::new, |info| vec![info]);
             }
         };
 
@@ -202,13 +201,6 @@ impl Bvh {
         }
 
         hits
-    }
-
-    #[inline]
-    #[must_use]
-    /// Returns the calculated ray-intersection of the given Sphere and the BVH.
-    pub fn collide(&self, obj: Sphere) -> Vec<(Ray, Vec3A)> {
-        self.intersect(obj)
     }
 }
 
@@ -322,59 +314,34 @@ mod test {
     }
 
     #[test]
-    fn test_bvh_intersect() {
+    fn test_bvh_collide_count() {
         let triangles = generate_tris();
 
         let bvh = Bvh::from(&triangles);
         {
             // Sphere hits nothing
-            let sphere = Sphere {
-                center: Vec3A::new(0., 0., 1022.),
-                radius: 100.,
-            };
-            let hits = bvh.intersect(sphere);
+            let sphere = Sphere::new(Vec3A::new(0., 0., 1022.), 100.);
+            let hits = bvh.collide(sphere);
             assert_eq!(hits.len(), 0);
         }
         {
             // Sphere hits one Tri
-            let sphere = Sphere {
-                center: Vec3A::new(4096. / 2., 5120. / 2., 99.9),
-                radius: 100.,
-            };
-            let hits = bvh.intersect(sphere);
+            let sphere = Sphere::new(Vec3A::new(4096. / 2., 5120. / 2., 99.9), 100.);
+            let hits = bvh.collide(sphere);
 
             assert_eq!(hits.len(), 1);
-
-            // let p0 = hits[0].get_point(0);
-            // assert!((p0.x - 4096.).abs() < f32::EPSILON);
-            // assert!((p0.y - 5120.).abs() < f32::EPSILON);
-            // assert!((p0.z - 0.).abs() < f32::EPSILON);
-            // let p1 = hits[0].get_point(1);
-            // assert!((p1.x - -4096.).abs() < f32::EPSILON);
-            // assert!((p1.y - 5120.).abs() < f32::EPSILON);
-            // assert!((p1.z - 0.).abs() < f32::EPSILON);
-            // let p2 = hits[0].get_point(2);
-            // assert!((p2.x - 4096.).abs() < f32::EPSILON);
-            // assert!((p2.y - -5120.).abs() < f32::EPSILON);
-            // assert!((p2.z - 0.).abs() < f32::EPSILON);
         }
         {
             // Middle of two Tris
-            let sphere = Sphere {
-                center: Vec3A::ZERO,
-                radius: 100.,
-            };
-            let hits = bvh.intersect(sphere);
+            let sphere = Sphere::new(Vec3A::ZERO, 100.);
+            let hits = bvh.collide(sphere);
 
             assert_eq!(hits.len(), 2);
         }
         {
             // Sphere is in a corner
-            let sphere = Sphere {
-                center: Vec3A::new(4096., 5120., 0.),
-                radius: 100.,
-            };
-            let hits = bvh.intersect(sphere);
+            let sphere = Sphere::new(Vec3A::new(4096., 5120., 0.), 100.);
+            let hits = bvh.collide(sphere);
 
             assert_eq!(hits.len(), 5);
         }
@@ -388,10 +355,7 @@ mod test {
 
         {
             // Sphere hits nothing
-            let sphere = Sphere {
-                center: Vec3A::new(0., 0., 1022.),
-                radius: 100.,
-            };
+            let sphere = Sphere::new(Vec3A::new(0., 0., 1022.), 100.);
 
             let ray = bvh.collide(sphere);
 
@@ -399,10 +363,7 @@ mod test {
         }
         {
             // Sphere hits one Tri
-            let sphere = Sphere {
-                center: Vec3A::new(4096. / 2., 5120. / 2., 99.),
-                radius: 100.,
-            };
+            let sphere = Sphere::new(Vec3A::new(4096. / 2., 5120. / 2., 99.), 100.);
 
             let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
@@ -418,10 +379,7 @@ mod test {
         }
         {
             // Middle of two Tris
-            let sphere = Sphere {
-                center: Vec3A::ZERO,
-                radius: 100.,
-            };
+            let sphere = Sphere::new(Vec3A::ZERO, 100.);
 
             let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
@@ -437,10 +395,7 @@ mod test {
         }
         {
             // Sphere is in a corner
-            let sphere = Sphere {
-                center: Vec3A::new(4096., 5120., 0.),
-                radius: 100.,
-            };
+            let sphere = Sphere::new(Vec3A::new(4096., 5120., 0.), 100.);
 
             let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
@@ -468,14 +423,10 @@ mod test {
         let bvh = Bvh::from(&triangles);
 
         {
-            let sphere = Sphere {
-                center: Vec3A::new(0., 0., 93.15),
-                radius: 93.15,
-            };
-
+            let sphere = Sphere::new(Vec3A::new(0., 0., 92.15 - f32::EPSILON), 92.15);
             let ray = bvh.collide(sphere);
 
-            assert!(ray.is_empty());
+            assert_eq!(ray.len(), 2);
         }
     }
 
@@ -486,7 +437,7 @@ mod test {
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
         assert_eq!(ball.location.y as i64, 0);
-        assert_eq!(ball.location.z as i64, 102);
+        assert_eq!(ball.location.z as i64, 100);
         assert_eq!(ball.velocity.x as i64, 0);
         assert_eq!(ball.velocity.y as i64, 0);
         assert_eq!(ball.velocity.z as i64, 0);
@@ -568,7 +519,7 @@ mod test {
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
         assert_eq!(ball.location.y as i64, 0);
-        assert_eq!(ball.location.z as i64, 102);
+        assert_eq!(ball.location.z as i64, 100);
         assert_eq!(ball.velocity.x as i64, 0);
         assert_eq!(ball.velocity.y as i64, 0);
         assert_eq!(ball.velocity.z as i64, 0);
@@ -664,7 +615,7 @@ mod test {
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
         assert_eq!(ball.location.y as i64, 0);
-        assert_eq!(ball.location.z as i64, 102);
+        assert_eq!(ball.location.z as i64, 100);
         assert_eq!(ball.velocity.x as i64, 0);
         assert_eq!(ball.velocity.y as i64, 0);
         assert_eq!(ball.velocity.z as i64, 0);
@@ -691,7 +642,7 @@ mod test {
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
         assert_eq!(ball.location.y as i64, 0);
-        assert_eq!(ball.location.z as i64, 107);
+        assert_eq!(ball.location.z as i64, 106);
         assert_eq!(ball.velocity.x as i64, 0);
         assert_eq!(ball.velocity.y as i64, 0);
         assert_eq!(ball.velocity.z as i64, 0);
@@ -718,7 +669,7 @@ mod test {
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
         assert_eq!(ball.location.y as i64, 0);
-        assert_eq!(ball.location.z as i64, 112);
+        assert_eq!(ball.location.z as i64, 110);
         assert_eq!(ball.velocity.x as i64, 0);
         assert_eq!(ball.velocity.y as i64, 0);
         assert_eq!(ball.velocity.z as i64, 0);
@@ -749,7 +700,7 @@ mod test {
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
         assert_eq!(ball.location.y as i64, 0);
-        assert_eq!(ball.location.z as i64, 102);
+        assert_eq!(ball.location.z as i64, 100);
         assert_eq!(ball.velocity.x as i64, 0);
         assert_eq!(ball.velocity.y as i64, 0);
         assert_eq!(ball.velocity.z as i64, 0);
