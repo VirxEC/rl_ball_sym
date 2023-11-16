@@ -6,11 +6,11 @@ edition = "2021"
 description = "rl_ball_sym is a Rust implementation of ball path prediction for Rocket League; Based on Samuel (Chip) P. Mish's C++ utils called RLUtilities and RocketSim by Zealan"
 readme = "README.md"
 repository = "https://github.com/VirxEC/rl_ball_sym"
-license = "GPL-3.0"
+license = "MIT"
 keywords = ["rocket-league", "rlbot", "physics", "simulation"]
 categories = ["science", "simulation", "mathematics"]
 include = ["src/", "assets/"]
-rust-version = "1.65"
+rust-version = "1.72"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
