@@ -4,13 +4,13 @@ use super::{
     geometry::{Aabb, Ray, Sphere, Tri},
     morton::Morton,
 };
-use combo_vec::{rearr, ReArr};
+use combo_vec::{re_arr, ReArr};
 use glam::Vec3A;
 use std::{boxed::Box, convert::Into, ops::Add};
 
 /// A leaf in the BVH.
 #[derive(Clone, Copy, Debug)]
-pub struct Leaf {
+struct Leaf {
     /// The bounding box of this leaf.
     pub aabb: Aabb,
     /// The primitive that this leaf represents.
@@ -30,7 +30,7 @@ impl Leaf {
 
 /// A branch in the BVH.
 #[derive(Clone, Debug)]
-pub struct Branch {
+struct Branch {
     /// The bounding box of this branch.
     pub aabb: Aabb,
     /// The left child of this branch.
@@ -50,7 +50,7 @@ impl Branch {
 
 /// A node in the BVH.
 #[derive(Clone, Debug)]
-pub enum Node {
+enum Node {
     /// A leaf node at the end of a series of branches
     Leaf(Leaf),
     /// A branch node that connects to more nodes
@@ -78,11 +78,12 @@ impl Node {
 
 /// A bounding volume hierarchy.
 #[derive(Clone, Debug)]
-pub struct Bvh {
-    /// The number of leaves that the BVH has; used in tests
-    pub num_leaves: usize,
+pub struct TriangleBvh {
+    /// The number of leaves that the BVH has
+    #[cfg(test)]
+    pub(crate) num_leaves: usize,
     /// The root of the BVH.
-    pub root: Node,
+    root: Node,
 }
 
 #[inline]
@@ -90,10 +91,11 @@ fn global_aabb(boxes: &[Aabb]) -> Aabb {
     boxes.iter().skip(1).copied().fold(boxes[0], Add::add)
 }
 
-impl Bvh {
+impl TriangleBvh {
     #[must_use]
     /// Creates a new BVH from a list of primitives.
     pub fn from(primitives: &[Tri]) -> Self {
+        #[cfg(test)]
         let num_leaves = primitives.len();
 
         let boxes: Vec<Aabb> = primitives.iter().copied().map(Into::into).collect();
@@ -110,7 +112,15 @@ impl Bvh {
 
         let root = Self::generate_hierarchy(&sorted_leaves);
 
-        Self { num_leaves, root }
+        #[cfg(test)]
+        {
+            Self { num_leaves, root }
+        }
+
+        #[cfg(not(test))]
+        {
+            Self { root }
+        }
     }
 
     fn generate_hierarchy(sorted_leaves: &[Leaf]) -> Node {
@@ -132,22 +142,23 @@ impl Bvh {
     #[must_use]
     /// Returns a Vec of the collision rays and triangle normals from the triangles intersecting with the `query_object`.
     pub fn collide(&self, query_object: Sphere) -> Vec<(Ray, Vec3A)> {
-        const STACK: ReArr<&Branch, 8> = rearr![];
+        const STACK: ReArr<&Branch, 12> = re_arr![];
+
+        let mut hits = Vec::with_capacity(4);
 
         // Traverse nodes starting from the root
         // If the node is a leaf, check for intersection
         let mut node = match &self.root {
             Node::Branch(branch) => branch,
             Node::Leaf(leaf) => {
-                return leaf
-                    .primitive
-                    .intersect_sphere(query_object)
-                    .map_or_else(Vec::new, |info| vec![info]);
+                if let Some(hit) = leaf.primitive.intersect_sphere(query_object) {
+                    hits.push(hit);
+                }
+                return hits;
             }
         };
 
         let query_box = Aabb::from(query_object);
-        let mut hits = Vec::with_capacity(4);
 
         // Allocate traversal stack from thread-local memory
         let mut stack = STACK;
@@ -310,14 +321,14 @@ mod test {
     fn test_bvh_build() {
         let triangles = generate_tris();
 
-        let _ = black_box(Bvh::from(&triangles));
+        let _ = black_box(TriangleBvh::from(&triangles));
     }
 
     #[test]
     fn test_bvh_collide_count() {
         let triangles = generate_tris();
 
-        let bvh = Bvh::from(&triangles);
+        let bvh = TriangleBvh::from(&triangles);
         {
             // Sphere hits nothing
             let sphere = Sphere::new(Vec3A::new(0., 0., 1022.), 100.);
@@ -351,7 +362,7 @@ mod test {
     fn test_bvh_collide() {
         let triangles = generate_tris();
 
-        let bvh = Bvh::from(&triangles);
+        let bvh = TriangleBvh::from(&triangles);
 
         {
             // Sphere hits nothing
@@ -420,7 +431,7 @@ mod test {
     fn is_collision_ray_finite() {
         let triangles = generate_tris();
 
-        let bvh = Bvh::from(&triangles);
+        let bvh = TriangleBvh::from(&triangles);
 
         {
             let sphere = Sphere::new(Vec3A::new(0., 0., 92.15 - f32::EPSILON), 92.15);
@@ -458,15 +469,14 @@ mod test {
         assert_eq!(ball_prediction.len(), time as usize * 120);
 
         let iters = 200;
-        let time = 10.; // 10 seconds
-        let num_slices = time as usize * 120 * iters;
+        let num_slices = 6 * 120 * iters;
         let mut rng = rand::thread_rng();
 
         let mut x_locs = Vec::with_capacity(num_slices);
         let mut y_locs = Vec::with_capacity(num_slices);
         let mut z_locs = Vec::with_capacity(num_slices);
 
-        dbg!(game.collision_mesh.root.aabb());
+        dbg!(game.triangle_collisions.root.aabb());
 
         for _ in 0..iters {
             ball.update(
@@ -502,14 +512,14 @@ mod test {
         dbg!(*z_locs.iter().min().unwrap());
         dbg!(*z_locs.iter().max().unwrap());
 
-        assert!(*z_locs.iter().min().unwrap() > game.collision_mesh.root.aabb().min().z as isize);
-        assert!(*z_locs.iter().max().unwrap() < game.collision_mesh.root.aabb().max().z as isize);
+        assert!(*z_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().z as isize);
+        assert!(*z_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().z as isize);
 
-        assert!(*y_locs.iter().min().unwrap() > game.collision_mesh.root.aabb().min().y as isize);
-        assert!(*y_locs.iter().max().unwrap() < game.collision_mesh.root.aabb().max().y as isize);
+        assert!(*y_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().y as isize);
+        assert!(*y_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().y as isize);
 
-        assert!(*x_locs.iter().min().unwrap() > game.collision_mesh.root.aabb().min().x as isize);
-        assert!(*x_locs.iter().max().unwrap() < game.collision_mesh.root.aabb().max().x as isize);
+        assert!(*x_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().x as isize);
+        assert!(*x_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().x as isize);
     }
 
     #[test]
@@ -548,7 +558,7 @@ mod test {
         let mut y_locs = Vec::with_capacity(num_slices);
         let mut z_locs = Vec::with_capacity(num_slices);
 
-        dbg!(game.collision_mesh.root.aabb());
+        dbg!(game.triangle_collisions.root.aabb());
 
         for _ in 0..iters {
             ball.update(
@@ -588,14 +598,14 @@ mod test {
         dbg!(*z_locs.iter().min().unwrap());
         dbg!(*z_locs.iter().max().unwrap());
 
-        assert!(*z_locs.iter().min().unwrap() > game.collision_mesh.root.aabb().min().z as isize);
-        assert!(*z_locs.iter().max().unwrap() < game.collision_mesh.root.aabb().max().z as isize);
+        assert!(*z_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().z as isize);
+        assert!(*z_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().z as isize);
 
-        assert!(*y_locs.iter().min().unwrap() > game.collision_mesh.root.aabb().min().y as isize);
-        assert!(*y_locs.iter().max().unwrap() < game.collision_mesh.root.aabb().max().y as isize);
+        assert!(*y_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().y as isize);
+        assert!(*y_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().y as isize);
 
-        assert!(*x_locs.iter().min().unwrap() > game.collision_mesh.root.aabb().min().x as isize);
-        assert!(*x_locs.iter().max().unwrap() < game.collision_mesh.root.aabb().max().x as isize);
+        assert!(*x_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().x as isize);
+        assert!(*x_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().x as isize);
     }
 
     #[test]
@@ -608,9 +618,9 @@ mod test {
         assert_eq!(game.gravity.y as i64, 0);
         assert_eq!(game.gravity.z as i64, -650);
 
-        dbg!(game.collision_mesh.root.aabb());
+        dbg!(game.triangle_collisions.root.aabb());
 
-        assert_eq!(game.collision_mesh.num_leaves, 8028);
+        assert_eq!(game.triangle_collisions.num_leaves, 8028);
 
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
@@ -635,9 +645,9 @@ mod test {
         assert_eq!(game.gravity.y as i64, 0);
         assert_eq!(game.gravity.z as i64, -650);
 
-        dbg!(game.collision_mesh.root.aabb());
+        dbg!(game.triangle_collisions.root.aabb());
 
-        assert_eq!(game.collision_mesh.num_leaves, 15732);
+        assert_eq!(game.triangle_collisions.num_leaves, 15732);
 
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
@@ -662,9 +672,9 @@ mod test {
         assert_eq!(game.gravity.y as i64, 0);
         assert_eq!(game.gravity.z as i64, -650);
 
-        dbg!(game.collision_mesh.root.aabb());
+        dbg!(game.triangle_collisions.root.aabb());
 
-        assert_eq!(game.collision_mesh.num_leaves, 3616);
+        assert_eq!(game.triangle_collisions.num_leaves, 3616);
 
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
@@ -689,13 +699,13 @@ mod test {
         assert_eq!(game.gravity.y as i64, 0);
         assert_eq!(game.gravity.z as i64, -650);
 
-        dbg!(&game.collision_mesh.root.aabb());
-        if let Node::Branch(branch) = &game.collision_mesh.root {
+        dbg!(&game.triangle_collisions.root.aabb());
+        if let Node::Branch(branch) = &game.triangle_collisions.root {
             dbg!(branch.left.aabb());
             dbg!(branch.right.aabb());
         }
 
-        assert_eq!(game.collision_mesh.num_leaves, 9272);
+        assert_eq!(game.triangle_collisions.num_leaves, 9272);
 
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
@@ -726,7 +736,7 @@ mod test {
         let (game, _) = load_standard_throwback();
         let mut max_depth = 0;
 
-        recurse_bvhnode(&game.collision_mesh.root, 0, &mut max_depth);
+        recurse_bvhnode(&game.triangle_collisions.root, 0, &mut max_depth);
         assert_eq!(max_depth, 14);
     }
 
@@ -735,7 +745,7 @@ mod test {
         let (game, _) = load_hoops();
         let mut max_depth = 0;
 
-        recurse_bvhnode(&game.collision_mesh.root, 0, &mut max_depth);
+        recurse_bvhnode(&game.triangle_collisions.root, 0, &mut max_depth);
         assert_eq!(max_depth, 14);
     }
 
@@ -744,7 +754,7 @@ mod test {
         let (game, _) = load_standard();
         let mut max_depth = 0;
 
-        recurse_bvhnode(&game.collision_mesh.root, 0, &mut max_depth);
+        recurse_bvhnode(&game.triangle_collisions.root, 0, &mut max_depth);
         assert_eq!(max_depth, 13);
     }
 
@@ -753,7 +763,7 @@ mod test {
         let (game, _) = load_dropshot();
         let mut max_depth = 0;
 
-        recurse_bvhnode(&game.collision_mesh.root, 0, &mut max_depth);
+        recurse_bvhnode(&game.triangle_collisions.root, 0, &mut max_depth);
         assert_eq!(max_depth, 12);
     }
 }

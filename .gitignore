@@ -1,5 +1,6 @@
-.vscode/
+/.vscode
 /target
+/venv
 ball_prediction.json
 Cargo.lock
 *.svg

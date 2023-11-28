@@ -5,6 +5,7 @@ use super::{
     geometry::{Ray, Sphere},
 };
 use crate::linear_algebra::math::Vec3AExt;
+use colored::Colorize;
 use glam::Vec3A;
 
 /// Represents the game's ball
@@ -570,12 +571,13 @@ impl Ball {
         self.time += dt;
 
         if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
-            let external_force_impulse = game.gravity * dt;
+            println!("{}; {}; {}; {}", self.time, self.location, self.velocity, self.angular_velocity);
             self.velocity *= (1. - Self::DRAG).powf(dt);
+            let external_force_impulse = game.gravity * dt;
 
-            let contacts = game.collision_mesh.collide(self.hitbox());
+            let contacts = game.triangle_collisions.collide(self.hitbox());
             if !contacts.is_empty() {
-                // dbg!(self.time);
+                println!("{}{}{}", "[CONTACTS: ".bright_green(), contacts.len(), "]".bright_green());
                 // dbg!(self.location / 50.);
                 // dbg!(self.velocity / 50.);
                 // dbg!(self.angular_velocity);

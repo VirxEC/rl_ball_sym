@@ -10,9 +10,15 @@ license = "MIT"
 keywords = ["rocket-league", "rlbot", "physics", "simulation"]
 categories = ["science", "simulation", "mathematics"]
 include = ["src/", "assets/"]
-rust-version = "1.72"
+rust-version = "1.74"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"
 
 [dev-dependencies]
 rand = "0.8"
@@ -21,10 +27,11 @@ criterion = { version = "0.5.0", features = ["html_reports"] }
 serde_json = "1.0.107"
 
 [dependencies]
+colored = "2.0.4"
 byteorder = "1"
 glam = "0.24.0"
 radsort = "0.1"
-combo_vec = "0.5"
+combo_vec = { version = "0.7.0", default_features = false }
 include-flate = { version = "0.3.0", optional = true }
 serde = { version = "1.0.188", features = ["derive"], optional = true }
 

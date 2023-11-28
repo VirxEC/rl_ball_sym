@@ -1,4 +1,4 @@
-use super::{bvh::Bvh, mesh::Mesh};
+use super::{mesh::Mesh, tri_bvh::TriangleBvh};
 use crate::linear_algebra::math::z_axis_to_rotation;
 use glam::{Mat3A, Vec3, Vec3A};
 use std::f32::consts::{FRAC_PI_3, FRAC_PI_6};
@@ -21,7 +21,7 @@ pub fn initialize_standard(
     standard_goal: &Mesh,
     standard_ramps_0: &Mesh,
     standard_ramps_1: &Mesh,
-) -> Bvh {
+) -> TriangleBvh {
     const SCALE: f32 = 100.;
     const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
 
@@ -68,7 +68,7 @@ pub fn initialize_standard(
         side_wall_1,
     ]);
 
-    Bvh::from(&field_mesh.into_triangles())
+    TriangleBvh::from(&field_mesh.into_triangles())
 }
 
 #[must_use]
@@ -79,7 +79,7 @@ pub fn initialize_hoops(
     hoops_rim: &Mesh,
     hoops_ramps_0: Mesh,
     hoops_ramps_1: Mesh,
-) -> Bvh {
+) -> TriangleBvh {
     const SCALE: f32 = 0.9;
     const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
 
@@ -143,12 +143,12 @@ pub fn initialize_hoops(
         back_wall_1,
     ]);
 
-    Bvh::from(&field_mesh.into_triangles())
+    TriangleBvh::from(&field_mesh.into_triangles())
 }
 
 #[must_use]
 /// Get a BVH generated from the given dropshot field meshes.
-pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
+pub fn initialize_dropshot(dropshot: &Mesh) -> TriangleBvh {
     const SCALE: f32 = 0.393;
     const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
     const Z_OFFSET: f32 = -207.565;
@@ -189,7 +189,7 @@ pub fn initialize_dropshot(dropshot: &Mesh) -> Bvh {
         get_wall(),
     ]);
 
-    Bvh::from(&field_mesh.into_triangles())
+    TriangleBvh::from(&field_mesh.into_triangles())
 }
 
 pub struct InitializeThrowbackParams {
@@ -220,7 +220,7 @@ pub fn initialize_throwback(
         side_ramps_lower,
         side_ramps_upper,
     }: InitializeThrowbackParams,
-) -> Bvh {
+) -> TriangleBvh {
     const SCALE: f32 = 100.;
     const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
 
@@ -305,5 +305,5 @@ pub fn initialize_throwback(
         back_wall_1,
     ]);
 
-    Bvh::from(&field_mesh.into_triangles())
+    TriangleBvh::from(&field_mesh.into_triangles())
 }
