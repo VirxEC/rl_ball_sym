@@ -1,4 +1,4 @@
-// use colored::Colorize;
+use colored::Colorize;
 use rand::Rng;
 use rl_ball_sym::{glam::Vec3A, load_standard};
 
@@ -8,7 +8,7 @@ fn main() {
     let mut rng = rand::thread_rng();
 
     'outer: for _ in 0..1_000 {
-        // println!("{}", "[START]".bright_red());
+        println!("{}", "[START]".bright_red());
         let location = Vec3A::new(
             rng.gen_range(0f32..3200.),
             rng.gen_range(0f32..3200.),
@@ -24,6 +24,10 @@ fn main() {
         ball.update(0., location, velocity, angular_velocity);
 
         for _ in 0..120 * 2 {
+            println!(
+                "{}; {}; {}; {}",
+                ball.time, ball.location, ball.velocity, ball.angular_velocity
+            );
             ball.step(&game, 1. / 120.);
             if ball.location.z > 2_100.
                 || ball.location.z < 0.

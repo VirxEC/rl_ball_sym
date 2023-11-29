@@ -1,10 +1,9 @@
 //! Various geometrical objects and tools.
 
+use crate::simulation::game::Constraints;
 use combo_vec::ReArr;
 use glam::Vec3A;
 use std::ops::{Add, AddAssign};
-
-use crate::simulation::game::Constraints;
 
 #[derive(Debug)]
 pub struct Contact {
@@ -25,7 +24,7 @@ impl Hits {
     }
 
     // int btPersistentManifold::getCacheEntry(const btManifoldPoint& newPoint) const
-    fn get_cache_entry(&self, new_contact: &Contact) -> usize {
+    fn nearest_point(&self, new_contact: &Contact) -> usize {
         // btScalar shortestDist = getContactBreakingThreshold() * getContactBreakingThreshold();
         let mut shortest_dist = Sphere::CONTACT_BREAKING_THRESHOLD.powi(2);
         // int size = getNumContacts();
@@ -36,7 +35,7 @@ impl Hits {
             // const btManifoldPoint& mp = m_pointCache[i];
 
             // btVector3 diffA = mp.m_localPointA - newPoint.m_localPointA;
-            let diff_a = new_contact.local_position - contact.local_position;
+            let diff_a = contact.local_position - new_contact.local_position;
             // const btScalar distToManiPoint = diffA.dot(diffA);
             let dist_to_mani_point = diff_a.dot(diff_a);
             // if (distToManiPoint < shortestDist)
@@ -52,7 +51,7 @@ impl Hits {
     }
 
     // int btPersistentManifold::sortCachedPoints(const btManifoldPoint& pt)
-    fn get_insertion_index(&self, new_contact: &Contact) -> usize {
+    fn replacement_index(&self, new_contact: &Contact) -> usize {
         //calculate 4 possible cases areas, and take biggest area
         //also need to keep 'deepest'
 
@@ -111,7 +110,7 @@ impl Hits {
         }
 
         // if (maxPenetrationIndex != 3)
-        if max_penetration_index != 4 {
+        if max_penetration_index != 3 {
             // btVector3 a3 = pt.m_localPointA - m_pointCache[0].m_localPointA;
             let a3 = new_contact.local_position - self.0[0].local_position;
             // btVector3 b3 = m_pointCache[2].m_localPointA - m_pointCache[1].m_localPointA;
@@ -129,17 +128,26 @@ impl Hits {
         // get the index of the biggest element
         let mut biggest_area = res[0];
         let mut biggest_area_index = 0;
-        for (i, area) in res.into_iter().skip(1).enumerate() {
-            if area > biggest_area {
-                biggest_area = area;
-                biggest_area_index = i;
-            }
+        
+        if res[1] > biggest_area {
+            biggest_area = res[1];
+            biggest_area_index = 1;
         }
+
+        if res[2] > biggest_area {
+            biggest_area = res[2];
+            biggest_area_index = 2;
+        }
+
+        if res[3] > biggest_area {
+            biggest_area_index = 3;
+        }
+
         biggest_area_index
     }
 
     pub fn push(&mut self, contact: Contact) {
-        let mut index = self.get_cache_entry(&contact);
+        let mut index = self.nearest_point(&contact);
 
         if index < self.0.len() {
             // replaceContactPoint
@@ -147,7 +155,7 @@ impl Hits {
         } else {
             // btPersistentManifold::addManifoldPoint
             if index == Constraints::MAX_CONTACTS {
-                index = self.get_insertion_index(&contact);
+                index = self.replacement_index(&contact);
             }
 
             if index == self.0.len() {

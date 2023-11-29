@@ -44,9 +44,10 @@ dropshot = []
 throwback = []
 serde = ["dep:serde", "glam/serde"]
 
-[profile.release-with-debug]
-inherits = "release"
+[profile.release]
+codegen-units = 1
 debug = true
+lto = true
 
 [package.metadata.docs.rs]
 all-features = true

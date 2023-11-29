@@ -501,14 +501,15 @@ impl Ball {
         // solverConstraint.m_originalContactPoint = &cp;
 
         // const btVector3& pos1 = cp.getPositionWorldOnA();
-        let pos1 = contact.position;
+        // let pos1 = contact.position;
         // const btVector3& pos2 = cp.getPositionWorldOnB();
         // let pos2 = point_in_world;
 
         // colObj0 is the ball
         // colObj1 is all default values
         // rel_pos1 = pos1 - colObj0->getWorldTransform().getOrigin();
-        let rel_pos1 = pos1 - self.location;
+        // let rel_pos1 = pos1 - self.location;
+        let rel_pos = contact.local_position;
         // rel_pos2 = pos2 - colObj1->getWorldTransform().getOrigin();
         // let rel_pos2 = pos2 - Vec3A::ZERO;
         // dbg!(rel_pos1 / 50., rel_pos2 / 50.);
@@ -517,7 +518,7 @@ impl Ball {
         // btVector3 vel2;
 
         // solverBodyA->getVelocityInLocalPointNoDelta(rel_pos1, vel1);
-        let vel = self.get_velocity_in_local_point_no_delta(rel_pos1, external_force_impulse);
+        let vel = self.get_velocity_in_local_point_no_delta(rel_pos, external_force_impulse);
 
         // solverBodyB has m_originalBody as false, so vel2 is always 0, 0, 0
         // solverBodyB->getVelocityInLocalPointNoDelta(rel_pos2, vel2);
@@ -532,7 +533,7 @@ impl Ball {
         // dbg!(rel_vel / 50.);
 
         // setupContactConstraint(solverConstraint, solverBodyIdA, solverBodyIdB, cp, infoGlobal, relaxation, rel_pos1, rel_pos2);
-        let contact_constraint = self.setup_contact_contraint(cp_normal_world_on_b, rel_pos1, external_force_impulse);
+        let contact_constraint = self.setup_contact_contraint(cp_normal_world_on_b, rel_pos, external_force_impulse);
 
         // cp.m_lateralFrictionDir1 = vel - cp.m_normalWorldOnB * rel_vel;
         let mut cp_lateral_friction_dir_1 = vel - cp_normal_world_on_b * rel_vel;
@@ -550,8 +551,7 @@ impl Ball {
             // addFrictionConstraint(cp.m_lateralFrictionDir1, solverBodyIdA, solverBodyIdB, frictionIndex, cp, rel_pos1, rel_pos2, colObj0, colObj1, relaxation, infoGlobal);
         }
 
-        let friction_constraint =
-            self.setup_friction_constraint(cp_lateral_friction_dir_1, rel_pos1, external_force_impulse);
+        let friction_constraint = self.setup_friction_constraint(cp_lateral_friction_dir_1, rel_pos, external_force_impulse);
 
         // this method sets the current m_appliedImpulse back to 0
         // setFrictionConstraintImpulse(solverConstraint, solverBodyIdA, solverBodyIdB, cp, infoGlobal);
@@ -566,10 +566,6 @@ impl Ball {
         self.time += dt;
 
         if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
-            // println!(
-            //     "{}; {}; {}; {}",
-            //     self.time, self.location, self.velocity, self.angular_velocity
-            // );
             self.velocity *= (1. - Self::DRAG).powf(dt);
             let external_force_impulse = game.gravity * dt;
 
