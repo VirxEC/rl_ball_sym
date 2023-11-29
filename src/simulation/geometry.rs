@@ -128,7 +128,7 @@ impl Hits {
         // get the index of the biggest element
         let mut biggest_area = res[0];
         let mut biggest_area_index = 0;
-        
+
         if res[1] > biggest_area {
             biggest_area = res[1];
             biggest_area_index = 1;
