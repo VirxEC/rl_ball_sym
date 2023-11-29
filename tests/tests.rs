@@ -1,9 +1,5 @@
 use rand::random;
-#[cfg(feature = "compression")]
-use rl_ball_sym::compressed::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
-use rl_ball_sym::glam::Vec3A;
-#[cfg(all(feature = "uncompressed", not(feature = "compression")))]
-use rl_ball_sym::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
+use rl_ball_sym::{glam::Vec3A, load_dropshot, load_hoops, load_standard, load_standard_throwback};
 
 #[test]
 fn init() {

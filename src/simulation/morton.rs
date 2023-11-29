@@ -13,7 +13,7 @@ pub struct Morton {
 impl Morton {
     /// Calculate basic information required to generate a morton code.
     #[must_use]
-    pub fn from(global_box: Aabb) -> Self {
+    pub fn new(global_box: Aabb) -> Self {
         let offset = global_box.min();
         // 2 ^ 20 - 1 = 1048575
         let scale = 1_048_575. / (global_box.max() - offset);
@@ -37,9 +37,9 @@ impl Morton {
 
     /// Get an AABB's morton code.
     #[must_use]
-    pub fn get_code(self, box_: Aabb) -> u64 {
+    pub fn get_code(self, aabb: Aabb) -> u64 {
         // get the centroid of the ith bounding box
-        let c = (box_.min() + box_.max()) / 2.;
+        let c = (aabb.min() + aabb.max()) / 2.;
 
         let u = (c - self.offset) * self.scale;
 
@@ -67,12 +67,11 @@ mod test {
     fn morton() {
         let global_box = Aabb::new(Vec3A::new(-4096., -5120., 0.), Vec3A::new(4096., 5120., 2044.));
 
-        let morton = Morton::from(global_box);
+        let morton = Morton::new(global_box);
 
-        let box_ = Aabb::new(Vec3A::new(-4095., -5119., 1.), Vec3A::new(-4094., -5118., 2.));
+        let aabb = Aabb::new(Vec3A::new(-4095., -5119., 1.), Vec3A::new(-4094., -5118., 2.));
 
-        // let code = morton.get_code(&box_);
-        let c = (box_.min() + box_.max()) / 2.;
+        let c = (aabb.min() + aabb.max()) / 2.;
 
         let u = (c - morton.offset) * morton.scale;
         dbg!(&u);

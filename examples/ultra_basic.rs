@@ -1,9 +1,4 @@
-use rl_ball_sym::{Predictions, Vec3A};
-
-#[cfg(feature = "compression")]
-use rl_ball_sym::compressed::load_standard;
-#[cfg(all(feature = "uncompressed", not(feature = "compression")))]
-use rl_ball_sym::load_standard;
+use rl_ball_sym::{load_standard, Predictions, Vec3A};
 
 fn main() {
     // load a standard standard match

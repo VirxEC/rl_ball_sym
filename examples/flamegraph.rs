@@ -1,11 +1,5 @@
+use rl_ball_sym::{load_standard, Vec3A};
 use std::hint::black_box;
-
-use rl_ball_sym::Vec3A;
-
-#[cfg(feature = "compression")]
-use rl_ball_sym::compressed::load_standard;
-#[cfg(all(feature = "uncompressed", not(feature = "compression")))]
-use rl_ball_sym::load_standard;
 
 fn main() {
     // load a standard standard match

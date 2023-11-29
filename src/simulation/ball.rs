@@ -2,10 +2,9 @@
 
 use super::{
     game::{Constraint, Constraints, Game},
-    geometry::{Ray, Sphere},
+    geometry::{Contact, Sphere},
 };
 use crate::linear_algebra::math::Vec3AExt;
-use colored::Colorize;
 use glam::Vec3A;
 
 /// Represents the game's ball
@@ -470,20 +469,16 @@ impl Ball {
         }
     }
 
-    fn process_contacts(
-        &self,
-        (contact, triangle_normal): (Ray, Vec3A),
-        external_force_impulse: Vec3A,
-    ) -> (Constraint, Constraint) {
+    fn process_contacts(&self, contact: &Contact, external_force_impulse: Vec3A) -> (Constraint, Constraint) {
         // normalOnBInWorld = contact_point.direction
         // pointInWorld = contact_point.start
-        let point_in_world = contact.start;
+        // let point_in_world = contact.ray.start;
         // cp.getDistance() = depth = contact_point.depth
         // btVector3 pointA = pointInWorld + normalOnBInWorld * depth;
         // newPt.m_positionWorldOnA = pointA;
         // newPt.m_positionWorldOnB = pointInWorld;
         // newPt.m_normalWorldOnB = normalOnBInWorld;
-        let normal_world_on_b = contact.direction;
+        // let normal_world_on_b = contact.ray.direction;
         // dbg!(contact.start / 50.);
         // dbg!(contact.direction);
         // dbg!(contact.depth / 50.);
@@ -506,7 +501,7 @@ impl Ball {
         // solverConstraint.m_originalContactPoint = &cp;
 
         // const btVector3& pos1 = cp.getPositionWorldOnA();
-        let pos1 = point_in_world + normal_world_on_b * contact.depth;
+        let pos1 = contact.position;
         // const btVector3& pos2 = cp.getPositionWorldOnB();
         // let pos2 = point_in_world;
 
@@ -529,7 +524,7 @@ impl Ball {
         // let vel2 = Vec3A::ZERO;
 
         // not sure at which point this changes or when it's set to this instead :/
-        let cp_normal_world_on_b = triangle_normal;
+        let cp_normal_world_on_b = contact.triangle_normal;
         // btVector3 vel = vel1 - vel2;
         // let vel = vel1 - vel2;
         // btScalar rel_vel = cp.m_normalWorldOnB.dot(vel);
@@ -571,21 +566,19 @@ impl Ball {
         self.time += dt;
 
         if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
-            println!("{}; {}; {}; {}", self.time, self.location, self.velocity, self.angular_velocity);
+            // println!(
+            //     "{}; {}; {}; {}",
+            //     self.time, self.location, self.velocity, self.angular_velocity
+            // );
             self.velocity *= (1. - Self::DRAG).powf(dt);
             let external_force_impulse = game.gravity * dt;
 
             let contacts = game.triangle_collisions.collide(self.hitbox());
             if !contacts.is_empty() {
-                println!("{}{}{}", "[CONTACTS: ".bright_green(), contacts.len(), "]".bright_green());
-                // dbg!(self.location / 50.);
-                // dbg!(self.velocity / 50.);
-                // dbg!(self.angular_velocity);
-
-                let mut constraints = Constraints::with_capacity(contacts.len(), Self::INV_M, Self::FRICTION);
+                let mut constraints = Constraints::new(Self::INV_M, Self::FRICTION);
 
                 for contact in contacts {
-                    constraints.push(self.process_contacts(contact, external_force_impulse));
+                    constraints.push(self.process_contacts(&contact, external_force_impulse));
                 }
 
                 let (delta_linear_velocity, delta_angular_velocity) = constraints.solve();

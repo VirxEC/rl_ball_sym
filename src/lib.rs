@@ -28,16 +28,20 @@
 pub extern crate glam;
 
 #[cfg(feature = "compression")]
-pub mod compressed;
+mod compressed;
+#[cfg(not(feature = "compression"))]
+mod uncompressed;
+
+#[cfg(feature = "compression")]
+pub use compressed::*;
+#[cfg(not(feature = "compression"))]
+pub use uncompressed::*;
+
 mod linear_algebra;
 pub mod simulation;
-#[cfg(feature = "uncompressed")]
-mod uncompressed;
 
 pub use crate::simulation::{
     ball::{Ball, Predictions},
     game::Game,
 };
 pub use glam::Vec3A;
-#[cfg(feature = "uncompressed")]
-pub use uncompressed::*;

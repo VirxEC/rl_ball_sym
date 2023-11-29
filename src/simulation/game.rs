@@ -67,14 +67,16 @@ pub(crate) struct Constraints {
 }
 
 impl Constraints {
+    pub const MAX_CONTACTS: usize = 4;
+
     const NUM_ITERATIONS: usize = 10;
 
     #[inline]
     #[must_use]
-    pub fn with_capacity(capacity: usize, inv_mass: f32, coeff_friction: f32) -> Self {
+    pub fn new(inv_mass: f32, coeff_friction: f32) -> Self {
         Self {
-            contact: Vec::with_capacity(capacity),
-            friction: Vec::with_capacity(capacity),
+            contact: Vec::with_capacity(Self::MAX_CONTACTS),
+            friction: Vec::with_capacity(Self::MAX_CONTACTS),
             inv_mass,
             coeff_friction,
         }

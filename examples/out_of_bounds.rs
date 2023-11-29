@@ -1,11 +1,6 @@
-use colored::Colorize;
-use glam::Vec3A;
+// use colored::Colorize;
 use rand::Rng;
-
-#[cfg(feature = "compression")]
-use rl_ball_sym::compressed::load_standard;
-#[cfg(all(feature = "uncompressed", not(feature = "compression")))]
-use rl_ball_sym::load_standard;
+use rl_ball_sym::{glam::Vec3A, load_standard};
 
 fn main() {
     let (game, mut ball) = load_standard();
@@ -13,7 +8,7 @@ fn main() {
     let mut rng = rand::thread_rng();
 
     'outer: for _ in 0..1_000 {
-        println!("{}", "[START]".bright_red());
+        // println!("{}", "[START]".bright_red());
         let location = Vec3A::new(
             rng.gen_range(0f32..3200.),
             rng.gen_range(0f32..3200.),

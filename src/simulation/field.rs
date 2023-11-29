@@ -14,6 +14,29 @@ fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
     )
 }
 
+#[inline]
+#[must_use]
+pub fn get_standard_walls() -> [Mesh; 4] {
+    [
+        quad(Vec3A::ZERO, Vec3A::new(4096., 0., 0.), Vec3A::new(0., 5500., 0.)),
+        quad(
+            Vec3A::new(0., 0., 2048.),
+            Vec3A::new(-4096., 0., 0.),
+            Vec3A::new(0., 5120., 0.),
+        ),
+        quad(
+            Vec3A::new(4096., 0., 1024.),
+            Vec3A::new(0., -5120., 0.),
+            Vec3A::new(0., 0., 1024.),
+        ),
+        quad(
+            Vec3A::new(-4096., 0., 1024.),
+            Vec3A::new(0., 5120., 0.),
+            Vec3A::new(0., 0., 1024.),
+        ),
+    ]
+}
+
 #[must_use]
 /// Get a BVH generated from the given standard field meshes.
 pub fn initialize_standard(
@@ -32,24 +55,7 @@ pub fn initialize_standard(
     let standard_ramps_0_tf = standard_ramps_0.transform(S);
     let standard_ramps_1_tf = standard_ramps_1.transform(S);
 
-    let floor = quad(Vec3A::ZERO, Vec3A::new(4096., 0., 0.), Vec3A::new(0., 5500., 0.));
-    let ceiling = quad(
-        Vec3A::new(0., 0., 2048.),
-        Vec3A::new(-4096., 0., 0.),
-        Vec3A::new(0., 5120., 0.),
-    );
-    let [side_wall_0, side_wall_1] = [
-        quad(
-            Vec3A::new(4096., 0., 1024.),
-            Vec3A::new(0., -5120., 0.),
-            Vec3A::new(0., 0., 1024.),
-        ),
-        quad(
-            Vec3A::new(-4096., 0., 1024.),
-            Vec3A::new(0., 5120., 0.),
-            Vec3A::new(0., 0., 1024.),
-        ),
-    ];
+    let [floor, ceiling, side_wall_0, side_wall_1] = get_standard_walls();
 
     let field_mesh = Mesh::combine([
         standard_corner_tf.transform(FLIP_X),
@@ -68,7 +74,40 @@ pub fn initialize_standard(
         side_wall_1,
     ]);
 
-    TriangleBvh::from(&field_mesh.into_triangles())
+    TriangleBvh::new(field_mesh.into_triangles())
+}
+
+#[inline]
+#[must_use]
+pub fn get_hoops_walls() -> [Mesh; 6] {
+    [
+        quad(Vec3A::ZERO, Vec3A::new(2966., 0., 0.), Vec3A::new(0., 3581., 0.)),
+        quad(
+            Vec3A::new(0., 0., 1820.),
+            Vec3A::new(-2966., 0., 0.),
+            Vec3A::new(0., 3581., 0.),
+        ),
+        quad(
+            Vec3A::new(2966., 0., 910.),
+            Vec3A::new(0., -3581., 0.),
+            Vec3A::new(0., 0., 910.),
+        ),
+        quad(
+            Vec3A::new(-2966., 0., 910.),
+            Vec3A::new(0., 3581., 0.),
+            Vec3A::new(0., 0., 910.),
+        ),
+        quad(
+            Vec3A::new(0., -3581., 910.),
+            Vec3A::new(2966., 0., 0.),
+            Vec3A::new(0., 0., 910.),
+        ),
+        quad(
+            Vec3A::new(0., 3581., 910.),
+            Vec3A::new(-2966., 0., 0.),
+            Vec3A::new(0., 0., 910.),
+        ),
+    ]
 }
 
 #[must_use]
@@ -88,39 +127,7 @@ pub fn initialize_hoops(
     let hoops_net_tf = hoops_net.transform(S).translate(Y_OFFSET);
     let hoops_rim_tf = hoops_rim.transform(S).translate(Y_OFFSET);
 
-    let floor = quad(Vec3A::ZERO, Vec3A::new(2966., 0., 0.), Vec3A::new(0., 3581., 0.));
-
-    let ceiling = quad(
-        Vec3A::new(0., 0., 1820.),
-        Vec3A::new(-2966., 0., 0.),
-        Vec3A::new(0., 3581., 0.),
-    );
-
-    let [side_wall_0, side_wall_1] = [
-        quad(
-            Vec3A::new(2966., 0., 910.),
-            Vec3A::new(0., -3581., 0.),
-            Vec3A::new(0., 0., 910.),
-        ),
-        quad(
-            Vec3A::new(-2966., 0., 910.),
-            Vec3A::new(0., 3581., 0.),
-            Vec3A::new(0., 0., 910.),
-        ),
-    ];
-
-    let [back_wall_0, back_wall_1] = [
-        quad(
-            Vec3A::new(0., -3581., 910.),
-            Vec3A::new(2966., 0., 0.),
-            Vec3A::new(0., 0., 910.),
-        ),
-        quad(
-            Vec3A::new(0., 3581., 910.),
-            Vec3A::new(-2966., 0., 0.),
-            Vec3A::new(0., 0., 910.),
-        ),
-    ];
+    let [floor, ceiling, side_wall_0, side_wall_1, back_wall_0, back_wall_1] = get_hoops_walls();
 
     let field_mesh = Mesh::combine([
         hoops_corner.transform(FLIP_X),
@@ -143,7 +150,7 @@ pub fn initialize_hoops(
         back_wall_1,
     ]);
 
-    TriangleBvh::from(&field_mesh.into_triangles())
+    TriangleBvh::new(field_mesh.into_triangles())
 }
 
 #[must_use]
@@ -189,7 +196,7 @@ pub fn initialize_dropshot(dropshot: &Mesh) -> TriangleBvh {
         get_wall(),
     ]);
 
-    TriangleBvh::from(&field_mesh.into_triangles())
+    TriangleBvh::new(field_mesh.into_triangles())
 }
 
 pub struct InitializeThrowbackParams {
@@ -305,5 +312,5 @@ pub fn initialize_throwback(
         back_wall_1,
     ]);
 
-    TriangleBvh::from(&field_mesh.into_triangles())
+    TriangleBvh::new(field_mesh.into_triangles())
 }

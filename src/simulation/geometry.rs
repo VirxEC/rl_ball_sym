@@ -1,7 +1,168 @@
 //! Various geometrical objects and tools.
 
+use combo_vec::ReArr;
 use glam::Vec3A;
 use std::ops::{Add, AddAssign};
+
+use crate::simulation::game::Constraints;
+
+#[derive(Debug)]
+pub struct Contact {
+    pub ray: Ray,
+    pub triangle_normal: Vec3A,
+    pub position: Vec3A,
+    pub local_position: Vec3A,
+}
+
+#[derive(Debug)]
+#[repr(transparent)]
+pub struct Hits(ReArr<Contact, { Constraints::MAX_CONTACTS }>);
+
+impl Hits {
+    #[inline]
+    pub const fn new() -> Self {
+        Self(ReArr::new())
+    }
+
+    // int btPersistentManifold::getCacheEntry(const btManifoldPoint& newPoint) const
+    fn get_cache_entry(&self, new_contact: &Contact) -> usize {
+        // btScalar shortestDist = getContactBreakingThreshold() * getContactBreakingThreshold();
+        let mut shortest_dist = Sphere::CONTACT_BREAKING_THRESHOLD.powi(2);
+        // int size = getNumContacts();
+        // int nearestPoint = -1;
+        let mut nearest_point = self.0.len();
+        // for (int i = 0; i < size; i++)
+        for (i, contact) in self.0.iter().enumerate() {
+            // const btManifoldPoint& mp = m_pointCache[i];
+
+            // btVector3 diffA = mp.m_localPointA - newPoint.m_localPointA;
+            let diff_a = new_contact.local_position - contact.local_position;
+            // const btScalar distToManiPoint = diffA.dot(diffA);
+            let dist_to_mani_point = diff_a.dot(diff_a);
+            // if (distToManiPoint < shortestDist)
+            if dist_to_mani_point < shortest_dist {
+                // shortestDist = distToManiPoint;
+                shortest_dist = dist_to_mani_point;
+                // nearestPoint = i;
+                nearest_point = i;
+            }
+        }
+        // return nearestPoint;
+        nearest_point
+    }
+
+    // int btPersistentManifold::sortCachedPoints(const btManifoldPoint& pt)
+    fn get_insertion_index(&self, new_contact: &Contact) -> usize {
+        //calculate 4 possible cases areas, and take biggest area
+        //also need to keep 'deepest'
+
+        // int maxPenetrationIndex = -1;
+        let mut max_penetration_index = self.0.len();
+        // btScalar maxPenetration = pt.getDistance();
+        let mut max_penetration = new_contact.ray.depth;
+        // for (int i = 0; i < 4; i++)
+        for (i, contact) in self.0.iter().enumerate() {
+            // if (m_pointCache[i].getDistance() < maxPenetration)
+            if contact.ray.depth < max_penetration {
+                // maxPenetrationIndex = i;
+                max_penetration_index = i;
+                // maxPenetration = m_pointCache[i].getDistance();
+                max_penetration = contact.ray.depth;
+            }
+        }
+
+        // btScalar res0(btScalar(0.)), res1(btScalar(0.)), res2(btScalar(0.)), res3(btScalar(0.));
+        let mut res = [0., 0., 0., 0.];
+
+        // if (maxPenetrationIndex != 0)
+        if max_penetration_index != 0 {
+            // btVector3 a0 = pt.m_localPointA - m_pointCache[1].m_localPointA;
+            let a0 = new_contact.local_position - self.0[1].local_position;
+            // btVector3 b0 = m_pointCache[3].m_localPointA - m_pointCache[2].m_localPointA;
+            let b0 = self.0[3].local_position - self.0[2].local_position;
+            // btVector3 cross = a0.cross(b0);
+            let cross = a0.cross(b0);
+            // res0 = cross.length2();
+            res[0] = cross.length_squared();
+        }
+
+        // if (maxPenetrationIndex != 1)
+        if max_penetration_index != 1 {
+            // btVector3 a1 = pt.m_localPointA - m_pointCache[0].m_localPointA;
+            let a1 = new_contact.local_position - self.0[0].local_position;
+            // btVector3 b1 = m_pointCache[3].m_localPointA - m_pointCache[2].m_localPointA;
+            let b1 = self.0[3].local_position - self.0[2].local_position;
+            // btVector3 cross = a1.cross(b1);
+            let cross = a1.cross(b1);
+            // res1 = cross.length2();
+            res[1] = cross.length_squared();
+        }
+
+        // if (maxPenetrationIndex != 2)
+        if max_penetration_index != 2 {
+            // btVector3 a2 = pt.m_localPointA - m_pointCache[0].m_localPointA;
+            let a2 = new_contact.local_position - self.0[0].local_position;
+            // btVector3 b2 = m_pointCache[3].m_localPointA - m_pointCache[1].m_localPointA;
+            let b2 = self.0[3].local_position - self.0[1].local_position;
+            // btVector3 cross = a2.cross(b2);
+            let cross = a2.cross(b2);
+            // res2 = cross.length2();
+            res[2] = cross.length_squared();
+        }
+
+        // if (maxPenetrationIndex != 3)
+        if max_penetration_index != 4 {
+            // btVector3 a3 = pt.m_localPointA - m_pointCache[0].m_localPointA;
+            let a3 = new_contact.local_position - self.0[0].local_position;
+            // btVector3 b3 = m_pointCache[2].m_localPointA - m_pointCache[1].m_localPointA;
+            let b3 = self.0[2].local_position - self.0[1].local_position;
+            // btVector3 cross = a3.cross(b3);
+            let cross = a3.cross(b3);
+            // res3 = cross.length2();
+            res[3] = cross.length_squared();
+        }
+
+        // btVector4 maxvec(res0, res1, res2, res3);
+        // int biggestarea = maxvec.closestAxis4();
+        // return biggestarea;
+
+        // get the index of the biggest element
+        let mut biggest_area = res[0];
+        let mut biggest_area_index = 0;
+        for (i, area) in res.into_iter().skip(1).enumerate() {
+            if area > biggest_area {
+                biggest_area = area;
+                biggest_area_index = i;
+            }
+        }
+        biggest_area_index
+    }
+
+    pub fn push(&mut self, contact: Contact) {
+        let mut index = self.get_cache_entry(&contact);
+
+        if index < self.0.len() {
+            // replaceContactPoint
+            self.0[index] = contact;
+        } else {
+            // btPersistentManifold::addManifoldPoint
+            if index == Constraints::MAX_CONTACTS {
+                index = self.get_insertion_index(&contact);
+            }
+
+            if index == self.0.len() {
+                self.0.push(contact);
+            } else {
+                self.0[index] = contact;
+            }
+        }
+    }
+
+    #[inline]
+    pub fn inner(self) -> ReArr<Contact, { Constraints::MAX_CONTACTS }> {
+        self.0
+    }
+}
 
 #[repr(transparent)]
 /// A triangle made from 3 points.
@@ -99,7 +260,7 @@ impl Tri {
 
     #[must_use]
     /// Check if a sphere intersects the triangle.
-    pub fn intersect_sphere(&self, obj: Sphere) -> Option<(Ray, Vec3A)> {
+    pub fn intersect_sphere(&self, obj: Sphere) -> Option<Contact> {
         let mut normal = (self.points[1] - self.points[0])
             .cross(self.points[2] - self.points[0])
             .normalize();
@@ -151,7 +312,14 @@ impl Tri {
             (point, result_normal, depth)
         };
 
-        Some((Ray::new(point, result_normal, depth), normal))
+        let point_in_world = point + result_normal * depth;
+
+        Some(Contact {
+            ray: Ray::new(point, result_normal, depth),
+            triangle_normal: normal,
+            position: point_in_world,
+            local_position: point - obj.center,
+        })
     }
 }
 
@@ -224,7 +392,7 @@ impl Aabb {
     pub fn intersect_sphere(&self, b: Sphere) -> bool {
         let nearest = b.center.clamp(self.min, self.max);
 
-        (b.center - nearest).length() <= b.radius
+        (b.center - nearest).length() < b.radius
     }
 }
 
@@ -290,7 +458,7 @@ pub struct Sphere {
 }
 
 impl Sphere {
-    const CONTACT_BREAKING_THRESHOLD: f32 = 1.905;
+    pub const CONTACT_BREAKING_THRESHOLD: f32 = 1.905;
 
     #[inline]
     #[must_use]

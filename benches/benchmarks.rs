@@ -1,7 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use glam::Vec3A;
-#[cfg(feature = "compression")]
-use rl_ball_sym::compressed;
 use rl_ball_sym::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
 
 fn load_standard_benchmark(c: &mut Criterion) {
@@ -18,28 +16,6 @@ fn load_dropshot_benchmark(c: &mut Criterion) {
 
 fn load_standard_throwback_benchmark(c: &mut Criterion) {
     c.bench_function("load_standard_throwback", |b| b.iter(load_standard_throwback));
-}
-
-#[cfg(feature = "compression")]
-fn compressed_load_standard_benchmark(c: &mut Criterion) {
-    c.bench_function("compressed_load_standard", |b| b.iter(compressed::load_standard));
-}
-
-#[cfg(feature = "compression")]
-fn compressed_load_hoops_benchmark(c: &mut Criterion) {
-    c.bench_function("compressed_load_hoops", |b| b.iter(compressed::load_hoops));
-}
-
-#[cfg(feature = "compression")]
-fn compressed_load_dropshot_benchmark(c: &mut Criterion) {
-    c.bench_function("compressed_load_dropshot", |b| b.iter(compressed::load_dropshot));
-}
-
-#[cfg(feature = "compression")]
-fn compressed_load_standard_throwback_benchmark(c: &mut Criterion) {
-    c.bench_function("compressed_load_standard_throwback", |b| {
-        b.iter(compressed::load_standard_throwback)
-    });
 }
 
 const BALL_VEL: Vec3A = Vec3A::new(600., 1550., 0.);
@@ -99,14 +75,6 @@ criterion_group!(
     load_dropshot_benchmark,
     load_standard_throwback_benchmark,
 );
-#[cfg(feature = "compression")]
-criterion_group!(
-    compressed_init,
-    compressed_load_standard_benchmark,
-    compressed_load_hoops_benchmark,
-    compressed_load_dropshot_benchmark,
-    compressed_load_standard_throwback_benchmark,
-);
 criterion_group!(
     ball_prediction,
     get_ball_prediction_struct_with_time_benchmark,
@@ -116,8 +84,4 @@ criterion_group!(
     get_ball_prediction_struct_throwback
 );
 
-#[cfg(not(feature = "compression"))]
 criterion_main!(init, ball_prediction);
-
-#[cfg(feature = "compression")]
-criterion_main!(init, compressed_init, ball_prediction);

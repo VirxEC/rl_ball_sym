@@ -1,12 +1,8 @@
 use std::{fs, io};
 
 use byteorder::{LittleEndian, ReadBytesExt};
-use rl_ball_sym::Ball;
-
-#[cfg(feature = "compression")]
-use rl_ball_sym::compressed::load_standard;
-#[cfg(all(feature = "uncompressed", not(feature = "compression")))]
-use rl_ball_sym::load_standard;
+use colored::Colorize;
+use rl_ball_sym::{load_standard, Ball};
 
 fn read_balls(file_name: &str, mut ball: Ball) -> io::Result<Vec<Ball>> {
     let mut file = fs::File::open(file_name)?;
@@ -47,16 +43,18 @@ fn main() -> io::Result<()> {
     rl_ball_sym.push(rocketsim[0]);
 
     ball = rocketsim[0];
-    for cball in rocketsim.iter().take(rocketsim.len() - 1).copied() {
-        // for cball in rocketsim.iter().skip(886).take(2).copied() {
+    for cball in rocketsim.iter().take(10).copied() {
         println!(
             "Error: {}, {}, {}",
             ball.location.distance(cball.location),
             ball.velocity.distance(cball.velocity),
             ball.angular_velocity.distance(cball.angular_velocity)
         );
+        println!("Vel error: {}", ball.velocity - cball.velocity);
+        ball = cball;
         ball.step(&game, 1. / 120.);
         rl_ball_sym.push(ball);
+        println!("{}", "[END OF TICK]".red());
     }
 
     fs::write(

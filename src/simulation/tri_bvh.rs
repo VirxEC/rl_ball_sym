@@ -1,11 +1,13 @@
 //! Tools for calculating collisions between objects and the Rocket League field.
 
+use crate::simulation::geometry::Hits;
+
 use super::{
-    geometry::{Aabb, Ray, Sphere, Tri},
+    game::Constraints,
+    geometry::{Aabb, Contact, Sphere, Tri},
     morton::Morton,
 };
 use combo_vec::{re_arr, ReArr};
-use glam::Vec3A;
 use std::{boxed::Box, convert::Into, ops::Add};
 
 /// A leaf in the BVH.
@@ -94,19 +96,18 @@ fn global_aabb(boxes: &[Aabb]) -> Aabb {
 impl TriangleBvh {
     #[must_use]
     /// Creates a new BVH from a list of primitives.
-    pub fn from(primitives: &[Tri]) -> Self {
+    pub fn new(primitives: Vec<Tri>) -> Self {
         #[cfg(test)]
         let num_leaves = primitives.len();
 
         let boxes: Vec<Aabb> = primitives.iter().copied().map(Into::into).collect();
         let global_box = global_aabb(&boxes);
-        let morton = Morton::from(global_box);
+        let morton = Morton::new(global_box);
 
         let mut sorted_leaves: Vec<Leaf> = primitives
-            .iter()
-            .copied()
+            .into_iter()
             .zip(boxes)
-            .map(|(primitive, box_)| Leaf::new(primitive, box_, morton.get_code(box_)))
+            .map(|(primitive, aabb)| Leaf::new(primitive, aabb, morton.get_code(aabb)))
             .collect();
         radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.morton);
 
@@ -141,10 +142,11 @@ impl TriangleBvh {
 
     #[must_use]
     /// Returns a Vec of the collision rays and triangle normals from the triangles intersecting with the `query_object`.
-    pub fn collide(&self, query_object: Sphere) -> Vec<(Ray, Vec3A)> {
+    pub fn collide(&self, query_object: Sphere) -> ReArr<Contact, { Constraints::MAX_CONTACTS }> {
         const STACK: ReArr<&Branch, 12> = re_arr![];
+        const HITS: Hits = Hits::new();
 
-        let mut hits = Vec::with_capacity(4);
+        let mut hits = HITS;
 
         // Traverse nodes starting from the root
         // If the node is a leaf, check for intersection
@@ -154,7 +156,7 @@ impl TriangleBvh {
                 if let Some(hit) = leaf.primitive.intersect_sphere(query_object) {
                     hits.push(hit);
                 }
-                return hits;
+                return hits.inner();
             }
         };
 
@@ -211,7 +213,7 @@ impl TriangleBvh {
             node = next_node;
         }
 
-        hits
+        hits.inner()
     }
 }
 
@@ -220,7 +222,7 @@ mod test {
     #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 
     use super::*;
-    use crate::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
+    use crate::{load_dropshot, load_hoops, load_standard, load_standard_throwback, simulation::geometry::Ray};
     use criterion::black_box;
     use glam::Vec3A;
     use rand::Rng;
@@ -321,14 +323,14 @@ mod test {
     fn test_bvh_build() {
         let triangles = generate_tris();
 
-        let _ = black_box(TriangleBvh::from(&triangles));
+        let _ = black_box(TriangleBvh::new(triangles));
     }
 
     #[test]
     fn test_bvh_collide_count() {
         let triangles = generate_tris();
 
-        let bvh = TriangleBvh::from(&triangles);
+        let bvh = TriangleBvh::new(triangles);
         {
             // Sphere hits nothing
             let sphere = Sphere::new(Vec3A::new(0., 0., 1022.), 100.);
@@ -347,14 +349,14 @@ mod test {
             let sphere = Sphere::new(Vec3A::ZERO, 100.);
             let hits = bvh.collide(sphere);
 
-            assert_eq!(hits.len(), 2);
+            assert_eq!(hits.len(), 1);
         }
         {
             // Sphere is in a corner
             let sphere = Sphere::new(Vec3A::new(4096., 5120., 0.), 100.);
             let hits = bvh.collide(sphere);
 
-            assert_eq!(hits.len(), 5);
+            assert_eq!(hits.len(), 1);
         }
     }
 
@@ -362,7 +364,7 @@ mod test {
     fn test_bvh_collide() {
         let triangles = generate_tris();
 
-        let bvh = TriangleBvh::from(&triangles);
+        let bvh = TriangleBvh::new(triangles);
 
         {
             // Sphere hits nothing
@@ -379,7 +381,7 @@ mod test {
             let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
 
-            let ray = rays[0].0;
+            let ray = rays[0].ray;
 
             assert!((ray.start.x - 2048.).abs() < f32::EPSILON);
             assert!((ray.start.y - 2560.).abs() < f32::EPSILON);
@@ -395,7 +397,7 @@ mod test {
             let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
 
-            let ray = rays[0].0;
+            let ray = rays[0].ray;
 
             assert!((ray.start.x - 0.0).abs() < f32::EPSILON);
             assert!((ray.start.y - 0.0).abs() < f32::EPSILON);
@@ -411,16 +413,17 @@ mod test {
             let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
 
-            let ray = rays[0].0;
+            let ray = rays[0].ray;
 
             assert!((ray.start.x - 4096.).abs() < f32::EPSILON);
             assert!((ray.start.y - 5120.).abs() < f32::EPSILON);
             assert!((ray.start.z - 0.0).abs() < f32::EPSILON);
             let mut ray = rays.iter().fold(Ray::default(), |mut acc, ray| {
-                acc += ray.0;
+                acc += ray.ray;
                 acc
             });
             ray.direction = ray.direction.normalize();
+            dbg!(ray.direction);
             assert!((ray.direction.x - 0.666_666_7).abs() < f32::EPSILON);
             assert!((ray.direction.y - 0.666_666_7).abs() < f32::EPSILON);
             assert!((ray.direction.z - 0.333_333_34).abs() < f32::EPSILON);
@@ -431,13 +434,13 @@ mod test {
     fn is_collision_ray_finite() {
         let triangles = generate_tris();
 
-        let bvh = TriangleBvh::from(&triangles);
+        let bvh = TriangleBvh::new(triangles);
 
         {
             let sphere = Sphere::new(Vec3A::new(0., 0., 92.15 - f32::EPSILON), 92.15);
             let ray = bvh.collide(sphere);
 
-            assert_eq!(ray.len(), 2);
+            assert_eq!(ray.len(), 1);
         }
     }
 

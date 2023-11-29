@@ -6,8 +6,8 @@
 
 Rust implementation of Rocket League's ball physics;
 Inspired by Samuel P. Mish's C++ utils called [RLUtilities](https://github.com/samuelpmish/RLUtilities)
-with improvements from [RocketSim](https://github.com/ZealanL/RocketSim)
-and other miscellaneous improvements.
+with accuracy improvements from [RocketSim](https://github.com/ZealanL/RocketSim)
+and other miscellaneous performance improvements.
 
 ## Running
 
@@ -29,14 +29,14 @@ cargo run --example basic
 
 ## Performance numbers
 
-Numbers are with default features from a system running Ubuntu 23.04 with a Ryzen 9 5900X with 3600MHz CL18 RAM.
+Numbers are with default features from a system running Ubuntu 23.10 with a Ryzen 9 5900X with 3600MHz CL18 RAM.
 
 Numbers _will_ vary depending on your system.
 
-+ `load_standard`: Loads 8028 triangles, executes in around `855µs`
++ `load_standard`: Loads 8028 triangles, executes in around `745µs`
 + `load_hoops`: Loads 15732 triangles, executes in around `1.55ms`
-+ `load_dropshot`: Loads 3616 triangles, executes in around `360µs`
-+ `load_standard_throwback`: Loads 9272 triangles, executes in around `945µs`
++ `load_dropshot`: Loads 3616 triangles, executes in around `345µs`
++ `load_standard_throwback`: Loads 9272 triangles, executes in around `955µs`
 + `get_ball_prediction_struct_for_time`: standard + 8 seconds, executes in around `185µs`
 + `get_ball_prediction`: standard + 6 seconds, executes in around `135µs`
 + `get_ball_prediction`: Hoops + 6 seconds, executes in around `285µs`
@@ -45,5 +45,8 @@ Numbers _will_ vary depending on your system.
 
 ## Features
 
- - `uncompressed`: Default feature. Enables the loading of uncompressed binary field data, which is faster but increases the size of the final binary.
- - `compression`: Minimize the size of the produced binaries by compressing the binary field data at compile time. Will slightly slow down `load_x()` functions. 
++ `standard`: Enable loading the standard map
++ `hoops`: Enable loading the hoops map
++ `dropshot`: Enable loading the dropshot map
++ `throwback`: Enable loading the throwback map (with standard game rules)
++ `compression`: Minimize the size of the produced binaries by compressing the binary field data at compile time. Will slightly slow down `load_x()` functions.
