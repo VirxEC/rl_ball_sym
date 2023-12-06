@@ -13,10 +13,10 @@ pub struct Morton {
 impl Morton {
     /// Calculate basic information required to generate a morton code.
     #[must_use]
-    pub fn new(global_box: Aabb) -> Self {
-        let offset = global_box.min();
+    pub fn new(global_aabb: Aabb) -> Self {
+        let offset = global_aabb.min();
         // 2 ^ 20 - 1 = 1048575
-        let scale = 1_048_575. / (global_box.max() - offset);
+        let scale = 1_048_575. / (global_aabb.max() - offset);
 
         Self { offset, scale }
     }

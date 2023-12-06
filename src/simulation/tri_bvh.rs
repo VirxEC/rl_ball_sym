@@ -1,12 +1,11 @@
 //! Tools for calculating collisions between objects and the Rocket League field.
 
-use crate::simulation::geometry::Hits;
-
 use super::{
     game::Constraints,
     geometry::{Aabb, Contact, Sphere, Tri},
     morton::Morton,
 };
+use crate::simulation::geometry::Hits;
 use combo_vec::{re_arr, ReArr};
 use std::{boxed::Box, convert::Into, ops::Add};
 
@@ -16,17 +15,15 @@ struct Leaf {
     /// The bounding box of this leaf.
     pub aabb: Aabb,
     /// The primitive that this leaf represents.
-    pub primitive: Tri,
-    /// The morton code of this leaf.
-    pub morton: u64,
+    pub idx: usize,
 }
 
 impl Leaf {
     #[must_use]
     #[inline]
     /// Create a new leaf.
-    pub const fn new(primitive: Tri, aabb: Aabb, morton: u64) -> Self {
-        Self { aabb, primitive, morton }
+    pub const fn new(aabb: Aabb, idx: usize) -> Self {
+        Self { aabb, idx }
     }
 }
 
@@ -81,11 +78,10 @@ impl Node {
 /// A bounding volume hierarchy.
 #[derive(Clone, Debug)]
 pub struct TriangleBvh {
-    /// The number of leaves that the BVH has
-    #[cfg(test)]
-    pub(crate) num_leaves: usize,
     /// The root of the BVH.
     root: Node,
+    /// The primitive triangles that the BVH is built from.
+    primitives: Vec<Tri>,
 }
 
 #[inline]
@@ -97,45 +93,34 @@ impl TriangleBvh {
     #[must_use]
     /// Creates a new BVH from a list of primitives.
     pub fn new(primitives: Vec<Tri>) -> Self {
-        #[cfg(test)]
-        let num_leaves = primitives.len();
+        let aabbs: Vec<Aabb> = primitives.iter().copied().map(Into::into).collect();
+        let global_aabb = global_aabb(&aabbs);
+        let morton = Morton::new(global_aabb);
 
-        let boxes: Vec<Aabb> = primitives.iter().copied().map(Into::into).collect();
-        let global_box = global_aabb(&boxes);
-        let morton = Morton::new(global_box);
-
-        let mut sorted_leaves: Vec<Leaf> = primitives
-            .into_iter()
-            .zip(boxes)
-            .map(|(primitive, aabb)| Leaf::new(primitive, aabb, morton.get_code(aabb)))
+        let mut sorted_leaves: Vec<_> = (0..primitives.len())
+            .map(|idx| (morton.get_code(aabbs[idx]), idx))
             .collect();
-        radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.morton);
+        radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.0);
 
-        let root = Self::generate_hierarchy(&sorted_leaves);
+        let root = Self::generate_hierarchy(&sorted_leaves, &aabbs);
 
-        #[cfg(test)]
-        {
-            Self { num_leaves, root }
-        }
-
-        #[cfg(not(test))]
-        {
-            Self { root }
-        }
+        Self { root, primitives }
     }
 
-    fn generate_hierarchy(sorted_leaves: &[Leaf]) -> Node {
+    fn generate_hierarchy(sorted_leaves: &[(u64, usize)], aabbs: &[Aabb]) -> Node {
         // If we're dealing with a single object, return the leaf node
         if sorted_leaves.len() == 1 {
-            return Node::Leaf(sorted_leaves[0]);
+            let idx = sorted_leaves[0].1;
+            let leaf = Leaf::new(aabbs[idx], idx);
+            return Node::Leaf(leaf);
         }
 
         // Determine where to split the range
         let split = sorted_leaves.len() / 2;
 
         // Process the resulting sub-ranges recursively
-        let right = Self::generate_hierarchy(&sorted_leaves[..split]);
-        let left = Self::generate_hierarchy(&sorted_leaves[split..]);
+        let right = Self::generate_hierarchy(&sorted_leaves[..split], aabbs);
+        let left = Self::generate_hierarchy(&sorted_leaves[split..], aabbs);
 
         Node::branch(right, left)
     }
@@ -153,7 +138,7 @@ impl TriangleBvh {
         let mut node = match &self.root {
             Node::Branch(branch) => branch,
             Node::Leaf(leaf) => {
-                if let Some(hit) = leaf.primitive.intersect_sphere(query_object) {
+                if let Some(hit) = self.primitives[leaf.idx].intersect_sphere(query_object) {
                     hits.push(hit);
                 }
                 return hits.inner();
@@ -173,7 +158,7 @@ impl TriangleBvh {
             if right.aabb().intersect_self(&query_box) {
                 match right {
                     Node::Leaf(right) => {
-                        if let Some(info) = right.primitive.intersect_sphere(query_object) {
+                        if let Some(info) = self.primitives[right.idx].intersect_sphere(query_object) {
                             hits.push(info);
                         }
                     }
@@ -185,7 +170,7 @@ impl TriangleBvh {
             if left.aabb().intersect_self(&query_box) {
                 match left {
                     Node::Leaf(left) => {
-                        if let Some(info) = left.primitive.intersect_sphere(query_object) {
+                        if let Some(info) = self.primitives[left.idx].intersect_sphere(query_object) {
                             hits.push(info);
                         }
                     }
@@ -622,7 +607,7 @@ mod test {
 
         dbg!(game.triangle_collisions.root.aabb());
 
-        assert_eq!(game.triangle_collisions.num_leaves, 8028);
+        assert_eq!(game.triangle_collisions.primitives.len(), 8028);
 
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
@@ -649,7 +634,7 @@ mod test {
 
         dbg!(game.triangle_collisions.root.aabb());
 
-        assert_eq!(game.triangle_collisions.num_leaves, 15732);
+        assert_eq!(game.triangle_collisions.primitives.len(), 15732);
 
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
@@ -676,7 +661,7 @@ mod test {
 
         dbg!(game.triangle_collisions.root.aabb());
 
-        assert_eq!(game.triangle_collisions.num_leaves, 3616);
+        assert_eq!(game.triangle_collisions.primitives.len(), 3616);
 
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
@@ -707,7 +692,7 @@ mod test {
             dbg!(branch.right.aabb());
         }
 
-        assert_eq!(game.triangle_collisions.num_leaves, 9272);
+        assert_eq!(game.triangle_collisions.primitives.len(), 9272);
 
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
