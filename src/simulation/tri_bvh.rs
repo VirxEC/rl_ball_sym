@@ -167,22 +167,9 @@ impl TriangleBvh {
 
         // Check each child node for overlap.
         loop {
-            let mut traverse_left = None;
+            let mut traverse_right = None;
 
-            let left = node.left.as_ref();
             let right = node.right.as_ref();
-
-            if left.aabb().intersect_self(&query_box) {
-                match left {
-                    Node::Leaf(left) => {
-                        if let Some(info) = left.primitive.intersect_sphere(query_object) {
-                            hits.push(info);
-                        }
-                    }
-                    Node::Branch(left) => traverse_left = Some(left),
-                }
-            }
-
             if right.aabb().intersect_self(&query_box) {
                 match right {
                     Node::Leaf(right) => {
@@ -190,18 +177,30 @@ impl TriangleBvh {
                             hits.push(info);
                         }
                     }
-                    Node::Branch(right) => {
-                        if traverse_left.is_some() {
-                            stack.push(right);
+                    Node::Branch(right) => traverse_right = Some(right),
+                }
+            }
+
+            let left = node.left.as_ref();
+            if left.aabb().intersect_self(&query_box) {
+                match left {
+                    Node::Leaf(left) => {
+                        if let Some(info) = left.primitive.intersect_sphere(query_object) {
+                            hits.push(info);
+                        }
+                    }
+                    Node::Branch(left) => {
+                        if traverse_right.is_some() {
+                            stack.push(left);
                         } else {
-                            node = right;
+                            node = left;
                             continue;
                         }
                     }
                 }
             }
 
-            if let Some(branch) = traverse_left {
+            if let Some(branch) = traverse_right {
                 node = branch;
                 continue;
             }
