@@ -7,13 +7,13 @@ fn main() {
 
     let mut rng = rand::thread_rng();
 
-    let num_iters = 100_000;
+    let num_iters = 100_000_000;
     let mut count = 0;
 
     for i in 0..num_iters {
         let location = Vec3A::new(
-            rng.gen_range(-3900.0..3900.),
-            rng.gen_range(-5000.0..5000.),
+            rng.gen_range(-3500.0..3500.),
+            rng.gen_range(-4500.0..4500.),
             rng.gen_range(100.0..1900.),
         );
         let velocity = Vec3A::new(
@@ -40,11 +40,13 @@ fn main() {
             }
         }
 
-        print!(
-            "\rNumber of out of bounds: {count}/{i} ({:.2}%)",
-            count as f32 / i as f32 * 100.
-        );
-        stdout().flush().unwrap();
+        if i % 500 == 0 {
+            print!(
+                "\rNumber of out of bounds: {count}/{i} ({:.6}%)",
+                count as f32 / i as f32 * 100.
+            );
+            stdout().flush().unwrap();
+        }
     }
 
     println!();

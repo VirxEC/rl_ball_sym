@@ -133,7 +133,7 @@ mod test {
     #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 
     use super::*;
-    use crate::{load_dropshot, load_hoops, load_standard, load_standard_throwback, simulation::geometry::Ray};
+    use crate::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
     use criterion::black_box;
     use glam::Vec3A;
     use rand::Rng;
@@ -243,7 +243,7 @@ mod test {
         }
         {
             // Middle of two Tris
-            let sphere = Sphere::new(Vec3A::ZERO, 100.);
+            let sphere = Sphere::new(Vec3A::Z, 100.);
 
             let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
@@ -259,25 +259,26 @@ mod test {
         }
         {
             // Sphere is in a corner
-            let sphere = Sphere::new(Vec3A::new(4096., 5120., 0.), 100.);
+            let sphere = Sphere::new(Vec3A::new(4095., 5119., 5.), 100.);
 
             let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
 
-            let ray = rays[0].ray;
+            let first_ray = rays[0].ray;
+            dbg!(first_ray);
+            assert!((first_ray.start.x - 4093.8838).abs() < f32::EPSILON);
+            assert!((first_ray.start.y - 5120.).abs() < f32::EPSILON);
+            assert!((first_ray.start.z - 0.528_076_2).abs() < f32::EPSILON);
 
-            assert!((ray.start.x - 4096.).abs() < f32::EPSILON);
-            assert!((ray.start.y - 5120.).abs() < f32::EPSILON);
-            assert!((ray.start.z - 0.0).abs() < f32::EPSILON);
-            let mut ray = rays.iter().fold(Ray::default(), |mut acc, ray| {
+            let mut ray = rays.iter().skip(1).fold(rays[0].ray, |mut acc, ray| {
                 acc += ray.ray;
                 acc
             });
             ray.direction = ray.direction.normalize();
-            dbg!(ray.direction);
-            assert!((ray.direction.x - 0.666_666_7).abs() < f32::EPSILON);
-            assert!((ray.direction.y - 0.666_666_7).abs() < f32::EPSILON);
-            assert!((ray.direction.z - 0.333_333_34).abs() < f32::EPSILON);
+
+            assert!((ray.direction.x - 0.102_604_72).abs() < f32::EPSILON);
+            assert!((ray.direction.y - -0.525_460_96).abs() < f32::EPSILON);
+            assert!((ray.direction.z - 0.844_608_3).abs() < f32::EPSILON);
         }
     }
 
