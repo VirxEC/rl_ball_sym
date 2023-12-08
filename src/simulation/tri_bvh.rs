@@ -1,9 +1,9 @@
 //! Tools for calculating collisions between objects and the Rocket League field.
 
 use super::{
-    bvh::{global_aabb, Leaf, Node, Branch},
+    bvh::{global_aabb, Branch, Leaf, Node},
     game::Constraints,
-    geometry::{Aabb, Contact, Sphere, Tri, Hits},
+    geometry::{Aabb, Contact, Hits, Sphere, Tri},
     morton::Morton,
 };
 use combo_vec::{re_arr, ReArr};
@@ -79,19 +79,7 @@ impl TriangleBvh {
 
         // Check each child node for overlap.
         loop {
-            let mut traverse_right = None;
-
-            let right = node.right.as_ref();
-            if right.aabb().intersect_self(&query_box) {
-                match right {
-                    Node::Leaf(right) => {
-                        if let Some(info) = self.primitives[right.idx].intersect_sphere(query_object) {
-                            hits.push(info);
-                        }
-                    }
-                    Node::Branch(right) => traverse_right = Some(right),
-                }
-            }
+            let mut traverse_left = None;
 
             let left = node.left.as_ref();
             if left.aabb().intersect_self(&query_box) {
@@ -101,18 +89,30 @@ impl TriangleBvh {
                             hits.push(info);
                         }
                     }
-                    Node::Branch(left) => {
-                        if traverse_right.is_some() {
-                            stack.push(left);
+                    Node::Branch(left) => traverse_left = Some(left),
+                }
+            }
+
+            let right = node.right.as_ref();
+            if right.aabb().intersect_self(&query_box) {
+                match right {
+                    Node::Leaf(right) => {
+                        if let Some(info) = self.primitives[right.idx].intersect_sphere(query_object) {
+                            hits.push(info);
+                        }
+                    }
+                    Node::Branch(right) => {
+                        if traverse_left.is_some() {
+                            stack.push(right);
                         } else {
-                            node = left;
+                            node = right;
                             continue;
                         }
                     }
                 }
             }
 
-            if let Some(branch) = traverse_right {
+            if let Some(branch) = traverse_left {
                 node = branch;
                 continue;
             }
@@ -166,7 +166,7 @@ mod test {
         ];
         VERT_MAP
             .iter()
-            .map(|map| Tri::from_points(verts[map[0]], verts[map[1]], verts[map[2]]))
+            .map(|map| Tri::new([verts[map[0]], verts[map[1]], verts[map[2]]]))
             .collect()
     }
 

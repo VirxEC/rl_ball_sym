@@ -181,14 +181,9 @@ pub struct Tri {
 
 impl Tri {
     #[inline]
-    const fn new(points: [Vec3A; 3]) -> Self {
+    /// Create a new triangle from 3 points.
+    pub const fn new(points: [Vec3A; 3]) -> Self {
         Self { points }
-    }
-
-    #[cfg(test)]
-    /// Create a new triangle from 3 points
-    pub const fn from_points(p0: Vec3A, p1: Vec3A, p2: Vec3A) -> Self {
-        Self::new([p0, p1, p2])
     }
 
     #[inline]
@@ -293,6 +288,7 @@ impl Tri {
 
             let closest_point = self.closest_point(obj.center);
             let distance_sqr = (closest_point - obj.center).length_squared();
+
             if distance_sqr < min_dist_sqr {
                 Some(closest_point)
             } else {
@@ -483,11 +479,11 @@ mod test {
     use super::*;
     use glam::Vec3A;
 
-    const TRI: Tri = Tri::from_points(
+    const TRI: Tri = Tri::new([
         Vec3A::new(-1.0, 5.0, 0.0),
         Vec3A::new(2.0, 2.0, -3.0),
         Vec3A::new(5.0, 5.0, 0.0),
-    );
+    ]);
 
     const BOUNDING_BOXES: &[Aabb] = &[
         Aabb {
