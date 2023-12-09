@@ -4,7 +4,7 @@ use super::geometry::Aabb;
 use glam::Vec3A;
 
 /// Basic data for generating morton codes.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Debug)]
 pub struct Morton {
     offset: Vec3A,
     scale: Vec3A,
@@ -37,7 +37,7 @@ impl Morton {
 
     /// Get an AABB's morton code.
     #[must_use]
-    pub fn get_code(self, aabb: Aabb) -> u64 {
+    pub fn get_code(&self, aabb: &Aabb) -> u64 {
         // get the centroid of the ith bounding box
         let c = (aabb.min() + aabb.max()) / 2.;
 

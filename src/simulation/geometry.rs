@@ -283,8 +283,7 @@ impl Tri {
         let contact_point = if self.face_contains(obj.center) {
             Some(obj.center - normal * distance_from_plane)
         } else {
-            let contact_capsule_radius_sqr = obj.radius_with_threshold.powi(2);
-            let min_dist_sqr = contact_capsule_radius_sqr;
+            let min_dist_sqr = obj.radius_with_threshold.powi(2);
 
             let closest_point = self.closest_point(obj.center);
             let distance_sqr = (closest_point - obj.center).length_squared();
@@ -303,26 +302,20 @@ impl Tri {
             return None;
         }
 
-        let (point, result_normal, depth) = if distance_sqr > f32::EPSILON {
+        let (result_normal, depth) = if distance_sqr > f32::EPSILON {
             let distance = distance_sqr.sqrt();
-            let result_normal = contact_to_center / distance;
-            let point = contact_point;
-            let depth = -(obj.radius - distance);
-            (point, result_normal, depth)
+            (contact_to_center / distance, -(obj.radius - distance))
         } else {
-            let result_normal = normal;
-            let point = contact_point;
-            let depth = -obj.radius;
-            (point, result_normal, depth)
+            (normal, -obj.radius)
         };
 
-        let point_in_world = point + result_normal * depth;
+        let point_in_world = contact_point + result_normal * depth;
 
         Some(Contact {
-            ray: Ray::new(point, result_normal, depth),
+            ray: Ray::new(contact_point, result_normal, depth),
             triangle_normal: normal,
             position: point_in_world,
-            local_position: point - obj.center,
+            local_position: contact_point - obj.center,
         })
     }
 }

@@ -33,7 +33,7 @@ Numbers are with default features from a system running Ubuntu 23.10 with a Ryze
 
 Numbers _will_ vary depending on your system.
 
-+ `load_standard`: Loads 8028 triangles, executes in around `650µs`
++ `load_standard`: Loads 8028 triangles, executes in around `640µs`
 + `load_hoops`: Loads 15732 triangles, executes in around `1.30ms`
 + `load_dropshot`: Loads 3616 triangles, executes in around `300µs`
 + `load_standard_throwback`: Loads 9272 triangles, executes in around `805µs`

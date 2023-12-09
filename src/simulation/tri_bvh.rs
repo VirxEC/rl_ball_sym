@@ -23,31 +23,31 @@ impl TriangleBvh {
     /// Creates a new BVH from a list of primitives.
     pub fn new(primitives: Vec<Tri>) -> Self {
         let aabbs: Vec<Aabb> = primitives.iter().copied().map(Into::into).collect();
-        let global_aabb = global_aabb(&aabbs);
-        let morton = Morton::new(global_aabb);
+        let morton = Morton::new(global_aabb(&aabbs));
 
-        let mut sorted_leaves: Vec<_> = (0..primitives.len()).map(|idx| (morton.get_code(aabbs[idx]), idx)).collect();
-        radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.0);
+        let mut sorted_leaves: Vec<_> = aabbs.iter().map(|aabb| morton.get_code(aabb)).enumerate().collect();
+        radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.1);
 
         let root = Self::generate_hierarchy(&sorted_leaves, &aabbs);
 
         Self { root, primitives }
     }
 
-    fn generate_hierarchy(sorted_leaves: &[(u64, usize)], aabbs: &[Aabb]) -> Node {
+    fn generate_hierarchy(sorted_leaves: &[(usize, u64)], aabbs: &[Aabb]) -> Node {
         // If we're dealing with a single object, return the leaf node
         if sorted_leaves.len() == 1 {
-            let idx = sorted_leaves[0].1;
+            let idx = sorted_leaves[0].0;
             let leaf = Leaf::new(aabbs[idx], idx);
             return Node::Leaf(leaf);
         }
 
         // Determine where to split the range
-        let split = sorted_leaves.len() / 2;
+        let mid = sorted_leaves.len() / 2;
+        let (first_half, last_half) = sorted_leaves.split_at(mid);
 
         // Process the resulting sub-ranges recursively
-        let right = Self::generate_hierarchy(&sorted_leaves[..split], aabbs);
-        let left = Self::generate_hierarchy(&sorted_leaves[split..], aabbs);
+        let right = Self::generate_hierarchy(first_half, aabbs);
+        let left = Self::generate_hierarchy(last_half, aabbs);
 
         Node::branch(right, left)
     }
