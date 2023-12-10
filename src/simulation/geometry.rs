@@ -50,6 +50,51 @@ impl Hits {
         nearest_point
     }
 
+    #[inline]
+    fn get_res(new_contact_local: Vec3A, point1: Vec3A, point2: Vec3A, point3: Vec3A) -> f32 {
+        (new_contact_local - point1).cross(point2 - point3).length_squared()
+    }
+
+    #[inline]
+    fn get_res_0(&self, new_contact_local: Vec3A) -> f32 {
+        Self::get_res(
+            new_contact_local,
+            self.0[1].local_position,
+            self.0[3].local_position,
+            self.0[2].local_position,
+        )
+    }
+
+    #[inline]
+    fn get_res_1(&self, new_contact_local: Vec3A) -> f32 {
+        Self::get_res(
+            new_contact_local,
+            self.0[0].local_position,
+            self.0[3].local_position,
+            self.0[2].local_position,
+        )
+    }
+
+    #[inline]
+    fn get_res_2(&self, new_contact_local: Vec3A) -> f32 {
+        Self::get_res(
+            new_contact_local,
+            self.0[0].local_position,
+            self.0[3].local_position,
+            self.0[1].local_position,
+        )
+    }
+
+    #[inline]
+    fn get_res_3(&self, new_contact_local: Vec3A) -> f32 {
+        Self::get_res(
+            new_contact_local,
+            self.0[0].local_position,
+            self.0[2].local_position,
+            self.0[1].local_position,
+        )
+    }
+
     // int btPersistentManifold::sortCachedPoints(const btManifoldPoint& pt)
     fn replacement_index(&self, new_contact: &Contact) -> usize {
         //calculate 4 possible cases areas, and take biggest area
@@ -70,69 +115,46 @@ impl Hits {
             }
         }
 
-        // btScalar res0(btScalar(0.)), res1(btScalar(0.)), res2(btScalar(0.)), res3(btScalar(0.));
-        let mut res = [0., 0., 0., 0.];
-
-        // if (maxPenetrationIndex != 0)
-        if max_penetration_index != 0 {
-            // btVector3 a0 = pt.m_localPointA - m_pointCache[1].m_localPointA;
-            let a0 = new_contact.local_position - self.0[1].local_position;
-            // btVector3 b0 = m_pointCache[3].m_localPointA - m_pointCache[2].m_localPointA;
-            let b0 = self.0[3].local_position - self.0[2].local_position;
-            // btVector3 cross = a0.cross(b0);
-            let cross = a0.cross(b0);
-            // res0 = cross.length2();
-            res[0] = cross.length_squared();
-        }
-
-        // if (maxPenetrationIndex != 1)
-        if max_penetration_index != 1 {
-            // btVector3 a1 = pt.m_localPointA - m_pointCache[0].m_localPointA;
-            let a1 = new_contact.local_position - self.0[0].local_position;
-            // btVector3 b1 = m_pointCache[3].m_localPointA - m_pointCache[2].m_localPointA;
-            let b1 = self.0[3].local_position - self.0[2].local_position;
-            // btVector3 cross = a1.cross(b1);
-            let cross = a1.cross(b1);
-            // res1 = cross.length2();
-            res[1] = cross.length_squared();
-        }
-
-        // if (maxPenetrationIndex != 2)
-        if max_penetration_index != 2 {
-            // btVector3 a2 = pt.m_localPointA - m_pointCache[0].m_localPointA;
-            let a2 = new_contact.local_position - self.0[0].local_position;
-            // btVector3 b2 = m_pointCache[3].m_localPointA - m_pointCache[1].m_localPointA;
-            let b2 = self.0[3].local_position - self.0[1].local_position;
-            // btVector3 cross = a2.cross(b2);
-            let cross = a2.cross(b2);
-            // res2 = cross.length2();
-            res[2] = cross.length_squared();
-        }
-
-        // if (maxPenetrationIndex != 3)
-        if max_penetration_index != 3 {
-            // btVector3 a3 = pt.m_localPointA - m_pointCache[0].m_localPointA;
-            let a3 = new_contact.local_position - self.0[0].local_position;
-            // btVector3 b3 = m_pointCache[2].m_localPointA - m_pointCache[1].m_localPointA;
-            let b3 = self.0[2].local_position - self.0[1].local_position;
-            // btVector3 cross = a3.cross(b3);
-            let cross = a3.cross(b3);
-            // res3 = cross.length2();
-            res[3] = cross.length_squared();
-        }
+        let new_contact_local = new_contact.local_position;
+        let res = match max_penetration_index {
+            0 => [
+                0.,
+                self.get_res_1(new_contact_local),
+                self.get_res_2(new_contact_local),
+                self.get_res_3(new_contact_local),
+            ],
+            1 => [
+                self.get_res_0(new_contact_local),
+                0.,
+                self.get_res_2(new_contact_local),
+                self.get_res_3(new_contact_local),
+            ],
+            2 => [
+                self.get_res_0(new_contact_local),
+                self.get_res_1(new_contact_local),
+                0.,
+                self.get_res_3(new_contact_local),
+            ],
+            3 => [
+                self.get_res_0(new_contact_local),
+                self.get_res_1(new_contact_local),
+                self.get_res_2(new_contact_local),
+                0.,
+            ],
+            _ => [
+                self.get_res_0(new_contact_local),
+                self.get_res_1(new_contact_local),
+                self.get_res_2(new_contact_local),
+                self.get_res_3(new_contact_local),
+            ],
+        };
 
         // btVector4 maxvec(res0, res1, res2, res3);
         // int biggestarea = maxvec.closestAxis4();
         // return biggestarea;
 
         // get the index of the biggest element
-        let mut biggest_area = res[0];
-        let mut biggest_area_index = 0;
-
-        if res[1] > biggest_area {
-            biggest_area = res[1];
-            biggest_area_index = 1;
-        }
+        let (mut biggest_area, mut biggest_area_index) = if res[1] > res[0] { (res[1], 1) } else { (res[0], 0) };
 
         if res[2] > biggest_area {
             biggest_area = res[2];
@@ -167,7 +189,7 @@ impl Hits {
     }
 
     #[inline]
-    pub fn inner(self) -> ReArr<Contact, { Constraints::MAX_CONTACTS }> {
+    pub const fn inner(self) -> ReArr<Contact, { Constraints::MAX_CONTACTS }> {
         self.0
     }
 }
