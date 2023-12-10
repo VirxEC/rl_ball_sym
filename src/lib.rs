@@ -1,4 +1,4 @@
-#![warn(missing_docs, clippy::pedantic, clippy::all)]
+#![warn(missing_docs, clippy::pedantic, clippy::all, clippy::nursery)]
 
 //! `rl_ball_sym` is a Rust implementation of a simulation of the Rocket League ball inside it's field.
 //! It loads the real geometry from the game and simulates the ball's movement in nanoseconds.

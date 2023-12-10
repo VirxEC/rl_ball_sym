@@ -102,26 +102,24 @@ impl TriangleBvh {
                         }
                     }
                     Node::Branch(right) => {
-                        if traverse_left.is_some() {
+                        node = traverse_left.map_or(right, |branch| {
                             stack.push(right);
-                        } else {
-                            node = right;
-                            continue;
-                        }
+                            branch
+                        });
+                        continue;
                     }
                 }
             }
 
-            if let Some(branch) = traverse_left {
-                node = branch;
-                continue;
-            }
+            node = if let Some(branch) = traverse_left {
+                branch
+            } else {
+                let Some(next_node) = stack.pop() else {
+                    break;
+                };
 
-            let Some(next_node) = stack.pop() else {
-                break;
+                next_node
             };
-
-            node = next_node;
         }
 
         hits.inner()
