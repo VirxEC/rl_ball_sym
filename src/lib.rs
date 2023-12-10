@@ -37,7 +37,6 @@ pub use compressed::*;
 #[cfg(not(feature = "compression"))]
 pub use uncompressed::*;
 
-mod linear_algebra;
 pub mod simulation;
 
 pub use crate::simulation::{

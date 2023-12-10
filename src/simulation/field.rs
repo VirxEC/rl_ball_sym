@@ -1,10 +1,15 @@
 use super::{mesh::Mesh, tri_bvh::TriangleBvh};
-use crate::linear_algebra::math::z_axis_to_rotation;
 use glam::{Mat3A, Vec3, Vec3A};
 use std::f32::consts::{FRAC_PI_3, FRAC_PI_6};
 
 const FLIP_X: Mat3A = Mat3A::from_cols(Vec3A::NEG_X, Vec3A::Y, Vec3A::Z);
 const FLIP_Y: Mat3A = Mat3A::from_cols(Vec3A::X, Vec3A::NEG_Y, Vec3A::Z);
+
+#[inline]
+/// Convert an axis-angle vector to a rotation matrix.
+fn z_axis_to_rotation(axis: f32) -> Mat3A {
+    Mat3A::from_axis_angle(Vec3::new(0., 0., axis), axis)
+}
 
 #[inline]
 fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {

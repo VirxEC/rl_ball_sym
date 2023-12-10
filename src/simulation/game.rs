@@ -50,7 +50,7 @@ impl Game {
 pub(crate) struct Constraint {
     pub contact_normal: Vec3A,
     pub rel_pos_cross_normal: Vec3A,
-    pub angular_component_a: Vec3A,
+    pub angular_component: Vec3A,
     pub rhs: f32,
     pub lower_limit: f32,
     pub upper_limit: f32,
@@ -100,7 +100,7 @@ impl Constraint {
         // bodyA.internalGetDeltaLinearVelocity().mVec128 = _mm_add_ps(bodyA.internalGetDeltaLinearVelocity().mVec128, _mm_mul_ps(linearComponentA, impulseMagnitude));
         deltas.0 += linear_component_a * impulse_magnitude;
         // bodyA.internalGetDeltaAngularVelocity().mVec128 = _mm_add_ps(bodyA.internalGetDeltaAngularVelocity().mVec128, _mm_mul_ps(c.m_angularComponentA.mVec128, impulseMagnitude));
-        deltas.1 += self.angular_component_a * impulse_magnitude;
+        deltas.1 += self.angular_component * impulse_magnitude;
         // bodyB.internalGetDeltaLinearVelocity().mVec128 = _mm_add_ps(bodyB.internalGetDeltaLinearVelocity().mVec128, _mm_mul_ps(linearComponentB, impulseMagnitude));
         // bodyB.internalGetDeltaAngularVelocity().mVec128 = _mm_add_ps(bodyB.internalGetDeltaAngularVelocity().mVec128, _mm_mul_ps(c.m_angularComponentB.mVec128, impulseMagnitude));
         // return deltaImpulse.m_floats[0] / c.m_jacDiagABInv;
@@ -164,7 +164,7 @@ impl Constraint {
         // bodyA.internalGetDeltaLinearVelocity().mVec128 = _mm_add_ps(bodyA.internalGetDeltaLinearVelocity().mVec128, _mm_mul_ps(linearComponentA, impulseMagnitude));
         deltas.0 += linear_component_a * impulse_magnitude;
         // bodyA.internalGetDeltaAngularVelocity().mVec128 = _mm_add_ps(bodyA.internalGetDeltaAngularVelocity().mVec128, _mm_mul_ps(c.m_angularComponentA.mVec128, impulseMagnitude));
-        deltas.1 += self.angular_component_a * impulse_magnitude;
+        deltas.1 += self.angular_component * impulse_magnitude;
         // bodyB.internalGetDeltaLinearVelocity().mVec128 = _mm_add_ps(bodyB.internalGetDeltaLinearVelocity().mVec128, _mm_mul_ps(linearComponentB, impulseMagnitude));
         // bodyB.internalGetDeltaAngularVelocity().mVec128 = _mm_add_ps(bodyB.internalGetDeltaAngularVelocity().mVec128, _mm_mul_ps(c.m_angularComponentB.mVec128, impulseMagnitude));
         // return deltaImpulse.m_floats[0] / c.m_jacDiagABInv;
@@ -213,7 +213,7 @@ impl Constraints {
         &self,
         ball: &Ball,
         normal_world_on_b: Vec3A,
-        rel_pos1: Vec3A,
+        rel_pos: Vec3A,
         external_force_impulse: Vec3A,
     ) -> Constraint {
         // btSolverBody* bodyA = &m_tmpSolverBodyPool[solverBodyIdA];
@@ -237,12 +237,12 @@ impl Constraints {
 
         // btVector3 torqueAxis0 = rel_pos1.cross(cp.m_normalWorldOnB);
         // dbg!(rel_pos1 / 50., normal_world_on_b);
-        let torque_axis_0 = rel_pos1.cross(normal_world_on_b);
+        let torque_axis = rel_pos.cross(normal_world_on_b);
         // dbg!(torque_axis_0);
         // getAngularFactor will always return 1, 1, 1
         // solverConstraint.m_angularComponentA = rb0 ? rb0->getInvInertiaTensorWorld() * torqueAxis0 * rb0->getAngularFactor() : btVector3(0, 0, 0);
         // dbg!(self.inv_inertia);
-        let angular_component_a = ball.inv_inertia * torque_axis_0;
+        let angular_component = ball.inv_inertia * torque_axis;
         // dbg!(angular_component_a);
         // btVector3 torqueAxis1 = rel_pos2.cross(cp.m_normalWorldOnB);
         // let torque_axis_1 = rel_pos2.cross(normal_world_on_b);
@@ -264,16 +264,16 @@ impl Constraints {
         //     vec = (-solverConstraint.m_angularComponentB).cross(rel_pos2);
         //     denom1 = rb1->getInvMass() + cp.m_normalWorldOnB.dot(vec);
         // }
-        let vec = angular_component_a.cross(rel_pos1);
-        let denom_0 = self.inv_mass + normal_world_on_b.dot(vec);
+        let vec = angular_component.cross(rel_pos);
+        let denom = self.inv_mass + normal_world_on_b.dot(vec);
         // let denom_1 = 0.;
 
         // dbg!(vec);
         // dbg!(denom_0);
         // btScalar denom = relaxation / (denom0 + denom1 + cfm);
-        let denom = Self::RELAXATION / denom_0;
+        // let denom = Self::RELAXATION / denom_0;
         // solverConstraint.m_jacDiagABInv = denom;
-        let jac_diag_ab_inv = denom;
+        let jac_diag_ab_inv = Self::RELAXATION / denom;
         // dbg!(jac_diag_ab_inv);
 
         // if (rb0)
@@ -287,7 +287,7 @@ impl Constraints {
         //     solverConstraint.m_relpos1CrossNormal.setZero();
         // }
         let contact_normal = normal_world_on_b;
-        let rel_pos_cross_normal = torque_axis_0;
+        let rel_pos_cross_normal = torque_axis;
         // if (rb1)
         // {
         //     solverConstraint.m_contactNormal2 = -cp.m_normalWorldOnB;
@@ -308,7 +308,7 @@ impl Constraints {
         // btVector3 vel1, vel2;
 
         // vel1 = rb0 ? rb0->getVelocityInLocalPoint(rel_pos1) : btVector3(0, 0, 0);
-        let abs_vel = ball.get_velocity_in_local_point(rel_pos1);
+        let abs_vel = ball.get_velocity_in_local_point(rel_pos);
         // vel2 = rb1 ? rb1->getVelocityInLocalPoint(rel_pos2) : btVector3(0, 0, 0);
         // let vel2 = Vec3A::ZERO;
 
@@ -344,7 +344,7 @@ impl Constraints {
 
         // m_externalForceImpulse is the effect of gravity, everything else is always 0
         // btVector3 externalForceImpulseA = bodyA->m_originalBody ? bodyA->m_externalForceImpulse : btVector3(0, 0, 0);
-        let external_force_impulse_a = external_force_impulse;
+        // let external_force_impulse_a = external_force_impulse;
         // btVector3 externalTorqueImpulseA = bodyA->m_originalBody ? bodyA->m_externalTorqueImpulse : btVector3(0, 0, 0);
         // let external_torque_impulse_a = Vec3A::ZERO;
         // btVector3 externalForceImpulseB = bodyB->m_originalBody ? bodyB->m_externalForceImpulse : btVector3(0, 0, 0);
@@ -354,7 +354,7 @@ impl Constraints {
 
         // btScalar vel1Dotn = solverConstraint.m_contactNormal1.dot(bodyA->m_linearVelocity + externalForceImpulseA) + solverConstraint.m_relpos1CrossNormal.dot(bodyA->m_angularVelocity + externalTorqueImpulseA);
         let rel_vel =
-            contact_normal.dot(ball.velocity + external_force_impulse_a) + rel_pos_cross_normal.dot(ball.angular_velocity);
+            contact_normal.dot(ball.velocity + external_force_impulse) + rel_pos_cross_normal.dot(ball.angular_velocity);
 
         // btScalar vel2Dotn = solverConstraint.m_contactNormal2.dot(bodyB->m_linearVelocity + externalForceImpulseB) + solverConstraint.m_relpos2CrossNormal.dot(bodyB->m_angularVelocity + externalTorqueImpulseB);
         // let vel_2_dot_n = contact_normal_2.dot(Vec3A::ZERO + external_force_impulse_b) + rel_pos_2_cross_normal.dot(Vec3A::ZERO + external_torque_impulse_b);
@@ -393,7 +393,7 @@ impl Constraints {
         Constraint {
             contact_normal,
             rel_pos_cross_normal,
-            angular_component_a,
+            angular_component,
             rhs: velocity_impulse,
             lower_limit: 0.,
             upper_limit: 1e10,
@@ -408,7 +408,7 @@ impl Constraints {
         &self,
         ball: &Ball,
         normal_axis: Vec3A,
-        rel_pos1: Vec3A,
+        rel_pos: Vec3A,
         external_force_impulse: Vec3A,
     ) -> Constraint {
         // btSolverBody& solverBodyA = m_tmpSolverBodyPool[solverBodyIdA];
@@ -442,9 +442,9 @@ impl Constraints {
         //     solverConstraint.m_angularComponentA.setZero();
         // }
 
-        let contact_normal_1 = normal_axis;
-        let rel_pos1_cross_normal = rel_pos1.cross(contact_normal_1);
-        let angular_component_a = ball.inv_inertia * rel_pos1_cross_normal;
+        let contact_normal = normal_axis;
+        let rel_pos_cross_normal = rel_pos.cross(contact_normal);
+        let angular_component = ball.inv_inertia * rel_pos_cross_normal;
 
         // if (bodyA)
         // {
@@ -472,35 +472,35 @@ impl Constraints {
         //     vec = (solverConstraint.m_angularComponentA).cross(rel_pos1);
         //     denom0 = body0->getInvMass() + normalAxis.dot(vec);
         // }
-        let vec = angular_component_a.cross(rel_pos1);
-        let denom_0: f32 = self.inv_mass + normal_axis.dot(vec);
+        let vec = angular_component.cross(rel_pos);
+        let denom: f32 = self.inv_mass + normal_axis.dot(vec);
 
         // if (bodyA)
         // {
         //     vec = (-solverConstraint.m_angularComponentB).cross(rel_pos2);
         //     denom1 = bodyA->getInvMass() + normalAxis.dot(vec);
         // }
-        let denom_1 = 0.;
+        // let denom_1 = 0.;
 
         // btScalar denom = relaxation / (denom0 + denom1);
-        let denom = Self::RELAXATION / (denom_0 + denom_1);
+        // let denom = Self::RELAXATION / (denom_0 + denom_1);
         // solverConstraint.m_jacDiagABInv = denom;
-        let jac_diag_ab_inv = denom;
+        let jac_diag_ab_inv = Self::RELAXATION / denom;
         // dbg!(jac_diag_ab_inv);
 
         // btScalar rel_vel;
         // btScalar vel1Dotn = solverConstraint.m_contactNormal1.dot(body0 ? solverBodyA.m_linearVelocity + solverBodyA.m_externalForceImpulse : btVector3(0, 0, 0)) + solverConstraint.m_relpos1CrossNormal.dot(body0 ? solverBodyA.m_angularVelocity : btVector3(0, 0, 0));
-        let vel_1_dot_n =
-            contact_normal_1.dot(ball.velocity + external_force_impulse) + rel_pos1_cross_normal.dot(ball.angular_velocity);
+        let rel_vel =
+            contact_normal.dot(ball.velocity + external_force_impulse) + rel_pos_cross_normal.dot(ball.angular_velocity);
         // btScalar vel2Dotn = solverConstraint.m_contactNormal2.dot(bodyA ? solverBodyB.m_linearVelocity + solverBodyB.m_externalForceImpulse : btVector3(0, 0, 0)) + solverConstraint.m_relpos2CrossNormal.dot(bodyA ? solverBodyB.m_angularVelocity : btVector3(0, 0, 0));
-        let vel_2_dot_n = 0.;
+        // let vel_2_dot_n = 0.;
 
         // rel_vel = vel1Dotn + vel2Dotn; // vel2Dotn is always 0
-        let rel_vel = vel_1_dot_n + vel_2_dot_n;
+        // let rel_vel = vel_1_dot_n + vel_2_dot_n;
 
-        let desired_velocity = 0.;
+        // let desired_velocity = 0.;
         // btScalar velocityError = desiredVelocity - rel_vel;
-        let velocity_error = desired_velocity - rel_vel;
+        let velocity_error = -rel_vel;
         // btScalar velocityImpulse = velocityError * solverConstraint.m_jacDiagABInv;
         let velocity_impulse = velocity_error * jac_diag_ab_inv;
         // dbg!(velocity_impulse / 50.);
@@ -514,9 +514,9 @@ impl Constraints {
         // solverConstraint.m_lowerLimit = -solverConstraint.m_friction;
         // solverConstraint.m_upperLimit = solverConstraint.m_friction;
         Constraint {
-            contact_normal: contact_normal_1,
-            rel_pos_cross_normal: rel_pos1_cross_normal,
-            angular_component_a,
+            contact_normal,
+            rel_pos_cross_normal,
+            angular_component,
             rhs: velocity_impulse,
             lower_limit: -Self::COEFF_FRICTION,
             upper_limit: Self::COEFF_FRICTION,

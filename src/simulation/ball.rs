@@ -4,7 +4,6 @@ use super::{
     game::{Constraints, Game},
     geometry::Sphere,
 };
-use crate::linear_algebra::math::Vec3AExt;
 use glam::Vec3A;
 
 /// Represents the game's ball
@@ -42,7 +41,7 @@ impl Ball {
     const W_MAX: f32 = 6.;
 
     const M: f32 = 30.;
-    const INV_M: f32 = 1. / Self::M;
+    pub(crate) const INV_M: f32 = 1. / Self::M;
 
     const STANDARD_RADIUS: f32 = 91.25;
     const HOOPS_RADIUS: f32 = 96.38307;
@@ -179,10 +178,6 @@ impl Ball {
             self.location += self.velocity * dt;
             self.angular_velocity = self.angular_velocity.clamp_length_max(Self::W_MAX);
             self.velocity = self.velocity.clamp_length_max(Self::V_MAX);
-
-            self.location.round_vec_bullet(50., 0.0002);
-            self.velocity.round_vec_bullet(50., 0.0002);
-            self.angular_velocity.round_vec_bullet(1., 0.00001);
         }
     }
 
