@@ -47,7 +47,7 @@ impl Game {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct Constraint {
+pub struct Constraint {
     pub contact_normal: Vec3A,
     pub rel_pos_cross_normal: Vec3A,
     pub angular_component: Vec3A,
@@ -173,7 +173,7 @@ impl Constraint {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct Constraints {
+pub struct Constraints {
     contact: Vec<Constraint>,
     friction: Vec<Constraint>,
     inv_mass: f32,

@@ -48,6 +48,7 @@ serde = ["dep:serde", "glam/serde"]
 codegen-units = 1
 debug = true
 lto = true
+panic = "abort"
 
 [package.metadata.docs.rs]
 all-features = true

@@ -74,7 +74,7 @@ pub fn load_dropshot() -> (Game, Ball) {
     (Game::new(triangle_collisions), Ball::initialize_dropshot())
 }
 
-/// Returns a Game object with throwback stadium and a standard standard ball.
+/// Returns a Game object with throwback stadium and a standard ball.
 #[must_use]
 #[cfg(feature = "throwback")]
 pub fn load_standard_throwback() -> (Game, Ball) {

@@ -37,7 +37,7 @@ pub use compressed::*;
 #[cfg(not(feature = "compression"))]
 pub use uncompressed::*;
 
-pub mod simulation;
+mod simulation;
 
 pub use crate::simulation::{
     ball::{Ball, Predictions},
