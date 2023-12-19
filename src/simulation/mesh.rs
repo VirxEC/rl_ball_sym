@@ -1,7 +1,6 @@
 //! Tools for creating space-efficient meshes and transforming them into a list of triangles.
 
 use super::geometry::Tri;
-use crate::linear_algebra::math::dot;
 use byteorder::{LittleEndian, ReadBytesExt};
 use glam::{Mat3A, Vec3A};
 use std::io::{Cursor, Read};
@@ -15,14 +14,14 @@ fn extract_f32(cursor: &mut Cursor<&[u8]>) -> f32 {
 
 /// A collection of inter-connected triangles.
 #[derive(Clone, Debug, Default)]
-pub(crate) struct Mesh {
+pub struct Mesh {
     ids: Vec<usize>,
     vertices: Vec<Vec3A>,
 }
 
 impl Mesh {
     #[must_use]
-    pub fn from_bytes(ids_dat: &[u8], vertices_dat: &[u8]) -> Mesh {
+    pub fn from_bytes(ids_dat: &[u8], vertices_dat: &[u8]) -> Self {
         let ids = {
             let ids_len = ids_dat.len() / 4;
             let mut ids_cursor = Cursor::new(ids_dat);
@@ -50,7 +49,7 @@ impl Mesh {
                 .collect::<Vec<_>>()
         };
 
-        Mesh { ids, vertices }
+        Self { ids, vertices }
     }
 
     #[must_use]
@@ -83,10 +82,11 @@ impl Mesh {
 
     #[must_use]
     /// Transform the mesh by the given matrix.
-    pub fn transform(&self, a: Mat3A) -> Self {
+    pub fn transform(&self, mut a: Mat3A) -> Self {
         debug_assert_eq!(self.ids.len() % 3, 0);
 
-        let vertices = self.vertices.iter().map(|&vertex| dot(a, vertex)).collect::<Vec<_>>();
+        a = a.transpose();
+        let vertices = self.vertices.iter().map(|&vertex| a * vertex).collect::<Vec<_>>();
 
         // for transformations that flip things
         // inside-out, change triangle winding

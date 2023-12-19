@@ -1,13 +1,11 @@
 //! Tools for simulation a Rocket League ball.
 
-use crate::{
-    linear_algebra::math::round_vec_bullet,
-    simulation::{game::Game, geometry::Sphere},
-};
+use super::{game::Game, geometry::Sphere};
 use glam::Vec3A;
 
 /// Represents the game's ball
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Ball {
     /// Game time of the ball
     pub time: f32,
@@ -19,10 +17,15 @@ pub struct Ball {
     pub angular_velocity: Vec3A,
     /// Size of the ball
     pub(crate) radius: f32,
-    /// Size of the ball for collisions
-    pub(crate) collision_radius: f32,
-    /// Moment of inertia of the ball
-    pub(crate) moi: f32,
+    /// 1 / Moment of inertia of the ball in the form of a diagonal matrix
+    pub(crate) inv_inertia: f32,
+}
+
+impl Default for Ball {
+    #[inline]
+    fn default() -> Self {
+        Self::const_default()
+    }
 }
 
 /// Collection of Balls representing future predictions based on field geometry
@@ -41,104 +44,87 @@ impl Ball {
     const RESTITUTION_M: f32 = -(1. + Self::RESTITUTION) * Self::M;
 
     const STANDARD_RADIUS: f32 = 91.25;
-    const HOOPS_RADIUS: f32 = 91.25;
-    const DROPSHOT_RADIUS: f32 = 100.45;
-    const STANDARD_COLLISION_RADIUS: f32 = 93.15;
-    const HOOPS_COLLISION_RADIUS: f32 = 93.15;
-    const DROPSHOT_COLLISION_RADIUS: f32 = 103.6;
+    const HOOPS_RADIUS: f32 = 96.38307;
+    const DROPSHOT_RADIUS: f32 = 100.2565;
 
     const SIMULATION_DT: f32 = 1. / 120.;
     const STANDARD_NUM_SLICES: usize = 720;
 
-    #[must_use]
+    const DEFAULT_INERTIA: f32 = 1. / (0.4 * Self::M);
+
     #[inline]
+    #[must_use]
     /// `Ball::default()`, but const
     pub const fn const_default() -> Self {
         Self {
             time: 0.,
-            location: Vec3A::ZERO,
+            location: Vec3A::Z,
             velocity: Vec3A::ZERO,
             angular_velocity: Vec3A::ZERO,
-            radius: 0.,
-            collision_radius: 0.,
-            moi: 0.,
+            radius: 1.,
+            inv_inertia: Self::DEFAULT_INERTIA,
         }
     }
 
-    /// Sets the default values for a standard ball
-    #[must_use]
     #[inline]
+    #[must_use]
+    /// Sets the default values for a standard ball
     pub fn initialize_standard() -> Self {
         Self {
             radius: Self::STANDARD_RADIUS,
-            collision_radius: Self::STANDARD_COLLISION_RADIUS,
-            moi: Self::calculate_moi(Self::STANDARD_RADIUS),
-            location: Self::default_height(Self::STANDARD_COLLISION_RADIUS),
+            inv_inertia: Self::get_inv_inertia(Self::STANDARD_RADIUS),
+            location: Self::default_height(Self::STANDARD_RADIUS),
             ..Default::default()
         }
     }
 
-    /// Sets the default values for a hoops ball
-    #[must_use]
     #[inline]
+    #[must_use]
+    /// Sets the default values for a hoops ball
     pub fn initialize_hoops() -> Self {
         Self {
             radius: Self::HOOPS_RADIUS,
-            collision_radius: Self::HOOPS_COLLISION_RADIUS,
-            moi: Self::calculate_moi(Self::HOOPS_RADIUS),
-            location: Self::default_height(Self::HOOPS_COLLISION_RADIUS),
+            inv_inertia: Self::get_inv_inertia(Self::HOOPS_RADIUS),
+            location: Self::default_height(Self::HOOPS_RADIUS),
             ..Default::default()
         }
     }
 
-    /// Sets the default values for a dropshot ball
-    #[must_use]
     #[inline]
+    #[must_use]
+    /// Sets the default values for a dropshot ball
     pub fn initialize_dropshot() -> Self {
         Self {
             radius: Self::DROPSHOT_RADIUS,
-            collision_radius: Self::DROPSHOT_COLLISION_RADIUS,
-            moi: Self::calculate_moi(Self::DROPSHOT_RADIUS),
-            location: Self::default_height(Self::DROPSHOT_COLLISION_RADIUS),
+            inv_inertia: Self::get_inv_inertia(Self::DROPSHOT_RADIUS),
+            location: Self::default_height(Self::DROPSHOT_RADIUS),
             ..Default::default()
         }
     }
 
     /// Set a custom radius for the ball
-    pub fn set_radius(&mut self, radius: f32, collision_radius: f32) {
+    pub fn set_radius(&mut self, radius: f32) {
         debug_assert!(radius > 0.);
-        debug_assert!(collision_radius > 0.);
         self.radius = radius;
-        self.collision_radius = collision_radius;
-        self.moi = Self::calculate_moi(radius);
+        self.inv_inertia = Self::get_inv_inertia(radius);
     }
 
+    #[inline]
     /// Calculates the default ball height based on the collision radius (arbitrary)
-    #[must_use]
-    #[inline]
-    fn default_height(collision_radius: f32) -> Vec3A {
-        Vec3A::new(0., 0., 1.1 * collision_radius)
+    fn default_height(radius: f32) -> Vec3A {
+        Vec3A::new(0., 0., 1.1 * radius)
     }
 
-    /// Calculates the moment of inertia of the ball
-    #[must_use]
     #[inline]
-    fn calculate_moi(radius: f32) -> f32 {
-        0.4 * Self::M * radius * radius
+    fn get_inv_inertia(radius: f32) -> f32 {
+        1. / (0.4 * Self::M * radius.powi(2))
     }
 
+    #[inline]
+    #[must_use]
     /// Get the radius of the ball
-    #[must_use]
-    #[inline]
     pub const fn radius(&self) -> f32 {
         self.radius
-    }
-
-    /// Get the collision radius of the ball
-    #[must_use]
-    #[inline]
-    pub const fn collision_radius(&self) -> f32 {
-        self.collision_radius
     }
 
     /// Updates the ball with everything that changes from game tick to game tick
@@ -149,14 +135,9 @@ impl Ball {
         self.angular_velocity = angular_velocity;
     }
 
-    /// Converts the ball into a sphere
-    #[must_use]
     #[inline]
-    pub const fn hitbox(&self) -> Sphere {
-        Sphere {
-            center: self.location,
-            radius: self.collision_radius,
-        }
+    fn hitbox(&self) -> Sphere {
+        Sphere::new(self.location, self.radius)
     }
 
     /// Simulate the ball for one game tick
@@ -166,13 +147,13 @@ impl Ball {
         self.time += dt;
 
         if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
-            if let Some(contact) = game.collision_mesh.collide(self.hitbox()) {
+            if let Some(contact) = game.triangle_collisions.collide(self.hitbox()) {
                 let p = contact.start;
                 let n = contact.direction;
 
                 let loc = p - self.location;
 
-                let m_reduced = 1. / (Self::INV_M + loc.length_squared() / self.moi);
+                let m_reduced = 1. / (Self::INV_M + loc.length_squared() * self.inv_inertia);
 
                 let v_perp = n * self.velocity.dot(n).min(0.);
                 let v_para = self.velocity - v_perp - loc.cross(self.angular_velocity);
@@ -190,9 +171,9 @@ impl Ball {
 
                 self.location += self.velocity * dt;
 
-                self.angular_velocity += loc.cross(j) / self.moi;
+                self.angular_velocity += loc.cross(j) * self.inv_inertia;
 
-                let penetration = self.collision_radius - (self.location - p).dot(n);
+                let penetration = self.radius + Sphere::CONTACT_BREAKING_THRESHOLD - (self.location - p).dot(n);
                 if penetration > 0. {
                     self.location += 1.001 * penetration * n;
                 }
@@ -204,10 +185,6 @@ impl Ball {
 
             self.angular_velocity *= (Self::W_MAX * self.angular_velocity.length_recip()).min(1.);
             self.velocity *= (Self::V_MAX * self.velocity.length_recip()).min(1.);
-
-            round_vec_bullet(&mut self.location, 50., 0.01 * (1. / 50.));
-            round_vec_bullet(&mut self.velocity, 50., 0.01 * (1. / 50.));
-            round_vec_bullet(&mut self.angular_velocity, 1., 0.00001);
         }
     }
 
@@ -220,7 +197,7 @@ impl Ball {
         // We are rounding up to the nearest integer so no truncation will occur
         // We are making sure that the minimum possible value is 0 so no sign loss will occur
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        self.get_ball_prediction_struct_for_slices(game, (time / Self::SIMULATION_DT).ceil() as usize)
+        self.get_ball_prediction_struct_for_slices(game, (time / Self::SIMULATION_DT).round() as usize)
     }
 
     /// Simulate the ball for the standard amount of time (6 seconds)

@@ -1,6 +1,4 @@
-#![forbid(unsafe_code)]
-#![warn(missing_docs)]
-#![warn(clippy::pedantic)]
+#![warn(missing_docs, clippy::pedantic, clippy::all)]
 
 //! `rl_ball_sym` is a Rust implementation of a simulation of the Rocket League ball inside it's field.
 //! It loads the real geometry from the game and simulates the ball's movement in nanoseconds.
@@ -30,16 +28,19 @@
 pub extern crate glam;
 
 #[cfg(feature = "compression")]
-pub mod compressed;
-mod linear_algebra;
-pub mod simulation;
-#[cfg(feature = "uncompressed")]
+mod compressed;
+#[cfg(not(feature = "compression"))]
 mod uncompressed;
+
+#[cfg(feature = "compression")]
+pub use compressed::*;
+#[cfg(not(feature = "compression"))]
+pub use uncompressed::*;
+
+mod simulation;
 
 pub use crate::simulation::{
     ball::{Ball, Predictions},
     game::Game,
 };
 pub use glam::Vec3A;
-#[cfg(feature = "uncompressed")]
-pub use uncompressed::*;

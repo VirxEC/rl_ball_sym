@@ -1,8 +1,5 @@
-#[cfg(feature = "compression")]
-use rl_ball_sym::compressed::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
-use rl_ball_sym::glam::Vec3A;
-#[cfg(all(feature = "uncompressed", not(feature = "compression")))]
-use rl_ball_sym::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
+use rand::random;
+use rl_ball_sym::{glam::Vec3A, load_dropshot, load_hoops, load_standard, load_standard_throwback};
 
 #[test]
 fn init() {
@@ -21,6 +18,10 @@ fn predict_custom_standard() {
 
     let ball_prediction = ball.get_ball_prediction_struct_for_time(&game, time);
     assert_eq!(ball_prediction.len(), 960);
+
+    for slice in ball_prediction {
+        assert!(slice.location.z > 0.);
+    }
 }
 
 #[test]
@@ -30,6 +31,10 @@ fn predict_standard() {
 
     let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
+
+    for slice in ball_prediction {
+        assert!(slice.location.z > 0.);
+    }
 }
 
 #[test]
@@ -39,6 +44,10 @@ fn predict_hoops() {
 
     let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
+
+    for slice in ball_prediction {
+        assert!(slice.location.z > 0.);
+    }
 }
 
 #[test]
@@ -48,6 +57,10 @@ fn predict_dropshot() {
 
     let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
+
+    for slice in ball_prediction {
+        assert!(slice.location.z > 0.);
+    }
 }
 
 #[test]
@@ -57,19 +70,34 @@ fn predict_throwback_standard() {
 
     let ball_prediction = ball.get_ball_prediction_struct(&game);
     assert_eq!(ball_prediction.len(), 720);
+
+    for slice in ball_prediction {
+        assert!(slice.location.z > 0.);
+    }
+}
+
+#[inline]
+fn rand_vec() -> Vec3A {
+    Vec3A::new(
+        f32::from(random::<u8>()),
+        f32::from(random::<u8>()),
+        f32::from(random::<u8>()),
+    )
 }
 
 #[test]
 fn check_for_nans_ball() {
     let (game, mut ball) = load_standard();
 
-    ball.update(0., Vec3A::new(0., 0., 100.), Vec3A::new(0., 0., f32::EPSILON), Vec3A::ZERO);
+    for _ in 0..500 {
+        ball.update(0., rand_vec(), rand_vec(), rand_vec());
 
-    let ball_prediction = ball.get_ball_prediction_struct(&game);
+        let ball_prediction = ball.get_ball_prediction_struct(&game);
 
-    for slice in ball_prediction {
-        assert!(slice.location.is_finite());
-        assert!(slice.velocity.is_finite());
-        assert!(slice.angular_velocity.is_finite());
+        for slice in ball_prediction {
+            assert!(slice.location.is_finite());
+            assert!(slice.velocity.is_finite());
+            assert!(slice.angular_velocity.is_finite());
+        }
     }
 }

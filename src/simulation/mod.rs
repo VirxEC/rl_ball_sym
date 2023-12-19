@@ -1,9 +1,10 @@
 //! A collection of all the tools required to simulate the Rocket League ball inside it's field.
 
 pub mod ball;
-pub(crate) mod bvh;
-pub(crate) mod field;
+mod bvh;
+pub mod field;
 pub mod game;
-pub(crate) mod geometry;
-pub(crate) mod mesh;
-pub(crate) mod morton;
+mod geometry;
+pub mod mesh;
+mod morton;
+mod tri_bvh;

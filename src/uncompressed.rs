@@ -31,9 +31,9 @@ pub fn load_standard() -> (Game, Ball) {
         "../assets/standard/standard_ramps_1_vertices.bin"
     );
 
-    let collision_mesh = initialize_standard(&standard_corner, &standard_goal, &standard_ramps_0, &standard_ramps_1);
+    let triangle_collisions = initialize_standard(&standard_corner, &standard_goal, &standard_ramps_0, &standard_ramps_1);
 
-    (Game::new(collision_mesh), Ball::initialize_standard())
+    (Game::new(triangle_collisions), Ball::initialize_standard())
 }
 
 /// Returns a Game object with a standard hoops field and hoops ball.
@@ -55,9 +55,9 @@ pub fn load_hoops() -> (Game, Ball) {
         "../assets/hoops/hoops_ramps_1_vertices.bin"
     );
 
-    let collision_mesh = initialize_hoops(hoops_corner, &hoops_net, &hoops_rim, hoops_ramps_0, hoops_ramps_1);
+    let triangle_collisions = initialize_hoops(hoops_corner, &hoops_net, &hoops_rim, hoops_ramps_0, hoops_ramps_1);
 
-    (Game::new(collision_mesh), Ball::initialize_hoops())
+    (Game::new(triangle_collisions), Ball::initialize_hoops())
 }
 
 /// Returns a Game object with a standard dropshot field and dropshot ball.
@@ -69,12 +69,12 @@ pub fn load_dropshot() -> (Game, Ball) {
         "../assets/dropshot/dropshot_vertices.bin"
     );
 
-    let collision_mesh = initialize_dropshot(&dropshot);
+    let triangle_collisions = initialize_dropshot(&dropshot);
 
-    (Game::new(collision_mesh), Ball::initialize_dropshot())
+    (Game::new(triangle_collisions), Ball::initialize_dropshot())
 }
 
-/// Returns a Game object with throwback stadium and a standard standard ball.
+/// Returns a Game object with throwback stadium and a standard ball.
 #[must_use]
 #[cfg(feature = "throwback")]
 pub fn load_standard_throwback() -> (Game, Ball) {
@@ -131,7 +131,7 @@ pub fn load_standard_throwback() -> (Game, Ball) {
         side_ramps_lower,
         side_ramps_upper,
     };
-    let collision_mesh = initialize_throwback(params);
+    let triangle_collisions = initialize_throwback(params);
 
-    (Game::new(collision_mesh), Ball::initialize_standard())
+    (Game::new(triangle_collisions), Ball::initialize_standard())
 }

@@ -1,13 +1,9 @@
-use rl_ball_sym::{Predictions, Vec3A};
-
-#[cfg(feature = "compression")]
-use rl_ball_sym::compressed::load_standard;
-#[cfg(all(feature = "uncompressed", not(feature = "compression")))]
-use rl_ball_sym::load_standard;
+use rl_ball_sym::{load_standard, Predictions, Vec3A};
 
 fn main() {
     // load a standard standard match
     let (game, mut ball) = load_standard();
+    dbg!(ball.location);
 
     // the current state of the ball in the game
     ball.update(0., Vec3A::new(0., 0., 200.), Vec3A::new(0., 0., -0.1), Vec3A::new(0., 0., 0.));

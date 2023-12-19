@@ -1,12 +1,7 @@
 use once_cell::sync::Lazy;
 use rand::Rng;
-use rl_ball_sym::{Ball, Game, Predictions, Vec3A};
+use rl_ball_sym::{load_standard, Ball, Game, Predictions, Vec3A};
 use std::sync::RwLock;
-
-#[cfg(feature = "compression")]
-use rl_ball_sym::compressed::load_standard;
-#[cfg(all(feature = "uncompressed", not(feature = "compression")))]
-use rl_ball_sym::load_standard;
 
 // We only need to initialize everything once,
 // and OnceCell's Lazy type is perfect for this
@@ -15,7 +10,7 @@ static GAME: RwLock<Lazy<(Game, Ball)>> = RwLock::new(Lazy::new(load_standard));
 fn main() {
     let mut rng = rand::thread_rng();
     let mut time = 0.;
-    
+
     // Generate random inputs for our get_output function - you just ignore this
     for _ in 0..240 {
         get_output(
