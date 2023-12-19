@@ -29,7 +29,7 @@ colored = "2.0.4"
 
 [dependencies]
 byteorder = "1"
-glam = "0.24.0"
+glam = "0.25.0"
 radsort = "0.1"
 combo_vec = { version = "0.7.1", default_features = false }
 include-flate = { version = "0.3.0", optional = true }
