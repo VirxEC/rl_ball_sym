@@ -191,7 +191,7 @@ impl Constraints {
 
     #[inline]
     #[must_use]
-    pub fn new(inv_mass: f32, external_force_impulse: Vec3A) -> Self {
+    pub const fn new(inv_mass: f32, external_force_impulse: Vec3A) -> Self {
         Self {
             normal_sum: Vec3A::ZERO,
             count: 0,
@@ -201,6 +201,7 @@ impl Constraints {
     }
 
     pub fn create_constraint(&mut self, contact: &Contact) {
+        // dbg!(contact.triangle_normal);
         self.normal_sum += contact.triangle_normal;
         self.count += 1;
     }
@@ -519,8 +520,7 @@ impl Constraints {
         debug_assert!(self.count > 0);
         let average_normal = self.normal_sum / f32::from(self.count);
 
-        // dbg!(contact.ray.direction);
-        // dbg!(contact.ray.depth / 50.);
+        // dbg!(average_normal);
         let rel_pos = average_normal * -ball.radius;
         let vel: Vec3A = ball.get_velocity_in_local_point_no_delta(rel_pos, self.external_force_impulse);
         let rel_vel = average_normal.dot(vel);

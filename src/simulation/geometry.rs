@@ -78,6 +78,7 @@ impl Hits {
         let mut max_penetration = new_contact.depth;
         // for (int i = 0; i < 4; i++)
         for (i, contact) in self.0.iter().enumerate() {
+            // dbg!(contact.depth / 50.);
             // if (m_pointCache[i].getDistance() < maxPenetration)
             if contact.depth < max_penetration {
                 // maxPenetrationIndex = i;
@@ -88,6 +89,9 @@ impl Hits {
         }
 
         let new_contact_local = new_contact.local_position;
+        // dbg!(new_contact_local.length() / 50.);
+        // dbg!(new_contact_local / 50.);
+        // dbg!(max_penetration_index);
         let res = match max_penetration_index {
             0 => [
                 0.,
@@ -120,6 +124,10 @@ impl Hits {
                 self.get_res_3(new_contact_local),
             ],
         };
+        // dbg!(res[0] / 50. / 50.);
+        // dbg!(res[1] / 50. / 50.);
+        // dbg!(res[2] / 50. / 50.);
+        // dbg!(res[3] / 50. / 50.);
 
         // btVector4 maxvec(res0, res1, res2, res3);
         // int biggestarea = maxvec.closestAxis4();
@@ -144,12 +152,7 @@ impl Hits {
         // btPersistentManifold::addManifoldPoint
         if self.0.len() == Constraints::MAX_CONTACTS {
             let index = self.replacement_index(&contact);
-
-            if index == self.0.len() {
-                self.0.push(contact);
-            } else {
-                self.0[index] = contact;
-            }
+            self.0[index] = contact;
         } else {
             self.0.push(contact);
         }
@@ -291,14 +294,17 @@ impl Tri {
             return None;
         }
 
-        let depth = if distance_sqr > f32::EPSILON {
-            -(obj.radius - distance_sqr.sqrt())
+        let (result_normal, depth) = if distance_sqr > f32::EPSILON {
+            let distance = distance_sqr.sqrt();
+            (contact_to_center / distance, -(obj.radius - distance))
         } else {
-            -obj.radius
+            (triangle_normal, -obj.radius)
         };
 
+        let point_in_world = contact_point + result_normal * depth;
+
         Some(Contact {
-            local_position: contact_point - obj.center,
+            local_position: point_in_world - obj.center,
             triangle_normal,
             depth,
         })
