@@ -162,13 +162,13 @@ impl Ball {
 
             let contacts = game.triangle_collisions.collide(self.hitbox());
             if !contacts.is_empty() {
-                let mut constraints = Constraints::new(Self::INV_M);
+                let mut constraints = Constraints::new(Self::INV_M, external_force_impulse);
 
                 for contact in contacts {
-                    constraints.create_constraint(self, &contact, external_force_impulse);
+                    constraints.create_constraint(&contact);
                 }
 
-                let (delta_linear_velocity, delta_angular_velocity) = constraints.solve();
+                let (delta_linear_velocity, delta_angular_velocity) = constraints.solve(self);
 
                 self.velocity += delta_linear_velocity;
                 self.angular_velocity += delta_angular_velocity;

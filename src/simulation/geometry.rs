@@ -3,14 +3,13 @@
 use crate::simulation::game::Constraints;
 use combo_vec::ReArr;
 use glam::Vec3A;
-use std::ops::{Add, AddAssign};
+use std::ops::Add;
 
 #[derive(Debug)]
 pub struct Contact {
-    pub ray: Ray,
-    pub triangle_normal: Vec3A,
-    pub position: Vec3A,
     pub local_position: Vec3A,
+    pub triangle_normal: Vec3A,
+    pub depth: f32,
 }
 
 #[derive(Debug)]
@@ -21,33 +20,6 @@ impl Hits {
     #[inline]
     pub const fn new() -> Self {
         Self(ReArr::new())
-    }
-
-    // int btPersistentManifold::getCacheEntry(const btManifoldPoint& newPoint) const
-    fn nearest_point(&self, new_contact: &Contact) -> usize {
-        // btScalar shortestDist = getContactBreakingThreshold() * getContactBreakingThreshold();
-        let mut shortest_dist = Sphere::CONTACT_BREAKING_THRESHOLD.powi(2);
-        // int size = getNumContacts();
-        // int nearestPoint = -1;
-        let mut nearest_point = self.0.len();
-        // for (int i = 0; i < size; i++)
-        for (i, contact) in self.0.iter().enumerate() {
-            // const btManifoldPoint& mp = m_pointCache[i];
-
-            // btVector3 diffA = mp.m_localPointA - newPoint.m_localPointA;
-            let diff_a = contact.local_position - new_contact.local_position;
-            // const btScalar distToManiPoint = diffA.dot(diffA);
-            let dist_to_mani_point = diff_a.dot(diff_a);
-            // if (distToManiPoint < shortestDist)
-            if dist_to_mani_point < shortest_dist {
-                // shortestDist = distToManiPoint;
-                shortest_dist = dist_to_mani_point;
-                // nearestPoint = i;
-                nearest_point = i;
-            }
-        }
-        // return nearestPoint;
-        nearest_point
     }
 
     #[inline]
@@ -103,15 +75,15 @@ impl Hits {
         // int maxPenetrationIndex = -1;
         let mut max_penetration_index = self.0.len();
         // btScalar maxPenetration = pt.getDistance();
-        let mut max_penetration = new_contact.ray.depth;
+        let mut max_penetration = new_contact.depth;
         // for (int i = 0; i < 4; i++)
         for (i, contact) in self.0.iter().enumerate() {
             // if (m_pointCache[i].getDistance() < maxPenetration)
-            if contact.ray.depth < max_penetration {
+            if contact.depth < max_penetration {
                 // maxPenetrationIndex = i;
                 max_penetration_index = i;
                 // maxPenetration = m_pointCache[i].getDistance();
-                max_penetration = contact.ray.depth;
+                max_penetration = contact.depth;
             }
         }
 
@@ -169,22 +141,17 @@ impl Hits {
     }
 
     pub fn push(&mut self, contact: Contact) {
-        let mut index = self.nearest_point(&contact);
-
-        if index < self.0.len() {
-            // replaceContactPoint
-            self.0[index] = contact;
-        } else {
-            // btPersistentManifold::addManifoldPoint
-            if index == Constraints::MAX_CONTACTS {
-                index = self.replacement_index(&contact);
-            }
+        // btPersistentManifold::addManifoldPoint
+        if self.0.len() == Constraints::MAX_CONTACTS {
+            let index = self.replacement_index(&contact);
 
             if index == self.0.len() {
                 self.0.push(contact);
             } else {
                 self.0[index] = contact;
             }
+        } else {
+            self.0.push(contact);
         }
     }
 
@@ -286,16 +253,16 @@ impl Tri {
     #[must_use]
     /// Check if a sphere intersects the triangle.
     pub fn intersect_sphere(&self, obj: Sphere) -> Option<Contact> {
-        let mut normal = (self.points[1] - self.points[0])
+        let mut triangle_normal = (self.points[1] - self.points[0])
             .cross(self.points[2] - self.points[0])
             .normalize();
 
         let p1_to_center = obj.center - self.points[0];
-        let mut distance_from_plane = p1_to_center.dot(normal);
+        let mut distance_from_plane = p1_to_center.dot(triangle_normal);
 
         if distance_from_plane < 0. {
             distance_from_plane *= -1.;
-            normal *= -1.;
+            triangle_normal *= -1.;
         }
 
         if distance_from_plane >= obj.radius_with_threshold {
@@ -303,7 +270,7 @@ impl Tri {
         }
 
         let contact_point = if self.face_contains(obj.center) {
-            Some(obj.center - normal * distance_from_plane)
+            Some(obj.center - triangle_normal * distance_from_plane)
         } else {
             let min_dist_sqr = obj.radius_with_threshold.powi(2);
 
@@ -324,20 +291,16 @@ impl Tri {
             return None;
         }
 
-        let (result_normal, depth) = if distance_sqr > f32::EPSILON {
-            let distance = distance_sqr.sqrt();
-            (contact_to_center / distance, -(obj.radius - distance))
+        let depth = if distance_sqr > f32::EPSILON {
+            -(obj.radius - distance_sqr.sqrt())
         } else {
-            (normal, -obj.radius)
+            -obj.radius
         };
 
-        let point_in_world = contact_point + result_normal * depth;
-
         Some(Contact {
-            ray: Ray::new(contact_point, result_normal, depth),
-            triangle_normal: normal,
-            position: point_in_world,
             local_position: contact_point - obj.center,
+            triangle_normal,
+            depth,
         })
     }
 }
@@ -437,33 +400,6 @@ impl From<Sphere> for Aabb {
     #[inline]
     fn from(value: Sphere) -> Self {
         Self::from_sphere(value)
-    }
-}
-
-/// A ray starting at `start` and going in `direction`.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct Ray {
-    /// Starting location of the ray.
-    pub start: Vec3A,
-    /// Direction the ray is pointing.
-    pub direction: Vec3A,
-    /// Length of the ray.
-    pub depth: f32,
-}
-
-impl AddAssign<Self> for Ray {
-    #[inline]
-    fn add_assign(&mut self, rhs: Self) {
-        self.start += rhs.start;
-        self.direction += rhs.direction;
-        self.depth += rhs.depth;
-    }
-}
-
-impl Ray {
-    #[inline]
-    pub const fn new(start: Vec3A, direction: Vec3A, depth: f32) -> Self {
-        Self { start, direction, depth }
     }
 }
 

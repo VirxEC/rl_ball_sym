@@ -44,6 +44,7 @@ fn main() -> io::Result<()> {
 
     ball = rocketsim[0];
     for cball in rocketsim.iter().take(10).copied() {
+        println!("{} | {}", ball.velocity / 50., cball.velocity / 50.);
         println!(
             "Error: {}, {}, {}",
             ball.location.distance(cball.location),

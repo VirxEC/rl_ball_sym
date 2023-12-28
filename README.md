@@ -37,11 +37,11 @@ Numbers _will_ vary depending on your system.
 + `load_hoops`: Loads 15732 triangles, executes in around `1.30ms`
 + `load_dropshot`: Loads 3616 triangles, executes in around `300µs`
 + `load_standard_throwback`: Loads 9272 triangles, executes in around `805µs`
-+ `get_ball_prediction_struct_for_time`: standard + 8 seconds, executes in around `185µs`
-+ `get_ball_prediction`: standard + 6 seconds, executes in around `135µs`
-+ `get_ball_prediction`: Hoops + 6 seconds, executes in around `285µs`
-+ `get_ball_prediction`: Dropshot + 6 seconds, executes in around `160µs`
-+ `get_ball_prediction`: standard + Throwback Stadium + 6 seconds, executes in around `130µs`
++ `get_ball_prediction_struct_for_time`: standard + 8 seconds, executes in around `205µs`
++ `get_ball_prediction`: standard + 6 seconds, executes in around `155µs`
++ `get_ball_prediction`: Hoops + 6 seconds, executes in around `155µs`
++ `get_ball_prediction`: Dropshot + 6 seconds, executes in around `170µs`
++ `get_ball_prediction`: standard + Throwback Stadium + 6 seconds, executes in around `160µs`
 
 ## Features
 

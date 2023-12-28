@@ -172,11 +172,12 @@ impl Constraint {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Constraints {
-    contact: Vec<Constraint>,
-    friction: Vec<Constraint>,
+    normal_sum: Vec3A,
+    count: u8,
     inv_mass: f32,
+    external_force_impulse: Vec3A,
 }
 
 impl Constraints {
@@ -190,18 +191,18 @@ impl Constraints {
 
     #[inline]
     #[must_use]
-    pub fn new(inv_mass: f32) -> Self {
+    pub fn new(inv_mass: f32, external_force_impulse: Vec3A) -> Self {
         Self {
-            contact: Vec::with_capacity(Self::MAX_CONTACTS),
-            friction: Vec::with_capacity(Self::MAX_CONTACTS),
+            normal_sum: Vec3A::ZERO,
+            count: 0,
             inv_mass,
+            external_force_impulse,
         }
     }
 
-    pub fn create_constraint(&mut self, ball: &Ball, contact: &Contact, external_force_impulse: Vec3A) {
-        let (contact_constraint, friction_constraint) = self.process_contacts(ball, contact, external_force_impulse);
-        self.contact.push(contact_constraint);
-        self.friction.push(friction_constraint);
+    pub fn create_constraint(&mut self, contact: &Contact) {
+        self.normal_sum += contact.triangle_normal;
+        self.count += 1;
     }
 
     // void btSequentialImpulseConstraintSolver::setupContactConstraint(btSolverConstraint& solverConstraint,
@@ -209,13 +210,7 @@ impl Constraints {
     //     btManifoldPoint& cp, const btContactSolverInfo& infoGlobal,
     //     btScalar& relaxation,
     //     const btVector3& rel_pos1, const btVector3& rel_pos2)
-    fn setup_contact_contraint(
-        &self,
-        ball: &Ball,
-        normal_world_on_b: Vec3A,
-        rel_pos: Vec3A,
-        external_force_impulse: Vec3A,
-    ) -> Constraint {
+    fn setup_contact_contraint(&self, ball: &Ball, normal_world_on_b: Vec3A, rel_pos: Vec3A) -> Constraint {
         // btSolverBody* bodyA = &m_tmpSolverBodyPool[solverBodyIdA];
         // btSolverBody* bodyB = &m_tmpSolverBodyPool[solverBodyIdB];
 
@@ -353,8 +348,8 @@ impl Constraints {
         // let external_torque_impulse_b = Vec3A::ZERO;
 
         // btScalar vel1Dotn = solverConstraint.m_contactNormal1.dot(bodyA->m_linearVelocity + externalForceImpulseA) + solverConstraint.m_relpos1CrossNormal.dot(bodyA->m_angularVelocity + externalTorqueImpulseA);
-        let rel_vel =
-            contact_normal.dot(ball.velocity + external_force_impulse) + rel_pos_cross_normal.dot(ball.angular_velocity);
+        let rel_vel = contact_normal.dot(ball.velocity + self.external_force_impulse)
+            + rel_pos_cross_normal.dot(ball.angular_velocity);
 
         // btScalar vel2Dotn = solverConstraint.m_contactNormal2.dot(bodyB->m_linearVelocity + externalForceImpulseB) + solverConstraint.m_relpos2CrossNormal.dot(bodyB->m_angularVelocity + externalTorqueImpulseB);
         // let vel_2_dot_n = contact_normal_2.dot(Vec3A::ZERO + external_force_impulse_b) + rel_pos_2_cross_normal.dot(Vec3A::ZERO + external_torque_impulse_b);
@@ -404,13 +399,7 @@ impl Constraints {
 
     // called by btSequentialImpulseConstraintSolver::addFrictionConstraint
     // void btSequentialImpulseConstraintSolver::setupFrictionConstraint(btSolverConstraint& solverConstraint, const btVector3& normalAxis, int solverBodyIdA, int solverBodyIdB, btManifoldPoint& cp, const btVector3& rel_pos1, const btVector3& rel_pos2, btCollisionObject* colObj0, btCollisionObject* colObj1, btScalar relaxation, const btContactSolverInfo& infoGlobal, btScalar desiredVelocity, btScalar cfmSlip)
-    fn setup_friction_constraint(
-        &self,
-        ball: &Ball,
-        normal_axis: Vec3A,
-        rel_pos: Vec3A,
-        external_force_impulse: Vec3A,
-    ) -> Constraint {
+    fn setup_friction_constraint(&self, ball: &Ball, normal_axis: Vec3A, rel_pos: Vec3A) -> Constraint {
         // btSolverBody& solverBodyA = m_tmpSolverBodyPool[solverBodyIdA];
         // btSolverBody& solverBodyB = m_tmpSolverBodyPool[solverBodyIdB];
 
@@ -490,8 +479,8 @@ impl Constraints {
 
         // btScalar rel_vel;
         // btScalar vel1Dotn = solverConstraint.m_contactNormal1.dot(body0 ? solverBodyA.m_linearVelocity + solverBodyA.m_externalForceImpulse : btVector3(0, 0, 0)) + solverConstraint.m_relpos1CrossNormal.dot(body0 ? solverBodyA.m_angularVelocity : btVector3(0, 0, 0));
-        let rel_vel =
-            contact_normal.dot(ball.velocity + external_force_impulse) + rel_pos_cross_normal.dot(ball.angular_velocity);
+        let rel_vel = contact_normal.dot(ball.velocity + self.external_force_impulse)
+            + rel_pos_cross_normal.dot(ball.angular_velocity);
         // btScalar vel2Dotn = solverConstraint.m_contactNormal2.dot(bodyA ? solverBodyB.m_linearVelocity + solverBodyB.m_externalForceImpulse : btVector3(0, 0, 0)) + solverConstraint.m_relpos2CrossNormal.dot(bodyA ? solverBodyB.m_angularVelocity : btVector3(0, 0, 0));
         // let vel_2_dot_n = 0.;
 
@@ -525,126 +514,60 @@ impl Constraints {
         }
     }
 
-    fn process_contacts(&self, ball: &Ball, contact: &Contact, external_force_impulse: Vec3A) -> (Constraint, Constraint) {
-        // normalOnBInWorld = contact_point.direction
-        // pointInWorld = contact_point.start
-        // let point_in_world = contact.ray.start;
-        // cp.getDistance() = depth = contact_point.depth
-        // btVector3 pointA = pointInWorld + normalOnBInWorld * depth;
-        // newPt.m_positionWorldOnA = pointA;
-        // newPt.m_positionWorldOnB = pointInWorld;
-        // newPt.m_normalWorldOnB = normalOnBInWorld;
-        // let normal_world_on_b = contact.ray.direction;
-        // dbg!(contact.start / 50.);
-        // dbg!(contact.direction);
-        // dbg!(contact.depth / 50.);
-        // btPlaneSpace1(newPt.m_normalWorldOnB, newPt.m_lateralFrictionDir1, newPt.m_lateralFrictionDir2);
-        // let (lateral_friction_dir_1, lateral_friction_dir_2) = Self::plane_space_1(normal_world_on_b);
-        // dbg!(lateral_friction_dir_1, lateral_friction_dir_2);
+    // void btSequentialImpulseConstraintSolver::convertContactSpecial(btCollisionObject& obj, const btContactSolverInfo& infoGlobal)
+    fn process_contact(&self, ball: &Ball) -> (Constraint, Constraint) {
+        debug_assert!(self.count > 0);
+        let average_normal = self.normal_sum / f32::from(self.count);
 
-        // adds contact point to manifold
-        // this is where RocketSim does stuff like callbacks and extra forces for extra gamemodes
+        // dbg!(contact.ray.direction);
+        // dbg!(contact.ray.depth / 50.);
+        let rel_pos = average_normal * -ball.radius;
+        let vel: Vec3A = ball.get_velocity_in_local_point_no_delta(rel_pos, self.external_force_impulse);
+        let rel_vel = average_normal.dot(vel);
 
-        // btVector3 rel_pos1;
-        // btVector3 rel_pos2;
-        // btScalar relaxation;
+        let contact_constraint = self.setup_contact_contraint(ball, average_normal, rel_pos);
 
-        // int frictionIndex = m_tmpSolverContactConstraintPool.size();
-        // btSolverConstraint& solverConstraint = m_tmpSolverContactConstraintPool.expandNonInitializing();
-        // solverConstraint.m_solverBodyIdA = solverBodyIdA;
-        // solverConstraint.m_solverBodyIdB = solverBodyIdB;
+        let mut cp_lateral_friction_dir = vel - average_normal * rel_vel;
+        let lat_rel_vel = cp_lateral_friction_dir.length_squared();
 
-        // solverConstraint.m_originalContactPoint = &cp;
-
-        // const btVector3& pos1 = cp.getPositionWorldOnA();
-        // let pos1 = contact.position;
-        // const btVector3& pos2 = cp.getPositionWorldOnB();
-        // let pos2 = point_in_world;
-
-        // colObj0 is the ball
-        // colObj1 is all default values
-        // rel_pos1 = pos1 - colObj0->getWorldTransform().getOrigin();
-        // let rel_pos1 = pos1 - self.location;
-        let rel_pos = contact.local_position;
-        // rel_pos2 = pos2 - colObj1->getWorldTransform().getOrigin();
-        // let rel_pos2 = pos2 - Vec3A::ZERO;
-        // dbg!(rel_pos1 / 50., rel_pos2 / 50.);
-
-        // btVector3 vel1;
-        // btVector3 vel2;
-
-        // solverBodyA->getVelocityInLocalPointNoDelta(rel_pos1, vel1);
-        let vel = ball.get_velocity_in_local_point_no_delta(rel_pos, external_force_impulse);
-
-        // solverBodyB has m_originalBody as false, so vel2 is always 0, 0, 0
-        // solverBodyB->getVelocityInLocalPointNoDelta(rel_pos2, vel2);
-        // let vel2 = Vec3A::ZERO;
-
-        // not sure at which point this changes or when it's set to this instead :/
-        let cp_normal_world_on_b = contact.triangle_normal;
-        // btVector3 vel = vel1 - vel2;
-        // let vel = vel1 - vel2;
-        // btScalar rel_vel = cp.m_normalWorldOnB.dot(vel);
-        let rel_vel = cp_normal_world_on_b.dot(vel);
-        // dbg!(rel_vel / 50.);
-
-        // setupContactConstraint(solverConstraint, solverBodyIdA, solverBodyIdB, cp, infoGlobal, relaxation, rel_pos1, rel_pos2);
-        let contact_constraint = self.setup_contact_contraint(ball, cp_normal_world_on_b, rel_pos, external_force_impulse);
-
-        // cp.m_lateralFrictionDir1 = vel - cp.m_normalWorldOnB * rel_vel;
-        let mut cp_lateral_friction_dir_1 = vel - cp_normal_world_on_b * rel_vel;
-        // btScalar lat_rel_vel = cp.m_lateralFrictionDir1.length2();
-        let lat_rel_vel = cp_lateral_friction_dir_1.length_squared();
-
-        // if (lat_rel_vel > SIMD_EPSILON)
         if lat_rel_vel > f32::EPSILON {
-            // cp.m_lateralFrictionDir1 *= 1.f / btSqrt(lat_rel_vel);
-            cp_lateral_friction_dir_1 /= lat_rel_vel.sqrt();
-            // addFrictionConstraint(cp.m_lateralFrictionDir1, solverBodyIdA, solverBodyIdB, frictionIndex, cp, rel_pos1, rel_pos2, colObj0, colObj1, relaxation, infoGlobal);
+            cp_lateral_friction_dir /= lat_rel_vel.sqrt();
         } else {
-            // btPlaneSpace1(cp.m_normalWorldOnB, cp.m_lateralFrictionDir1, cp.m_lateralFrictionDir2);
-            cp_lateral_friction_dir_1 = Game::plane_space_1(cp_normal_world_on_b);
-            // addFrictionConstraint(cp.m_lateralFrictionDir1, solverBodyIdA, solverBodyIdB, frictionIndex, cp, rel_pos1, rel_pos2, colObj0, colObj1, relaxation, infoGlobal);
+            cp_lateral_friction_dir = Game::plane_space_1(average_normal);
         }
 
-        let friction_constraint =
-            self.setup_friction_constraint(ball, cp_lateral_friction_dir_1, rel_pos, external_force_impulse);
-
-        // this method sets the current m_appliedImpulse back to 0
-        // setFrictionConstraintImpulse(solverConstraint, solverBodyIdA, solverBodyIdB, cp, infoGlobal);
+        let friction_constraint = self.setup_friction_constraint(ball, cp_lateral_friction_dir, rel_pos);
 
         (contact_constraint, friction_constraint)
     }
 
-    fn solve_single_iteration(&mut self, deltas: &mut (Vec3A, Vec3A)) -> f32 {
-        let mut least_squares_residual = 0f32;
+    fn solve_single_iteration(
+        &self,
+        deltas: &mut (Vec3A, Vec3A),
+        (contact_constraint, friction_constraint): &mut (Constraint, Constraint),
+    ) -> f32 {
+        let residual = contact_constraint.resolve_single_constraint_row_lower_limit(deltas, self.inv_mass);
+        let mut least_squares_residual = residual * residual;
 
-        for contact_constraint in &mut self.contact {
-            let residual = contact_constraint.resolve_single_constraint_row_lower_limit(deltas, self.inv_mass);
+        let total_impulse = contact_constraint.applied_impulse;
+        if total_impulse > 0. {
+            friction_constraint.lower_limit = -Self::COEFF_FRICTION * total_impulse;
+            friction_constraint.upper_limit = Self::COEFF_FRICTION * total_impulse;
+
+            let residual = friction_constraint.resolve_single_constraint_row_generic(deltas, self.inv_mass);
             least_squares_residual = least_squares_residual.max(residual * residual);
-        }
-
-        for (contact_constraint, friction_constraint) in self.contact.iter().zip(&mut self.friction) {
-            let total_impulse = contact_constraint.applied_impulse;
-
-            if total_impulse > 0. {
-                friction_constraint.lower_limit = -Self::COEFF_FRICTION * total_impulse;
-                friction_constraint.upper_limit = Self::COEFF_FRICTION * total_impulse;
-
-                let residual = friction_constraint.resolve_single_constraint_row_generic(deltas, self.inv_mass);
-                least_squares_residual = least_squares_residual.max(residual * residual);
-            }
         }
 
         least_squares_residual
     }
 
     #[must_use]
-    pub fn solve(mut self) -> (Vec3A, Vec3A) {
+    pub fn solve(self, ball: &Ball) -> (Vec3A, Vec3A) {
+        let mut average_constraint = self.process_contact(ball);
         let mut deltas = (Vec3A::ZERO, Vec3A::ZERO);
 
         for _ in 0..Self::NUM_ITERATIONS {
-            let least_squares_residual = self.solve_single_iteration(&mut deltas);
+            let least_squares_residual = self.solve_single_iteration(&mut deltas, &mut average_constraint);
 
             if least_squares_residual <= f32::EPSILON {
                 break;

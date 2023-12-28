@@ -9,8 +9,8 @@ fn main() {
 
     'outer: for _ in 0..1_000_000 {
         let location = Vec3A::new(
-            rng.gen_range(-3500.0..3500.),
-            rng.gen_range(-4500.0..4500.),
+            rng.gen_range(-2900.0..2900.),
+            rng.gen_range(-3900.0..3900.),
             rng.gen_range(100.0..1900.),
         );
         let velocity = Vec3A::new(

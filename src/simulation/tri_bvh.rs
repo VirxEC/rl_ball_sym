@@ -198,14 +198,14 @@ mod test {
             let sphere = Sphere::new(Vec3A::ZERO, 100.);
             let hits = bvh.collide(sphere);
 
-            assert_eq!(hits.len(), 1);
+            assert_eq!(hits.len(), 2);
         }
         {
             // Sphere is in a corner
             let sphere = Sphere::new(Vec3A::new(4096., 5120., 0.), 100.);
             let hits = bvh.collide(sphere);
 
-            assert_eq!(hits.len(), 1);
+            assert_eq!(hits.len(), 4);
         }
     }
 
@@ -225,58 +225,61 @@ mod test {
         }
         {
             // Sphere hits one Tri
-            let sphere = Sphere::new(Vec3A::new(4096. / 2., 5120. / 2., 99.), 100.);
+            let center = Vec3A::new(4096. / 2., 5120. / 2., 99.);
+            let sphere = Sphere::new(center, 100.);
 
             let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
 
-            let ray = rays[0].ray;
+            let position = rays[0].local_position + center;
 
-            assert!((ray.start.x - 2048.).abs() < f32::EPSILON);
-            assert!((ray.start.y - 2560.).abs() < f32::EPSILON);
-            assert!((ray.start.z - 0.).abs() < f32::EPSILON);
-            assert!((ray.direction.x - 0.0).abs() < f32::EPSILON);
-            assert!((ray.direction.y - 0.0).abs() < f32::EPSILON);
-            assert!((ray.direction.z - 1.0).abs() < f32::EPSILON);
+            assert!((position.x - 2048.).abs() < f32::EPSILON);
+            assert!((position.y - 2560.).abs() < f32::EPSILON);
+            assert!((position.z - 0.).abs() < f32::EPSILON);
+            assert!((rays[0].triangle_normal.x - 0.0).abs() < f32::EPSILON);
+            assert!((rays[0].triangle_normal.y - 0.0).abs() < f32::EPSILON);
+            assert!((rays[0].triangle_normal.z - 1.0).abs() < f32::EPSILON);
         }
         {
             // Middle of two Tris
-            let sphere = Sphere::new(Vec3A::Z, 100.);
+            let center = Vec3A::Z;
+            let sphere = Sphere::new(center, 100.);
 
             let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
 
-            let ray = rays[0].ray;
+            let position = rays[0].local_position + center;
 
-            assert!((ray.start.x - 0.0).abs() < f32::EPSILON);
-            assert!((ray.start.y - 0.0).abs() < f32::EPSILON);
-            assert!((ray.start.z - 0.0).abs() < f32::EPSILON);
-            assert!((ray.direction.x - 0.0).abs() < f32::EPSILON);
-            assert!((ray.direction.y - 0.0).abs() < f32::EPSILON);
-            assert!((ray.direction.z - 1.0).abs() < f32::EPSILON);
+            assert!((position.x - 0.0).abs() < f32::EPSILON);
+            assert!((position.y - 0.0).abs() < f32::EPSILON);
+            assert!((position.z - 0.0).abs() < f32::EPSILON);
+            assert!((rays[0].triangle_normal.x - 0.0).abs() < f32::EPSILON);
+            assert!((rays[0].triangle_normal.y - 0.0).abs() < f32::EPSILON);
+            assert!((rays[0].triangle_normal.z - 1.0).abs() < f32::EPSILON);
         }
         {
             // Sphere is in a corner
-            let sphere = Sphere::new(Vec3A::new(4095., 5119., 5.), 100.);
+            let center = Vec3A::new(4095., 5119., 5.);
+            let sphere = Sphere::new(center, 100.);
 
             let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
 
-            let first_ray = rays[0].ray;
-            dbg!(first_ray);
-            assert!((first_ray.start.x - 4093.8838).abs() < f32::EPSILON);
-            assert!((first_ray.start.y - 5120.).abs() < f32::EPSILON);
-            assert!((first_ray.start.z - 0.528_076_2).abs() < f32::EPSILON);
+            let position = rays[0].local_position + center;
 
-            let mut ray = rays.iter().skip(1).fold(rays[0].ray, |mut acc, ray| {
-                acc += ray.ray;
+            assert!((position.x - 4095.).abs() < f32::EPSILON);
+            assert!((position.y - 5119.).abs() < f32::EPSILON);
+            assert!((position.z - 0.).abs() < f32::EPSILON);
+
+            let ray_normal = rays.iter().skip(1).fold(rays[0].triangle_normal, |mut acc, ray| {
+                acc += ray.triangle_normal;
                 acc
             });
-            ray.direction = ray.direction.normalize();
+            let direction = ray_normal.normalize();
 
-            assert!((ray.direction.x - 0.102_604_72).abs() < f32::EPSILON);
-            assert!((ray.direction.y - -0.525_460_96).abs() < f32::EPSILON);
-            assert!((ray.direction.z - 0.844_608_3).abs() < f32::EPSILON);
+            assert!((direction.x - -0.816_496_55).abs() < f32::EPSILON);
+            assert!((direction.y - -0.408_248_28).abs() < f32::EPSILON);
+            assert!((direction.z - 0.408_248_28).abs() < f32::EPSILON);
         }
     }
 
@@ -290,7 +293,7 @@ mod test {
             let sphere = Sphere::new(Vec3A::new(0., 0., 92.15 - f32::EPSILON), 92.15);
             let ray = bvh.collide(sphere);
 
-            assert_eq!(ray.len(), 1);
+            assert_eq!(ray.len(), 2);
         }
     }
 
