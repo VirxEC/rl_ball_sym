@@ -268,21 +268,16 @@ impl Tri {
         let w = obj.center - self.points[0];
 
         // println!(
-        //     "verticies: [{:?}, {:?}, {:?}]",
+        //     "vertices: [{:?}, {:?}, {:?}]",
         //     (self.points[0] / 50.).to_array(),
         //     (self.points[1] / 50.).to_array(),
         //     (self.points[2] / 50.).to_array()
         // );
-        // dbg!(triangle_normal);
-        // dbg!(distance_from_plane / 50.);
 
         let contact_point = if Self::face_contains(u, v, n, w) {
-            // dbg!("face contains");
             obj.center - triangle_normal * distance_from_plane
         } else {
-            // dbg!("face doesn't contain");
             let min_dist_sqr = obj.radius_with_threshold.powi(2);
-
             let closest_point = self.closest_point(obj.center, u, v, w);
             let distance_sqr = (closest_point - obj.center).length_squared();
 
@@ -302,7 +297,6 @@ impl Tri {
 
         let (result_normal, depth) = if distance_sqr > f32::EPSILON {
             let distance = distance_sqr.sqrt();
-            // dbg!(distance / 50.);
             (contact_to_center / distance, -(obj.radius - distance))
         } else {
             (triangle_normal, -obj.radius)

@@ -244,7 +244,7 @@ mod test {
         {
             // Middle of two Tris
             let center = Vec3A::Z;
-            let sphere = Sphere::new(center, 100.);
+            let sphere = Sphere::new(center, 2.);
 
             let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
@@ -254,7 +254,7 @@ mod test {
 
             assert!((position.x - 0.0).abs() < f32::EPSILON);
             assert!((position.y - 0.0).abs() < f32::EPSILON);
-            assert!((position.z - -99.0).abs() < f32::EPSILON);
+            assert!((position.z - -1.0).abs() < f32::EPSILON);
             assert!((rays[0].triangle_normal.x - 0.0).abs() < f32::EPSILON);
             assert!((rays[0].triangle_normal.y - 0.0).abs() < f32::EPSILON);
             assert!((rays[0].triangle_normal.z - 1.0).abs() < f32::EPSILON);
@@ -262,7 +262,7 @@ mod test {
         {
             // Sphere is in a corner
             let center = Vec3A::new(4095., 5119., 5.);
-            let sphere = Sphere::new(center, 100.);
+            let sphere = Sphere::new(center, 6.);
 
             let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
@@ -272,7 +272,7 @@ mod test {
 
             assert!((position.x - 4095.).abs() < f32::EPSILON);
             assert!((position.y - 5119.).abs() < f32::EPSILON);
-            assert!((position.z - -95.).abs() < f32::EPSILON);
+            assert!((position.z - -1.).abs() < f32::EPSILON);
 
             let ray_normal = rays.iter().skip(1).fold(rays[0].triangle_normal, |mut acc, ray| {
                 acc += ray.triangle_normal;

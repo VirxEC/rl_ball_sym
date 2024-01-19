@@ -1,8 +1,7 @@
-use std::{fs, io};
-
 use byteorder::{LittleEndian, ReadBytesExt};
 use colored::Colorize;
 use rl_ball_sym::{load_standard, Ball};
+use std::{fs, io};
 
 fn read_balls(file_name: &str, mut ball: Ball) -> io::Result<Vec<Ball>> {
     let mut file = fs::File::open(file_name)?;
@@ -43,15 +42,10 @@ fn main() -> io::Result<()> {
     rl_ball_sym.push(rocketsim[0]);
 
     ball = rocketsim[0];
-    for cball in rocketsim.iter().copied() {
-        println!("{} | {}", ball.velocity / 50., cball.velocity / 50.);
-        println!(
-            "Error: {}, {}, {}",
-            ball.location.distance(cball.location),
-            ball.velocity.distance(cball.velocity),
-            ball.angular_velocity.distance(cball.angular_velocity)
-        );
-        println!("Vel error: {}", ball.velocity - cball.velocity);
+    for cball in rocketsim.iter().copied().take(3) {
+        print_error(ball, cball);
+
+        println!("{}", "[START OF TICK]".green());
         ball = cball;
         ball.step(&game, 1. / 120.);
         rl_ball_sym.push(ball);
@@ -64,4 +58,15 @@ fn main() -> io::Result<()> {
     )?;
 
     Ok(())
+}
+
+fn print_error(ball: Ball, cball: Ball) {
+    println!("{} | {}", ball.velocity / 50., cball.velocity / 50.);
+    println!(
+        "Error: {}, {}, {}",
+        ball.location.distance(cball.location),
+        ball.velocity.distance(cball.velocity),
+        ball.angular_velocity.distance(cball.angular_velocity)
+    );
+    println!("Vel error: {}", ball.velocity - cball.velocity);
 }

@@ -98,7 +98,7 @@ impl Mesh {
         // inside-out, change triangle winding
         if a.determinant() < 0. {
             for ids in self.ids.chunks_exact_mut(3) {
-                ids.swap(0, 1);
+                ids.swap(1, 2);
             }
         }
 
@@ -134,13 +134,7 @@ impl Mesh {
 
         (0..self.ids.len() / 3)
             .map(|i| i * 3)
-            .map(|i| {
-                Tri::from_points_iter(
-                    self.ids[i..i + 3]
-                        .iter()
-                        .map(|&j| self.vertices[j]),
-                )
-            })
+            .map(|i| Tri::from_points_iter(self.ids[i..i + 3].iter().map(|&j| self.vertices[j])))
             .collect()
     }
 }
