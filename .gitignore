@@ -7,3 +7,4 @@ Cargo.lock
 perf*
 *.dump
 *.json
+/collision_meshes

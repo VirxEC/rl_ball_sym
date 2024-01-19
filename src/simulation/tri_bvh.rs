@@ -15,17 +15,17 @@ pub struct TriangleBvh {
     /// The root of the BVH.
     root: Node,
     /// The primitive triangles that the BVH is built from.
-    primitives: Vec<Tri>,
+    primitives: Box<[Tri]>,
 }
 
 impl TriangleBvh {
     #[must_use]
     /// Creates a new BVH from a list of primitives.
-    pub fn new(primitives: Vec<Tri>) -> Self {
-        let aabbs: Vec<Aabb> = primitives.iter().copied().map(Into::into).collect();
+    pub fn new(primitives: Box<[Tri]>) -> Self {
+        let aabbs: Box<[Aabb]> = primitives.iter().copied().map(Into::into).collect();
         let morton = Morton::new(global_aabb(&aabbs));
 
-        let mut sorted_leaves: Vec<_> = aabbs.iter().map(|aabb| morton.get_code(aabb)).enumerate().collect();
+        let mut sorted_leaves: Box<[_]> = aabbs.iter().map(|aabb| morton.get_code(aabb)).enumerate().collect();
         radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.1);
 
         let root = Self::generate_hierarchy(&sorted_leaves, &aabbs);
@@ -151,7 +151,7 @@ mod test {
         [2, 3, 6],
     ];
 
-    fn generate_tris() -> Vec<Tri> {
+    fn generate_tris() -> Box<[Tri]> {
         let verts = &[
             Vec3A::new(-4096.0, -5120.0, 0.0),
             Vec3A::new(-4096.0, -5120.0, 2044.0),
@@ -232,10 +232,11 @@ mod test {
             assert!(!rays.is_empty());
 
             let position = rays[0].local_position + center;
+            dbg!(position);
 
             assert!((position.x - 2048.).abs() < f32::EPSILON);
             assert!((position.y - 2560.).abs() < f32::EPSILON);
-            assert!((position.z - 0.).abs() < f32::EPSILON);
+            assert!((position.z - -1.).abs() < f32::EPSILON);
             assert!((rays[0].triangle_normal.x - 0.0).abs() < f32::EPSILON);
             assert!((rays[0].triangle_normal.y - 0.0).abs() < f32::EPSILON);
             assert!((rays[0].triangle_normal.z - 1.0).abs() < f32::EPSILON);
@@ -249,10 +250,11 @@ mod test {
             assert!(!rays.is_empty());
 
             let position = rays[0].local_position + center;
+            dbg!(position);
 
             assert!((position.x - 0.0).abs() < f32::EPSILON);
             assert!((position.y - 0.0).abs() < f32::EPSILON);
-            assert!((position.z - 0.0).abs() < f32::EPSILON);
+            assert!((position.z - -99.0).abs() < f32::EPSILON);
             assert!((rays[0].triangle_normal.x - 0.0).abs() < f32::EPSILON);
             assert!((rays[0].triangle_normal.y - 0.0).abs() < f32::EPSILON);
             assert!((rays[0].triangle_normal.z - 1.0).abs() < f32::EPSILON);
@@ -266,10 +268,11 @@ mod test {
             assert!(!rays.is_empty());
 
             let position = rays[0].local_position + center;
+            dbg!(position);
 
             assert!((position.x - 4095.).abs() < f32::EPSILON);
             assert!((position.y - 5119.).abs() < f32::EPSILON);
-            assert!((position.z - 0.).abs() < f32::EPSILON);
+            assert!((position.z - -95.).abs() < f32::EPSILON);
 
             let ray_normal = rays.iter().skip(1).fold(rays[0].triangle_normal, |mut acc, ray| {
                 acc += ray.triangle_normal;

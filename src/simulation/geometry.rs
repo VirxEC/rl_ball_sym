@@ -87,11 +87,11 @@ impl Hits {
                 max_penetration = contact.depth;
             }
         }
+        // dbg!(max_penetration_index);
 
         let new_contact_local = new_contact.local_position;
         // dbg!(new_contact_local.length() / 50.);
         // dbg!(new_contact_local / 50.);
-        // dbg!(max_penetration_index);
         let res = match max_penetration_index {
             0 => [
                 0.,
@@ -188,11 +188,7 @@ impl Tri {
     /// is within the bounds of it.
     /// This is used instead of bullet's method because it's much faster:
     /// <https://gamedev.stackexchange.com/a/152476>
-    fn face_contains(&self, point: Vec3A) -> bool {
-        let u = self.points[1] - self.points[0];
-        let v = self.points[2] - self.points[0];
-        let n = u.cross(v);
-        let w = point - self.points[0];
+    fn face_contains(u: Vec3A, v: Vec3A, n: Vec3A, w: Vec3A) -> bool {
         let gamma = u.cross(w).dot(n) / n.dot(n);
         let beta = w.cross(v).dot(n) / n.dot(n);
         let alpha = 1. - gamma - beta;
@@ -204,11 +200,7 @@ impl Tri {
     /// Instead of using bullet's method,
     /// we use the method described here which is much faster:
     /// <https://stackoverflow.com/a/74395029/10930209>
-    fn closest_point(&self, point: Vec3A) -> Vec3A {
-        let ab = self.points[1] - self.points[0];
-        let ac = self.points[2] - self.points[0];
-        let ap = point - self.points[0];
-
+    fn closest_point(&self, point: Vec3A, ab: Vec3A, ac: Vec3A, ap: Vec3A) -> Vec3A {
         let d1 = ab.dot(ap);
         let d2 = ac.dot(ap);
         if d1 <= 0. && d2 <= 0. {
@@ -256,9 +248,10 @@ impl Tri {
     #[must_use]
     /// Check if a sphere intersects the triangle.
     pub fn intersect_sphere(&self, obj: Sphere) -> Option<Contact> {
-        let mut triangle_normal = (self.points[1] - self.points[0])
-            .cross(self.points[2] - self.points[0])
-            .normalize();
+        let u = self.points[1] - self.points[0];
+        let v = self.points[2] - self.points[0];
+        let n = u.cross(v);
+        let mut triangle_normal = n.normalize();
 
         let p1_to_center = obj.center - self.points[0];
         let mut distance_from_plane = p1_to_center.dot(triangle_normal);
@@ -272,20 +265,33 @@ impl Tri {
             return None;
         }
 
-        let contact_point = if self.face_contains(obj.center) {
-            Some(obj.center - triangle_normal * distance_from_plane)
+        let w = obj.center - self.points[0];
+
+        // println!(
+        //     "verticies: [{:?}, {:?}, {:?}]",
+        //     (self.points[0] / 50.).to_array(),
+        //     (self.points[1] / 50.).to_array(),
+        //     (self.points[2] / 50.).to_array()
+        // );
+        // dbg!(triangle_normal);
+        // dbg!(distance_from_plane / 50.);
+
+        let contact_point = if Self::face_contains(u, v, n, w) {
+            // dbg!("face contains");
+            obj.center - triangle_normal * distance_from_plane
         } else {
+            // dbg!("face doesn't contain");
             let min_dist_sqr = obj.radius_with_threshold.powi(2);
 
-            let closest_point = self.closest_point(obj.center);
+            let closest_point = self.closest_point(obj.center, u, v, w);
             let distance_sqr = (closest_point - obj.center).length_squared();
 
             if distance_sqr < min_dist_sqr {
-                Some(closest_point)
+                closest_point
             } else {
-                None
+                return None;
             }
-        }?;
+        };
 
         let contact_to_center = obj.center - contact_point;
         let distance_sqr = contact_to_center.length_squared();
@@ -296,10 +302,13 @@ impl Tri {
 
         let (result_normal, depth) = if distance_sqr > f32::EPSILON {
             let distance = distance_sqr.sqrt();
+            // dbg!(distance / 50.);
             (contact_to_center / distance, -(obj.radius - distance))
         } else {
             (triangle_normal, -obj.radius)
         };
+
+        // println!("CONTACT");
 
         let point_in_world = contact_point + result_normal * depth;
 

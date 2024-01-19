@@ -37,7 +37,7 @@ fn get_ball_prediction_struct_benchmark(c: &mut Criterion) {
     ball.velocity = BALL_VEL;
 
     c.bench_function("get_ball_prediction/standard", |b| {
-        b.iter(|| ball.get_ball_prediction_struct(black_box(&game)))
+        b.iter(|| ball.get_ball_prediction_struct(black_box(&game)));
     });
 }
 
@@ -46,7 +46,7 @@ fn get_ball_prediction_struct_hoops_benchmark(c: &mut Criterion) {
     ball.velocity = BALL_VEL;
 
     c.bench_function("get_ball_prediction/hoops", |b| {
-        b.iter(|| ball.get_ball_prediction_struct(black_box(&game)))
+        b.iter(|| ball.get_ball_prediction_struct(black_box(&game)));
     });
 }
 
@@ -55,7 +55,7 @@ fn get_ball_prediction_struct_dropshot(c: &mut Criterion) {
     ball.velocity = BALL_VEL;
 
     c.bench_function("get_ball_prediction/dropshot", |b| {
-        b.iter(|| ball.get_ball_prediction_struct(black_box(&game)))
+        b.iter(|| ball.get_ball_prediction_struct(black_box(&game)));
     });
 }
 
@@ -64,7 +64,7 @@ fn get_ball_prediction_struct_throwback(c: &mut Criterion) {
     ball.velocity = BALL_VEL;
 
     c.bench_function("get_ball_prediction/throwback", |b| {
-        b.iter(|| ball.get_ball_prediction_struct(black_box(&game)))
+        b.iter(|| ball.get_ball_prediction_struct(black_box(&game)));
     });
 }
 

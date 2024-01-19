@@ -43,7 +43,7 @@ fn main() -> io::Result<()> {
     rl_ball_sym.push(rocketsim[0]);
 
     ball = rocketsim[0];
-    for cball in rocketsim.iter().take(10).copied() {
+    for cball in rocketsim.iter().copied() {
         println!("{} | {}", ball.velocity / 50., cball.velocity / 50.);
         println!(
             "Error: {}, {}, {}",
