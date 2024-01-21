@@ -5,7 +5,7 @@ use combo_vec::ReArr;
 use glam::Vec3A;
 use std::ops::Add;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Contact {
     pub local_position: Vec3A,
     pub triangle_normal: Vec3A,

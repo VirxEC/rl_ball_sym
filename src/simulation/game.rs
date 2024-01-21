@@ -1,8 +1,11 @@
 //! All the data about the game to simulate it.
 
 use super::{ball::Ball, geometry::Contact, tri_bvh::TriangleBvh};
+use combo_vec::ReArr;
 use glam::Vec3A;
 use std::f32::consts::FRAC_1_SQRT_2;
+
+const COEFF_FRICTION: f32 = 0.35;
 
 /// All of the game information.
 #[derive(Clone, Debug)]
@@ -14,6 +17,9 @@ pub struct Game {
 }
 
 impl Game {
+    const RESTITUTION: f32 = 0.6;
+    const RESTITUTION_VELOCITY_THRESHOLD: f32 = 0.2;
+
     #[inline]
     pub(crate) const fn new(triangle_collisions: TriangleBvh) -> Self {
         Self {
@@ -37,11 +43,11 @@ impl Game {
     }
 
     #[inline]
-    pub(crate) fn restitution_curve(rel_vel: f32, restitution: f32, velocity_threshold: f32) -> f32 {
-        if rel_vel.abs() < velocity_threshold {
-            0.
+    pub(crate) fn restitution_curve(rel_vel: f32) -> f32 {
+        if -rel_vel > Self::RESTITUTION_VELOCITY_THRESHOLD {
+            Self::RESTITUTION * -rel_vel
         } else {
-            restitution * -rel_vel
+            0.
         }
     }
 }
@@ -52,16 +58,18 @@ pub struct Constraint {
     pub rel_pos_cross_normal: Vec3A,
     pub angular_component: Vec3A,
     pub rhs: f32,
+    pub rhs_penetration: f32,
     pub lower_limit: f32,
     pub upper_limit: f32,
     pub jac_diag_ab_inv: f32,
     pub applied_impulse: f32,
+    pub applied_push_impulse: f32,
 }
 
 impl Constraint {
     // called by resolveSingleConstraintRowLowerLimit
     // static btScalar gResolveSingleConstraintRowLowerLimit_sse2(btSolverBody& bodyA, btSolverBody& bodyB, const btSolverConstraint& c)
-    fn resolve_single_constraint_row_lower_limit(&mut self, deltas: &mut (Vec3A, Vec3A), inv_mass: f32) -> f32 {
+    fn resolve_single_constraint_row_lower_limit(&mut self, deltas: &mut VelocityPair, inv_mass: f32) -> f32 {
         // m_cfm is 0
         // __m128 cpAppliedImp = _mm_set1_ps(c.m_appliedImpulse);
         // __m128 lowerLimit1 = _mm_set1_ps(c.m_lowerLimit);
@@ -69,7 +77,7 @@ impl Constraint {
         // btSimdScalar deltaImpulse = _mm_sub_ps(_mm_set1_ps(c.m_rhs), _mm_mul_ps(_mm_set1_ps(c.m_appliedImpulse), _mm_set1_ps(c.m_cfm)));
         let mut delta_impulse: f32 = self.rhs - 0.;
         // __m128 deltaVel1Dotn = _mm_add_ps(btSimdDot3(c.m_contactNormal1.mVec128, bodyA.internalGetDeltaLinearVelocity().mVec128), btSimdDot3(c.m_relpos1CrossNormal.mVec128, bodyA.internalGetDeltaAngularVelocity().mVec128));
-        let delta_vel_1_dot_n = self.contact_normal.dot(deltas.0) + self.rel_pos_cross_normal.dot(deltas.1);
+        let delta_vel_1_dot_n = self.contact_normal.dot(deltas.linear) + self.rel_pos_cross_normal.dot(deltas.angular);
         // __m128 deltaVel2Dotn = _mm_add_ps(btSimdDot3(c.m_contactNormal2.mVec128, bodyB.internalGetDeltaLinearVelocity().mVec128), btSimdDot3(c.m_relpos2CrossNormal.mVec128, bodyB.internalGetDeltaAngularVelocity().mVec128));
         // let delta_vel_2_dot_n = constraint.contact_normal_2.dot(deltas.0) + constraint.rel_pos2_cross_normal.dot(deltas.1);
         // deltaImpulse = _mm_sub_ps(deltaImpulse, _mm_mul_ps(deltaVel1Dotn, _mm_set1_ps(c.m_jacDiagABInv)));
@@ -98,9 +106,9 @@ impl Constraint {
         // __m128 impulseMagnitude = deltaImpulse;
         let impulse_magnitude = Vec3A::splat(delta_impulse);
         // bodyA.internalGetDeltaLinearVelocity().mVec128 = _mm_add_ps(bodyA.internalGetDeltaLinearVelocity().mVec128, _mm_mul_ps(linearComponentA, impulseMagnitude));
-        deltas.0 += linear_component_a * impulse_magnitude;
+        deltas.linear += linear_component_a * impulse_magnitude;
         // bodyA.internalGetDeltaAngularVelocity().mVec128 = _mm_add_ps(bodyA.internalGetDeltaAngularVelocity().mVec128, _mm_mul_ps(c.m_angularComponentA.mVec128, impulseMagnitude));
-        deltas.1 += self.angular_component * impulse_magnitude;
+        deltas.angular += self.angular_component * impulse_magnitude;
         // bodyB.internalGetDeltaLinearVelocity().mVec128 = _mm_add_ps(bodyB.internalGetDeltaLinearVelocity().mVec128, _mm_mul_ps(linearComponentB, impulseMagnitude));
         // bodyB.internalGetDeltaAngularVelocity().mVec128 = _mm_add_ps(bodyB.internalGetDeltaAngularVelocity().mVec128, _mm_mul_ps(c.m_angularComponentB.mVec128, impulseMagnitude));
         // return deltaImpulse.m_floats[0] / c.m_jacDiagABInv;
@@ -109,7 +117,7 @@ impl Constraint {
 
     // called by resolveSingleConstraintRowGeneric
     // static btScalar gResolveSingleConstraintRowGeneric_sse2(btSolverBody& bodyA, btSolverBody& bodyB, const btSolverConstraint& c)
-    fn resolve_single_constraint_row_generic(&mut self, deltas: &mut (Vec3A, Vec3A), inv_mass: f32) -> f32 {
+    fn resolve_single_constraint_row_generic(&mut self, deltas: &mut VelocityPair, inv_mass: f32) -> f32 {
         // cfm is still 0
         // __m128 cpAppliedImp = _mm_set1_ps(c.m_appliedImpulse);
         let applied_impulse = self.applied_impulse;
@@ -118,7 +126,7 @@ impl Constraint {
         // btSimdScalar deltaImpulse = _mm_sub_ps(_mm_set1_ps(c.m_rhs), _mm_mul_ps(_mm_set1_ps(c.m_appliedImpulse), _mm_set1_ps(c.m_cfm)));
         let mut delta_impulse = self.rhs - 0.;
         // __m128 deltaVel1Dotn = _mm_add_ps(btSimdDot3(c.m_contactNormal1.mVec128, bodyA.internalGetDeltaLinearVelocity().mVec128), btSimdDot3(c.m_relpos1CrossNormal.mVec128, bodyA.internalGetDeltaAngularVelocity().mVec128));
-        let delta_vel_1_dot_n = self.contact_normal.dot(deltas.0) + self.rel_pos_cross_normal.dot(deltas.1);
+        let delta_vel_1_dot_n = self.contact_normal.dot(deltas.linear) + self.rel_pos_cross_normal.dot(deltas.angular);
         // __m128 deltaVel2Dotn = _mm_add_ps(btSimdDot3(c.m_contactNormal2.mVec128, bodyB.internalGetDeltaLinearVelocity().mVec128), btSimdDot3(c.m_relpos2CrossNormal.mVec128, bodyB.internalGetDeltaAngularVelocity().mVec128));
         // let delta_vel_2_dot_n = constraint.contact_normal_2.dot(deltas.0) + constraint.rel_pos2_cross_normal.dot(deltas.1);
         // assert_eq!(delta_vel_2_dot_n, 0.);
@@ -131,11 +139,10 @@ impl Constraint {
         // btSimdScalar resultLowerLess, resultUpperLess;
         // resultLowerLess = _mm_cmplt_ps(sum, lowerLimit1);
         // resultUpperLess = _mm_cmplt_ps(sum, upperLimit1);
-        // __m128 lowMinApplied = _mm_sub_ps(lowerLimit1, cpAppliedImp);
-        let low_min_applied = self.lower_limit - applied_impulse;
         // deltaImpulse = _mm_or_ps(_mm_and_ps(resultLowerLess, lowMinApplied), _mm_andnot_ps(resultLowerLess, deltaImpulse));
         delta_impulse = if sum < self.lower_limit {
-            low_min_applied
+            // __m128 lowMinApplied = _mm_sub_ps(lowerLimit1, cpAppliedImp);
+            self.lower_limit - applied_impulse
         } else {
             delta_impulse
         };
@@ -162,19 +169,123 @@ impl Constraint {
         // __m128 impulseMagnitude = deltaImpulse;
         let impulse_magnitude = Vec3A::splat(delta_impulse);
         // bodyA.internalGetDeltaLinearVelocity().mVec128 = _mm_add_ps(bodyA.internalGetDeltaLinearVelocity().mVec128, _mm_mul_ps(linearComponentA, impulseMagnitude));
-        deltas.0 += linear_component_a * impulse_magnitude;
+        deltas.linear += linear_component_a * impulse_magnitude;
         // bodyA.internalGetDeltaAngularVelocity().mVec128 = _mm_add_ps(bodyA.internalGetDeltaAngularVelocity().mVec128, _mm_mul_ps(c.m_angularComponentA.mVec128, impulseMagnitude));
-        deltas.1 += self.angular_component * impulse_magnitude;
+        deltas.angular += self.angular_component * impulse_magnitude;
         // bodyB.internalGetDeltaLinearVelocity().mVec128 = _mm_add_ps(bodyB.internalGetDeltaLinearVelocity().mVec128, _mm_mul_ps(linearComponentB, impulseMagnitude));
         // bodyB.internalGetDeltaAngularVelocity().mVec128 = _mm_add_ps(bodyB.internalGetDeltaAngularVelocity().mVec128, _mm_mul_ps(c.m_angularComponentB.mVec128, impulseMagnitude));
         // return deltaImpulse.m_floats[0] / c.m_jacDiagABInv;
         delta_impulse / self.jac_diag_ab_inv
     }
+
+    // static btScalar gResolveSplitPenetrationImpulse_sse2(btSolverBody& bodyA, btSolverBody& bodyB, const btSolverConstraint& c)
+    fn resolve_split_penetration_impulse(&mut self, velocities: &mut VelocityPair, inv_mass: f32) -> f32 {
+        // if (!c.m_rhsPenetration)
+        //     return 0.f;
+        if self.rhs_penetration == 0. {
+            return 0.;
+        }
+
+        // dbg!(self.rhs_penetration / 50.);
+        // gNumSplitImpulseRecoveries++;
+
+        // __m128 cpAppliedImp = _mm_set1_ps(c.m_appliedPushImpulse);
+        // __m128 lowerLimit1 = _mm_set1_ps(c.m_lowerLimit);
+        // __m128 upperLimit1 = _mm_set1_ps(c.m_upperLimit);
+        // __m128 deltaImpulse = _mm_sub_ps(_mm_set1_ps(c.m_rhsPenetration), _mm_mul_ps(_mm_set1_ps(c.m_appliedPushImpulse), _mm_set1_ps(c.m_cfm)));
+        let mut delta_impulse = self.rhs_penetration - 0.;
+
+        // __m128 deltaVel1Dotn = _mm_add_ps(btSimdDot3(c.m_contactNormal1.mVec128, bodyA.internalGetPushVelocity().mVec128), btSimdDot3(c.m_relpos1CrossNormal.mVec128, bodyA.internalGetTurnVelocity().mVec128));
+        let delta_vel_1_dot_n =
+            self.contact_normal.dot(velocities.linear) + self.rel_pos_cross_normal.dot(velocities.angular);
+        // __m128 deltaVel2Dotn = _mm_add_ps(btSimdDot3(c.m_contactNormal2.mVec128, bodyB.internalGetPushVelocity().mVec128), btSimdDot3(c.m_relpos2CrossNormal.mVec128, bodyB.internalGetTurnVelocity().mVec128));
+
+        // deltaImpulse = _mm_sub_ps(deltaImpulse, _mm_mul_ps(deltaVel1Dotn, _mm_set1_ps(c.m_jacDiagABInv)));
+        delta_impulse -= delta_vel_1_dot_n * self.jac_diag_ab_inv;
+        // deltaImpulse = _mm_sub_ps(deltaImpulse, _mm_mul_ps(deltaVel2Dotn, _mm_set1_ps(c.m_jacDiagABInv)));
+
+        // btSimdScalar sum = _mm_add_ps(cpAppliedImp, deltaImpulse);
+        let sum = self.applied_push_impulse + delta_impulse;
+
+        // btSimdScalar resultLowerLess, resultUpperLess;
+        // resultLowerLess = _mm_cmplt_ps(sum, lowerLimit1);
+        // resultUpperLess = _mm_cmplt_ps(sum, upperLimit1);
+        // deltaImpulse = _mm_or_ps(_mm_and_ps(resultLowerLess, lowMinApplied), _mm_andnot_ps(resultLowerLess, deltaImpulse));
+        delta_impulse = if sum < self.lower_limit {
+            // __m128 lowMinApplied = _mm_sub_ps(lowerLimit1, cpAppliedImp);
+            self.lower_limit - self.applied_push_impulse
+        } else {
+            delta_impulse
+        };
+
+        // c.m_appliedPushImpulse = _mm_or_ps(_mm_and_ps(resultLowerLess, lowerLimit1), _mm_andnot_ps(resultLowerLess, sum));
+        self.applied_push_impulse = sum.max(self.lower_limit);
+
+        // __m128 linearComponentA = _mm_mul_ps(c.m_contactNormal1.mVec128, bodyA.internalGetInvMass().mVec128);
+        let linear_component_a = self.contact_normal * inv_mass;
+        // __m128 linearComponentB = _mm_mul_ps(c.m_contactNormal2.mVec128, bodyB.internalGetInvMass().mVec128);
+
+        // __m128 impulseMagnitude = deltaImpulse;
+        let impulse_magnitude = Vec3A::splat(delta_impulse);
+
+        // bodyA.internalGetPushVelocity().mVec128 = _mm_add_ps(bodyA.internalGetPushVelocity().mVec128, _mm_mul_ps(linearComponentA, impulseMagnitude));
+        velocities.linear += linear_component_a * impulse_magnitude;
+        // bodyA.internalGetTurnVelocity().mVec128 = _mm_add_ps(bodyA.internalGetTurnVelocity().mVec128, _mm_mul_ps(c.m_angularComponentA.mVec128, impulseMagnitude));
+        velocities.angular += self.angular_component * impulse_magnitude;
+        // bodyB.internalGetPushVelocity().mVec128 = _mm_add_ps(bodyB.internalGetPushVelocity().mVec128, _mm_mul_ps(linearComponentB, impulseMagnitude));
+        // bodyB.internalGetTurnVelocity().mVec128 = _mm_add_ps(bodyB.internalGetTurnVelocity().mVec128, _mm_mul_ps(c.m_angularComponentB.mVec128, impulseMagnitude));
+
+        // btSimdScalar deltaImp = deltaImpulse;
+        // return deltaImp.m_floats[0] * (1. / c.m_jacDiagABInv);
+        delta_impulse / self.jac_diag_ab_inv
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ConstraintPair {
+    pub contact: Constraint,
+    pub friction: Constraint,
+}
+
+impl ConstraintPair {
+    fn solve_single_iteration(&mut self, deltas: &mut VelocityPair, inv_mass: f32) -> f32 {
+        let residual = self.contact.resolve_single_constraint_row_lower_limit(deltas, inv_mass);
+        let mut least_squares_residual = residual * residual;
+
+        let total_impulse = self.contact.applied_impulse;
+        if total_impulse > 0. {
+            self.friction.lower_limit = -COEFF_FRICTION * total_impulse;
+            self.friction.upper_limit = COEFF_FRICTION * total_impulse;
+
+            let residual = self.friction.resolve_single_constraint_row_generic(deltas, inv_mass);
+            least_squares_residual = least_squares_residual.max(residual * residual);
+        }
+
+        least_squares_residual
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
+pub struct VelocityPair {
+    pub linear: Vec3A,
+    pub angular: Vec3A,
+}
+
+impl VelocityPair {
+    pub const ZERO: Self = Self::new(Vec3A::ZERO, Vec3A::ZERO);
+
+    #[inline]
+    #[must_use]
+    pub const fn new(linear: Vec3A, angular: Vec3A) -> Self {
+        Self { linear, angular }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Constraints {
+    contacts: Vec<Constraint>,
     normal_sum: Vec3A,
+    depth_sum: f32,
     count: u8,
     inv_mass: f32,
     external_force_impulse: Vec3A,
@@ -184,26 +295,31 @@ impl Constraints {
     pub const MAX_CONTACTS: usize = 4;
 
     const NUM_ITERATIONS: usize = 10;
-    const COEFF_FRICTION: f32 = 0.35;
-    const RESTITUTION: f32 = 0.6;
-    const RESTITUTION_VELOCITY_THRESHOLD: f32 = 0.2;
     const RELAXATION: f32 = 1.;
+    const ERP2: f32 = 0.8;
 
     #[inline]
     #[must_use]
     pub const fn new(inv_mass: f32, external_force_impulse: Vec3A) -> Self {
         Self {
+            contacts: Vec::new(),
             normal_sum: Vec3A::ZERO,
+            depth_sum: 0.,
             count: 0,
             inv_mass,
             external_force_impulse,
         }
     }
 
-    pub fn create_constraint(&mut self, contact: &Contact) {
-        // dbg!(contact.triangle_normal);
-        self.normal_sum += contact.triangle_normal;
-        self.count += 1;
+    pub fn add_contacts(&mut self, contacts: ReArr<Contact, { Self::MAX_CONTACTS }>, ball: &Ball, dt: f32) {
+        self.contacts.reserve(contacts.len());
+
+        for contact in contacts {
+            self.normal_sum += contact.triangle_normal;
+            self.depth_sum += contact.local_position.length();
+            self.count += 1;
+            self.contacts.push(self.setup_contact_contraint(ball, contact, dt));
+        }
     }
 
     // void btSequentialImpulseConstraintSolver::setupContactConstraint(btSolverConstraint& solverConstraint,
@@ -211,7 +327,7 @@ impl Constraints {
     //     btManifoldPoint& cp, const btContactSolverInfo& infoGlobal,
     //     btScalar& relaxation,
     //     const btVector3& rel_pos1, const btVector3& rel_pos2)
-    fn setup_contact_contraint(&self, ball: &Ball, normal_world_on_b: Vec3A, rel_pos: Vec3A) -> Constraint {
+    fn setup_contact_contraint(&self, ball: &Ball, contact: Contact, dt: f32) -> Constraint {
         // btSolverBody* bodyA = &m_tmpSolverBodyPool[solverBodyIdA];
         // btSolverBody* bodyB = &m_tmpSolverBodyPool[solverBodyIdB];
 
@@ -222,7 +338,7 @@ impl Constraints {
 
         // relaxation = infoGlobal.m_sor;
         // btScalar invTimeStep = btScalar(1) / infoGlobal.m_timeStep;
-        // let inv_time_step = 1. / dt;
+        let inv_time_step = 1. / dt;
 
         // btScalar cfm = infoGlobal.m_globalCfm; // 0
         // let mut cfm = 0.;
@@ -233,7 +349,7 @@ impl Constraints {
 
         // btVector3 torqueAxis0 = rel_pos1.cross(cp.m_normalWorldOnB);
         // dbg!(rel_pos1 / 50., normal_world_on_b);
-        let torque_axis = rel_pos.cross(normal_world_on_b);
+        let torque_axis = contact.local_position.cross(contact.triangle_normal);
         // dbg!(torque_axis_0);
         // getAngularFactor will always return 1, 1, 1
         // solverConstraint.m_angularComponentA = rb0 ? rb0->getInvInertiaTensorWorld() * torqueAxis0 * rb0->getAngularFactor() : btVector3(0, 0, 0);
@@ -260,8 +376,8 @@ impl Constraints {
         //     vec = (-solverConstraint.m_angularComponentB).cross(rel_pos2);
         //     denom1 = rb1->getInvMass() + cp.m_normalWorldOnB.dot(vec);
         // }
-        let vec = angular_component.cross(rel_pos);
-        let denom = self.inv_mass + normal_world_on_b.dot(vec);
+        let vec = angular_component.cross(contact.local_position);
+        let denom = self.inv_mass + contact.triangle_normal.dot(vec);
         // let denom_1 = 0.;
 
         // dbg!(vec);
@@ -282,7 +398,6 @@ impl Constraints {
         //     solverConstraint.m_contactNormal1.setZero();
         //     solverConstraint.m_relpos1CrossNormal.setZero();
         // }
-        let contact_normal = normal_world_on_b;
         let rel_pos_cross_normal = torque_axis;
         // if (rb1)
         // {
@@ -304,7 +419,7 @@ impl Constraints {
         // btVector3 vel1, vel2;
 
         // vel1 = rb0 ? rb0->getVelocityInLocalPoint(rel_pos1) : btVector3(0, 0, 0);
-        let abs_vel = ball.get_velocity_in_local_point(rel_pos);
+        let abs_vel = ball.get_velocity_in_local_point(contact.local_position);
         // vel2 = rb1 ? rb1->getVelocityInLocalPoint(rel_pos2) : btVector3(0, 0, 0);
         // let vel2 = Vec3A::ZERO;
 
@@ -313,7 +428,7 @@ impl Constraints {
         // btVector3 vel = vel1 - vel2;
         // let vel = vel1 - vel2;
         // btScalar rel_vel = cp.m_normalWorldOnB.dot(vel);
-        let rel_vel = normal_world_on_b.dot(abs_vel);
+        let rel_vel = contact.triangle_normal.dot(abs_vel);
 
         // solverConstraint.m_friction = cp.m_combinedFriction;
 
@@ -324,7 +439,7 @@ impl Constraints {
         //     // restitution = 0.f;
         //     restitution = 0.;
         // }
-        let restitution = Game::restitution_curve(rel_vel, Self::RESTITUTION, Self::RESTITUTION_VELOCITY_THRESHOLD).max(0.);
+        let restitution = Game::restitution_curve(rel_vel);
 
         // none of the below is needed because applied_impulse is always 0 and it makes everything else 0
         // appliedImpulse is 0 and m_warmstartingFactor is 0.85
@@ -349,7 +464,7 @@ impl Constraints {
         // let external_torque_impulse_b = Vec3A::ZERO;
 
         // btScalar vel1Dotn = solverConstraint.m_contactNormal1.dot(bodyA->m_linearVelocity + externalForceImpulseA) + solverConstraint.m_relpos1CrossNormal.dot(bodyA->m_angularVelocity + externalTorqueImpulseA);
-        let rel_vel = contact_normal.dot(ball.velocity + self.external_force_impulse)
+        let rel_vel = contact.triangle_normal.dot(ball.velocity + self.external_force_impulse)
             + rel_pos_cross_normal.dot(ball.angular_velocity);
 
         // btScalar vel2Dotn = solverConstraint.m_contactNormal2.dot(bodyB->m_linearVelocity + externalForceImpulseB) + solverConstraint.m_relpos2CrossNormal.dot(bodyB->m_angularVelocity + externalTorqueImpulseB);
@@ -358,24 +473,18 @@ impl Constraints {
         // btScalar rel_vel = vel1Dotn + vel2Dotn; // vel2Dotn is always 0
         // let rel_vel = vel_dot_n + vel_2_dot_n;
 
-        // btScalar positionalError = 0.f;
-        // let mut positional_error = 0.;
         // btScalar velocityError = restitution - rel_vel;
         let velocity_error = restitution - rel_vel;
         // dbg!(velocity_error / 50., restitution / 50.);
 
-        // if (penetration > 0)
-        // if penetration > 0. {
-        //     // positionalError = 0;
-        //     positional_error = 0.;
-        // } else {
-        //     // positionalError = -penetration * erp * invTimeStep;
-        //     positional_error = -penetration * Self::ERP2 * inv_time_step;
-        // }
+        let positional_error = if contact.depth > 0. {
+            0.
+        } else {
+            -contact.depth * Self::ERP2 * inv_time_step
+        };
 
         // btScalar penetrationImpulse = positionalError * solverConstraint.m_jacDiagABInv; // m_jacDiagABInv is currently about 27.94
-        // this should always be 0, in theory
-        // let penetration_impulse = positional_error * jac_diag_ab_inv;
+        let penetration_impulse = positional_error * jac_diag_ab_inv;
         // btScalar velocityImpulse = velocityError * solverConstraint.m_jacDiagABInv;
         let velocity_impulse = velocity_error * jac_diag_ab_inv;
         // dbg!(penetration_impulse / 50., velocity_impulse / 50.);
@@ -387,14 +496,49 @@ impl Constraints {
         // solverConstraint.m_lowerLimit = 0;
         // solverConstraint.m_upperLimit = 1e10f;
         Constraint {
-            contact_normal,
+            contact_normal: contact.triangle_normal,
             rel_pos_cross_normal,
             angular_component,
             rhs: velocity_impulse,
+            rhs_penetration: penetration_impulse,
             lower_limit: 0.,
             upper_limit: 1e10,
             jac_diag_ab_inv,
             applied_impulse,
+            applied_push_impulse: 0.,
+        }
+    }
+
+    fn setup_special_contact_contraint(&self, ball: &Ball, normal_world_on_b: Vec3A, rel_pos: Vec3A) -> Constraint {
+        let torque_axis = rel_pos.cross(normal_world_on_b);
+        let angular_component = ball.inv_inertia * torque_axis;
+        let vec = angular_component.cross(rel_pos);
+
+        let denom = self.inv_mass + normal_world_on_b.dot(vec);
+        let jac_diag_ab_inv = Self::RELAXATION / denom;
+
+        let abs_vel = ball.get_velocity_in_local_point(rel_pos);
+        let rel_vel = normal_world_on_b.dot(abs_vel);
+
+        let restitution = Game::restitution_curve(rel_vel);
+
+        let rel_vel =
+            normal_world_on_b.dot(ball.velocity + self.external_force_impulse) + torque_axis.dot(ball.angular_velocity);
+
+        let velocity_error = restitution - rel_vel;
+        let velocity_impulse = velocity_error * jac_diag_ab_inv;
+
+        Constraint {
+            contact_normal: normal_world_on_b,
+            rel_pos_cross_normal: torque_axis,
+            angular_component,
+            rhs: velocity_impulse,
+            rhs_penetration: 0.,
+            lower_limit: 0.,
+            upper_limit: 1e10,
+            jac_diag_ab_inv,
+            applied_impulse: 0.,
+            applied_push_impulse: 0.,
         }
     }
 
@@ -476,7 +620,6 @@ impl Constraints {
         // let denom = Self::RELAXATION / (denom_0 + denom_1);
         // solverConstraint.m_jacDiagABInv = denom;
         let jac_diag_ab_inv = Self::RELAXATION / denom;
-        // dbg!(jac_diag_ab_inv);
 
         // btScalar rel_vel;
         // btScalar vel1Dotn = solverConstraint.m_contactNormal1.dot(body0 ? solverBodyA.m_linearVelocity + solverBodyA.m_externalForceImpulse : btVector3(0, 0, 0)) + solverConstraint.m_relpos1CrossNormal.dot(body0 ? solverBodyA.m_angularVelocity : btVector3(0, 0, 0));
@@ -493,7 +636,6 @@ impl Constraints {
         let velocity_error = -rel_vel;
         // btScalar velocityImpulse = velocityError * solverConstraint.m_jacDiagABInv;
         let velocity_impulse = velocity_error * jac_diag_ab_inv;
-        // dbg!(velocity_impulse / 50.);
 
         // btScalar penetrationImpulse = btScalar(0);
         // let penetration_impulse = 0.;
@@ -508,72 +650,93 @@ impl Constraints {
             rel_pos_cross_normal,
             angular_component,
             rhs: velocity_impulse,
-            lower_limit: -Self::COEFF_FRICTION,
-            upper_limit: Self::COEFF_FRICTION,
+            rhs_penetration: 0.,
+            lower_limit: -COEFF_FRICTION,
+            upper_limit: COEFF_FRICTION,
             jac_diag_ab_inv,
             applied_impulse,
+            applied_push_impulse: 0.,
         }
     }
 
     // void btSequentialImpulseConstraintSolver::convertContactSpecial(btCollisionObject& obj, const btContactSolverInfo& infoGlobal)
-    fn process_contact(&self, ball: &Ball) -> (Constraint, Constraint) {
+    fn process_special_contact(&self, ball: &Ball) -> ConstraintPair {
         debug_assert!(self.count > 0);
-        let average_normal = self.normal_sum / f32::from(self.count);
 
-        // dbg!(average_normal);
-        let rel_pos = average_normal * -ball.radius;
+        let count = f32::from(self.count);
+        let average_normal = self.normal_sum / count;
+        let average_distance = self.depth_sum / count;
+
+        let rel_pos = average_normal * -average_distance;
         let vel: Vec3A = ball.get_velocity_in_local_point_no_delta(rel_pos, self.external_force_impulse);
         let rel_vel = average_normal.dot(vel);
 
-        let contact_constraint = self.setup_contact_contraint(ball, average_normal, rel_pos);
+        let contact_constraint = self.setup_special_contact_contraint(ball, average_normal, rel_pos);
 
-        let mut cp_lateral_friction_dir = vel - average_normal * rel_vel;
-        let lat_rel_vel = cp_lateral_friction_dir.length_squared();
+        let mut lateral_friction_dir = vel - average_normal * rel_vel;
+        let lat_rel_vel = lateral_friction_dir.length_squared();
 
         if lat_rel_vel > f32::EPSILON {
-            cp_lateral_friction_dir /= lat_rel_vel.sqrt();
+            lateral_friction_dir /= lat_rel_vel.sqrt();
         } else {
-            cp_lateral_friction_dir = Game::plane_space_1(average_normal);
+            lateral_friction_dir = Game::plane_space_1(average_normal);
         }
 
-        let friction_constraint = self.setup_friction_constraint(ball, cp_lateral_friction_dir, rel_pos);
+        let friction_constraint = self.setup_friction_constraint(ball, lateral_friction_dir, rel_pos);
 
-        (contact_constraint, friction_constraint)
-    }
-
-    fn solve_single_iteration(
-        &self,
-        deltas: &mut (Vec3A, Vec3A),
-        (contact_constraint, friction_constraint): &mut (Constraint, Constraint),
-    ) -> f32 {
-        let residual = contact_constraint.resolve_single_constraint_row_lower_limit(deltas, self.inv_mass);
-        let mut least_squares_residual = residual * residual;
-
-        let total_impulse = contact_constraint.applied_impulse;
-        if total_impulse > 0. {
-            friction_constraint.lower_limit = -Self::COEFF_FRICTION * total_impulse;
-            friction_constraint.upper_limit = Self::COEFF_FRICTION * total_impulse;
-
-            let residual = friction_constraint.resolve_single_constraint_row_generic(deltas, self.inv_mass);
-            least_squares_residual = least_squares_residual.max(residual * residual);
+        ConstraintPair {
+            contact: contact_constraint,
+            friction: friction_constraint,
         }
-
-        least_squares_residual
     }
 
     #[must_use]
-    pub fn solve(self, ball: &Ball) -> (Vec3A, Vec3A) {
-        let mut average_constraint = self.process_contact(ball);
-        let mut deltas = (Vec3A::ZERO, Vec3A::ZERO);
+    pub fn solve(mut self, ball: &Ball) -> (VelocityPair, Vec3A) {
+        let mut average_constraint = self.process_special_contact(ball);
+
+        let velocities = self.solve_split_impulse_iterations();
+
+        let mut deltas = VelocityPair::ZERO;
 
         for _ in 0..Self::NUM_ITERATIONS {
-            let least_squares_residual = self.solve_single_iteration(&mut deltas, &mut average_constraint);
+            let least_squares_residual = average_constraint.solve_single_iteration(&mut deltas, self.inv_mass);
 
             if least_squares_residual <= f32::EPSILON {
                 break;
             }
         }
 
-        deltas
+        (deltas, velocities)
+    }
+
+    // void btSequentialImpulseConstraintSolver::solveGroupCacheFriendlySplitImpulseIterations(btCollisionObject** bodies, int numBodies, btPersistentManifold** manifoldPtr, int numManifolds, btTypedConstraint** constraints, int numConstraints, const btContactSolverInfo& infoGlobal)
+    fn solve_split_impulse_iterations(&mut self) -> Vec3A {
+        let mut velocities = VelocityPair::ZERO;
+        let mut should_runs = [true; Self::MAX_CONTACTS];
+
+        for _ in 0..Self::NUM_ITERATIONS {
+            let mut any_run_next = false;
+
+            for (should_run, contact) in should_runs.iter_mut().zip(&mut self.contacts) {
+                if !*should_run {
+                    continue;
+                }
+
+                let residual = contact.resolve_split_penetration_impulse(&mut velocities, self.inv_mass);
+
+                if residual * residual <= f32::EPSILON {
+                    *should_run = false;
+                } else {
+                    any_run_next = true;
+                }
+            }
+
+            if !any_run_next {
+                break;
+            }
+        }
+
+        // we skip calculating the ball's rotation so just return the linear velocity
+        velocities.linear
     }
 }

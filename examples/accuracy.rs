@@ -61,6 +61,7 @@ fn main() -> io::Result<()> {
 }
 
 fn print_error(ball: Ball, cball: Ball) {
+    println!("{} | {}", ball.location / 50., cball.location / 50.);
     println!("{} | {}", ball.velocity / 50., cball.velocity / 50.);
     println!(
         "Error: {}, {}, {}",
