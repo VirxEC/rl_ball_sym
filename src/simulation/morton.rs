@@ -56,9 +56,8 @@ impl Morton {
 }
 
 #[cfg(test)]
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 mod test {
-    #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-
     use super::Morton;
     use crate::simulation::geometry::Aabb;
     use glam::Vec3A;

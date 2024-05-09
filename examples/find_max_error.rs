@@ -64,14 +64,18 @@ fn main() -> io::Result<()> {
             arena.pin_mut().step(1);
 
             let rocketsim_ball = arena.pin_mut().get_ball();
-            let error = ball.velocity.distance(rocketsim_ball.vel.into());
-            if error > max_error {
+
+            let pos_error = ball.location.distance(rocketsim_ball.pos.into());
+            let vel_error = ball.velocity.distance(rocketsim_ball.vel.into());
+            let error = pos_error / 2. + vel_error / 2.;
+            if error > max_error && error < 100. {
                 max_error = error;
                 error_values[0] = last_ball.pos;
                 error_values[1] = last_ball.vel;
                 error_values[2] = last_ball.ang_vel;
 
-                if max_error > 1500. && i > TRIES / 2 {
+                if (max_error > 30. && i > TRIES / 2) || max_error > 80. {
+                    println!("Breaking early with an error of {max_error}; Location error: {pos_error}, Velocity error: {vel_error}");
                     break 'outer;
                 }
 
@@ -90,9 +94,18 @@ fn main() -> io::Result<()> {
     }
 
     println!("\n");
-    println!("Location: {:?}", error_values[0]);
-    println!("Velocity: {:?}", error_values[1]);
-    println!("Angular velocity: {:?}", error_values[2]);
+    println!(
+        "Location: ({}, {}, {})",
+        error_values[0].x, error_values[0].y, error_values[0].z
+    );
+    println!(
+        "Velocity: ({}, {}, {})",
+        error_values[1].x, error_values[1].y, error_values[1].z
+    );
+    println!(
+        "Angular velocity: ({}, {}, {})",
+        error_values[2].x, error_values[2].y, error_values[2].z
+    );
 
     let mut ball = arena.pin_mut().get_ball();
     ball.pos = error_values[0];

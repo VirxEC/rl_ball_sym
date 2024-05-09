@@ -7,7 +7,6 @@ use super::{
     morton::Morton,
 };
 use combo_vec::{re_arr, ReArr};
-use std::convert::Into;
 
 /// A bounding volume hierarchy.
 #[derive(Clone, Debug)]
@@ -127,9 +126,8 @@ impl TriangleBvh {
 }
 
 #[cfg(test)]
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 mod test {
-    #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-
     use super::*;
     use crate::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
     use criterion::black_box;

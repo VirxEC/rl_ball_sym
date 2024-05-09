@@ -13,6 +13,7 @@ fn main() {
             Vec3A::new(600., 1550., -1200.),
             Vec3A::new(0., 0., 0.),
         );
-        black_box(ball.get_ball_prediction_struct_for_time(&game, 60.));
+        let predictions = ball.get_ball_prediction_struct_for_time(&game, 60.);
+        black_box(predictions);
     }
 }

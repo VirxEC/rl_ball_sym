@@ -38,11 +38,18 @@ fn main() -> io::Result<()> {
 
     let rocketsim = read_balls("examples/ball.dump", ball)?;
 
+    println!("Starting config:");
+    println!("Location: {}", rocketsim[0].location);
+    println!("Velocity: {}", rocketsim[0].velocity);
+    println!("Angular Velocity: {}", rocketsim[0].angular_velocity);
+
+    println!();
+
     let mut rl_ball_sym = Vec::with_capacity(rocketsim.len());
     rl_ball_sym.push(rocketsim[0]);
 
     ball = rocketsim[0];
-    for cball in rocketsim.iter().copied().take(3) {
+    for cball in rocketsim.iter().copied().take(5) {
         print_error(ball, cball);
 
         println!("{}", "[START OF TICK]".green());
