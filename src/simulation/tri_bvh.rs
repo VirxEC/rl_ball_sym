@@ -2,11 +2,11 @@
 
 use super::{
     bvh::{global_aabb, Branch, Leaf, Node},
-    geometry::{Aabb, Ray, Sphere, Tri},
+    game::Constraints,
+    geometry::{Aabb, Contact, Hits, Sphere, Tri},
     morton::Morton,
 };
 use combo_vec::{re_arr, ReArr};
-use std::convert::Into;
 
 /// A bounding volume hierarchy.
 #[derive(Clone, Debug)]
@@ -14,17 +14,17 @@ pub struct TriangleBvh {
     /// The root of the BVH.
     root: Node,
     /// The primitive triangles that the BVH is built from.
-    primitives: Vec<Tri>,
+    primitives: Box<[Tri]>,
 }
 
 impl TriangleBvh {
     #[must_use]
     /// Creates a new BVH from a list of primitives.
-    pub fn new(primitives: Vec<Tri>) -> Self {
-        let aabbs: Vec<Aabb> = primitives.iter().copied().map(Into::into).collect();
+    pub fn new(primitives: Box<[Tri]>) -> Self {
+        let aabbs: Box<[Aabb]> = primitives.iter().copied().map(Into::into).collect();
         let morton = Morton::new(global_aabb(&aabbs));
 
-        let mut sorted_leaves: Vec<_> = aabbs.iter().map(|aabb| morton.get_code(aabb)).enumerate().collect();
+        let mut sorted_leaves: Box<[_]> = aabbs.iter().map(|aabb| morton.get_code(aabb)).enumerate().collect();
         radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.1);
 
         let root = Self::generate_hierarchy(&sorted_leaves, &aabbs);
@@ -52,21 +52,22 @@ impl TriangleBvh {
     }
 
     #[must_use]
-    /// Returns a Vec of the collision triangles intersecting with the `query_object`.
-    pub fn intersect(&self, query_object: Sphere) -> Vec<Ray> {
+    /// Returns a Vec of the collision rays and triangle normals from the triangles intersecting with the `query_object`.
+    pub fn collide(&self, query_object: Sphere) -> ReArr<Contact, { Constraints::MAX_CONTACTS }> {
         const STACK: ReArr<&Branch, 12> = re_arr![];
+        const HITS: Hits = Hits::new();
 
-        let mut hits = Vec::with_capacity(4);
+        let mut hits = HITS;
 
         // Traverse nodes starting from the root
         // If the node is a leaf, check for intersection
         let mut node = match &self.root {
             Node::Branch(branch) => branch,
             Node::Leaf(leaf) => {
-                if let Some(contact) = self.primitives[leaf.idx].intersect_sphere(query_object) {
-                    hits.push(contact);
+                if let Some(hit) = self.primitives[leaf.idx].intersect_sphere(query_object) {
+                    hits.push(hit);
                 }
-                return hits;
+                return hits.inner();
             }
         };
 
@@ -83,8 +84,8 @@ impl TriangleBvh {
             if left.aabb().intersect_self(&query_box) {
                 match left {
                     Node::Leaf(left) => {
-                        if let Some(contact) = self.primitives[left.idx].intersect_sphere(query_object) {
-                            hits.push(contact);
+                        if let Some(info) = self.primitives[left.idx].intersect_sphere(query_object) {
+                            hits.push(info);
                         }
                     }
                     Node::Branch(left) => traverse_left = Some(left),
@@ -95,8 +96,8 @@ impl TriangleBvh {
             if right.aabb().intersect_self(&query_box) {
                 match right {
                     Node::Leaf(right) => {
-                        if let Some(contact) = self.primitives[right.idx].intersect_sphere(query_object) {
-                            hits.push(contact);
+                        if let Some(info) = self.primitives[right.idx].intersect_sphere(query_object) {
+                            hits.push(info);
                         }
                     }
                     Node::Branch(right) => {
@@ -120,42 +121,13 @@ impl TriangleBvh {
             };
         }
 
-        hits
-    }
-
-    #[must_use]
-    /// Returns the calculated ray-intersection of the given Sphere and the BVH.
-    /// Returns None if no intersecting objects were found in the BVH.
-    pub fn collide(&self, obj: Sphere) -> Option<Ray> {
-        let tris_hit = self.intersect(obj);
-        if tris_hit.is_empty() {
-            return None;
-        }
-
-        let mut contact_points = tris_hit.into_iter();
-
-        let Some(mut contact_point) = contact_points.next() else {
-            return None;
-        };
-
-        let mut count = 1.;
-
-        for point in contact_points {
-            count += 1.;
-            contact_point += point;
-        }
-
-        contact_point.start /= count;
-        contact_point.direction = contact_point.direction.normalize_or_zero();
-
-        Some(contact_point)
+        hits.inner()
     }
 }
 
 #[cfg(test)]
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 mod test {
-    #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-
     use super::*;
     use crate::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
     use criterion::black_box;
@@ -177,7 +149,7 @@ mod test {
         [2, 3, 6],
     ];
 
-    fn generate_tris() -> Vec<Tri> {
+    fn generate_tris() -> Box<[Tri]> {
         let verts = &[
             Vec3A::new(-4096.0, -5120.0, 0.0),
             Vec3A::new(-4096.0, -5120.0, 2044.0),
@@ -209,29 +181,29 @@ mod test {
         {
             // Sphere hits nothing
             let sphere = Sphere::new(Vec3A::new(0., 0., 1022.), 100.);
-            let hits = bvh.intersect(sphere);
+            let hits = bvh.collide(sphere);
             assert_eq!(hits.len(), 0);
         }
         {
             // Sphere hits one Tri
             let sphere = Sphere::new(Vec3A::new(4096. / 2., 5120. / 2., 99.9), 100.);
-            let hits = bvh.intersect(sphere);
+            let hits = bvh.collide(sphere);
 
             assert_eq!(hits.len(), 1);
         }
         {
             // Middle of two Tris
             let sphere = Sphere::new(Vec3A::ZERO, 100.);
-            let hits = bvh.intersect(sphere);
+            let hits = bvh.collide(sphere);
 
             assert_eq!(hits.len(), 2);
         }
         {
             // Sphere is in a corner
             let sphere = Sphere::new(Vec3A::new(4096., 5120., 0.), 100.);
-            let hits = bvh.intersect(sphere);
+            let hits = bvh.collide(sphere);
 
-            assert_eq!(hits.len(), 5);
+            assert_eq!(hits.len(), 4);
         }
     }
 
@@ -245,54 +217,70 @@ mod test {
             // Sphere hits nothing
             let sphere = Sphere::new(Vec3A::new(0., 0., 1022.), 100.);
 
-            let ray = bvh.intersect(sphere);
+            let ray = bvh.collide(sphere);
 
             assert!(ray.is_empty());
         }
         {
             // Sphere hits one Tri
-            let sphere = Sphere::new(Vec3A::new(4096. / 2., 5120. / 2., 99.), 100.);
+            let center = Vec3A::new(4096. / 2., 5120. / 2., 99.);
+            let sphere = Sphere::new(center, 100.);
 
-            let rays = bvh.intersect(sphere);
+            let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
 
-            let ray = rays[0];
+            let position = rays[0].local_position + center;
+            dbg!(position);
 
-            assert!((ray.start.x - 2048.).abs() < f32::EPSILON);
-            assert!((ray.start.y - 2560.).abs() < f32::EPSILON);
-            assert!((ray.start.z - 0.).abs() < f32::EPSILON);
-            assert!((ray.direction.x - 0.0).abs() < f32::EPSILON);
-            assert!((ray.direction.y - 0.0).abs() < f32::EPSILON);
-            assert!((ray.direction.z - 1.0).abs() < f32::EPSILON);
+            assert!((position.x - 2048.).abs() < f32::EPSILON);
+            assert!((position.y - 2560.).abs() < f32::EPSILON);
+            assert!((position.z - -1.).abs() < f32::EPSILON);
+            assert!((rays[0].triangle_normal.x - 0.0).abs() < f32::EPSILON);
+            assert!((rays[0].triangle_normal.y - 0.0).abs() < f32::EPSILON);
+            assert!((rays[0].triangle_normal.z - 1.0).abs() < f32::EPSILON);
         }
         {
             // Middle of two Tris
-            let sphere = Sphere::new(Vec3A::Z, 100.);
+            let center = Vec3A::Z;
+            let sphere = Sphere::new(center, 2.);
 
-            let rays = bvh.intersect(sphere);
+            let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
 
-            let ray = rays[0];
+            let position = rays[0].local_position + center;
+            dbg!(position);
 
-            assert!((ray.start.x - 0.0).abs() < f32::EPSILON);
-            assert!((ray.start.y - 0.0).abs() < f32::EPSILON);
-            assert!((ray.start.z - 0.0).abs() < f32::EPSILON);
-            assert!((ray.direction.x - 0.0).abs() < f32::EPSILON);
-            assert!((ray.direction.y - 0.0).abs() < f32::EPSILON);
-            assert!((ray.direction.z - 1.0).abs() < f32::EPSILON);
+            assert!((position.x - 0.0).abs() < f32::EPSILON);
+            assert!((position.y - 0.0).abs() < f32::EPSILON);
+            assert!((position.z - -1.0).abs() < f32::EPSILON);
+            assert!((rays[0].triangle_normal.x - 0.0).abs() < f32::EPSILON);
+            assert!((rays[0].triangle_normal.y - 0.0).abs() < f32::EPSILON);
+            assert!((rays[0].triangle_normal.z - 1.0).abs() < f32::EPSILON);
         }
         {
             // Sphere is in a corner
-            let sphere = Sphere::new(Vec3A::new(4095., 5119., 5.), 100.);
+            let center = Vec3A::new(4095., 5119., 5.);
+            let sphere = Sphere::new(center, 6.);
 
-            let rays = bvh.intersect(sphere);
+            let rays = bvh.collide(sphere);
             assert!(!rays.is_empty());
 
-            let first_ray = rays[0];
-            dbg!(first_ray);
-            assert!((first_ray.start.x - 4093.8838).abs() < f32::EPSILON);
-            assert!((first_ray.start.y - 5120.).abs() < f32::EPSILON);
-            assert!((first_ray.start.z - 0.528_076_2).abs() < f32::EPSILON);
+            let position = rays[0].local_position + center;
+            dbg!(position);
+
+            assert!((position.x - 4095.).abs() < f32::EPSILON);
+            assert!((position.y - 5119.).abs() < f32::EPSILON);
+            assert!((position.z - -1.).abs() < f32::EPSILON);
+
+            let ray_normal = rays.iter().skip(1).fold(rays[0].triangle_normal, |mut acc, ray| {
+                acc += ray.triangle_normal;
+                acc
+            });
+            let direction = ray_normal.normalize();
+
+            assert!((direction.x - -0.816_496_55).abs() < f32::EPSILON);
+            assert!((direction.y - -0.408_248_28).abs() < f32::EPSILON);
+            assert!((direction.z - 0.408_248_28).abs() < f32::EPSILON);
         }
     }
 
@@ -304,7 +292,7 @@ mod test {
 
         {
             let sphere = Sphere::new(Vec3A::new(0., 0., 92.15 - f32::EPSILON), 92.15);
-            let ray = bvh.intersect(sphere);
+            let ray = bvh.collide(sphere);
 
             assert_eq!(ray.len(), 2);
         }

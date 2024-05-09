@@ -1,6 +1,9 @@
 //! Tools for simulation a Rocket League ball.
 
-use super::{game::Game, geometry::Sphere};
+use super::{
+    game::{Constraints, Game},
+    geometry::Sphere,
+};
 use glam::Vec3A;
 
 /// Represents the game's ball
@@ -32,16 +35,13 @@ impl Default for Ball {
 pub type Predictions = Vec<Ball>;
 
 impl Ball {
-    const RESTITUTION: f32 = 0.6;
     const DRAG: f32 = 0.03;
-    const MU: f32 = 2.;
 
     const V_MAX: f32 = 6000.;
     const W_MAX: f32 = 6.;
 
     const M: f32 = 30.;
-    const INV_M: f32 = 1. / Self::M;
-    const RESTITUTION_M: f32 = -(1. + Self::RESTITUTION) * Self::M;
+    pub(crate) const INV_M: f32 = 1. / Self::M;
 
     const STANDARD_RADIUS: f32 = 91.25;
     const HOOPS_RADIUS: f32 = 96.38307;
@@ -140,6 +140,16 @@ impl Ball {
         Sphere::new(self.location, self.radius)
     }
 
+    #[inline]
+    pub(crate) fn get_velocity_in_local_point(&self, rel_pos: Vec3A) -> Vec3A {
+        self.velocity + self.angular_velocity.cross(rel_pos)
+    }
+
+    #[inline]
+    pub(crate) fn get_velocity_in_local_point_no_delta(&self, rel_pos: Vec3A, external_force_impulse: Vec3A) -> Vec3A {
+        self.velocity + external_force_impulse + self.angular_velocity.cross(rel_pos)
+    }
+
     /// Simulate the ball for one game tick
     ///
     /// `dt` - The delta time (game tick length)
@@ -147,44 +157,25 @@ impl Ball {
         self.time += dt;
 
         if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
-            if let Some(contact) = game.triangle_collisions.collide(self.hitbox()) {
-                let p = contact.start;
-                let n = contact.direction;
+            self.velocity *= (1. - Self::DRAG).powf(dt);
+            let external_force_impulse = game.gravity * dt;
 
-                let loc = p - self.location;
+            let contacts = game.triangle_collisions.collide(self.hitbox());
+            if !contacts.is_empty() {
+                let mut constraints = Constraints::new(Self::INV_M, external_force_impulse);
+                constraints.add_contacts(contacts, self, dt);
 
-                let m_reduced = 1. / (Self::INV_M + loc.length_squared() * self.inv_inertia);
+                let (delta_velocity, push_velocity) = constraints.solve(self);
 
-                let v_perp = n * self.velocity.dot(n).min(0.);
-                let v_para = self.velocity - v_perp - loc.cross(self.angular_velocity);
-
-                let ratio = v_perp.length() / v_para.length().max(0.0001);
-
-                let j_perp = v_perp * Self::RESTITUTION_M;
-                let j_para = -(Self::MU * ratio).min(1.) * m_reduced * v_para;
-
-                let j = j_perp + j_para;
-
-                self.velocity *= (1. - Self::DRAG).powf(dt);
-                self.velocity += game.gravity * dt;
-                self.velocity += j * Self::INV_M;
-
-                self.location += self.velocity * dt;
-
-                self.angular_velocity += loc.cross(j) * self.inv_inertia;
-
-                let penetration = self.radius + Sphere::CONTACT_BREAKING_THRESHOLD - (self.location - p).dot(n);
-                if penetration > 0. {
-                    self.location += 1.001 * penetration * n;
-                }
-            } else {
-                self.velocity *= (1. - Self::DRAG).powf(dt);
-                self.velocity += game.gravity * dt;
-                self.location += self.velocity * dt;
+                self.velocity += delta_velocity.linear;
+                self.angular_velocity += delta_velocity.angular;
+                self.location += push_velocity * dt;
             }
 
-            self.angular_velocity *= (Self::W_MAX * self.angular_velocity.length_recip()).min(1.);
-            self.velocity *= (Self::V_MAX * self.velocity.length_recip()).min(1.);
+            self.velocity += external_force_impulse;
+            self.location += self.velocity * dt;
+            self.angular_velocity = self.angular_velocity.clamp_length_max(Self::W_MAX);
+            self.velocity = self.velocity.clamp_length_max(Self::V_MAX);
         }
     }
 

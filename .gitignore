@@ -1,7 +1,10 @@
-.vscode/
+/.vscode
 /target
+/venv
 ball_prediction.json
 Cargo.lock
 *.svg
 perf*
 *.dump
+*.json
+/collision_meshes

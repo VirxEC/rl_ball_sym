@@ -1,7 +1,145 @@
 //! Various geometrical objects and tools.
 
+use crate::simulation::game::Constraints;
+use combo_vec::ReArr;
 use glam::Vec3A;
-use std::ops::{Add, AddAssign};
+use std::ops::Add;
+
+#[derive(Clone, Copy, Debug)]
+pub struct Contact {
+    pub local_position: Vec3A,
+    pub triangle_normal: Vec3A,
+    pub depth: f32,
+}
+
+#[derive(Debug)]
+#[repr(transparent)]
+pub struct Hits(ReArr<Contact, { Constraints::MAX_CONTACTS }>);
+
+impl Hits {
+    #[inline]
+    pub const fn new() -> Self {
+        Self(ReArr::new())
+    }
+
+    #[inline]
+    fn get_res(new_contact_local: Vec3A, point1: Vec3A, point2: Vec3A, point3: Vec3A) -> f32 {
+        (new_contact_local - point1).cross(point2 - point3).length_squared()
+    }
+
+    #[inline]
+    fn get_res_0(&self, new_contact_local: Vec3A) -> f32 {
+        Self::get_res(
+            new_contact_local,
+            self.0[1].local_position,
+            self.0[3].local_position,
+            self.0[2].local_position,
+        )
+    }
+
+    #[inline]
+    fn get_res_1(&self, new_contact_local: Vec3A) -> f32 {
+        Self::get_res(
+            new_contact_local,
+            self.0[0].local_position,
+            self.0[3].local_position,
+            self.0[2].local_position,
+        )
+    }
+
+    #[inline]
+    fn get_res_2(&self, new_contact_local: Vec3A) -> f32 {
+        Self::get_res(
+            new_contact_local,
+            self.0[0].local_position,
+            self.0[3].local_position,
+            self.0[1].local_position,
+        )
+    }
+
+    #[inline]
+    fn get_res_3(&self, new_contact_local: Vec3A) -> f32 {
+        Self::get_res(
+            new_contact_local,
+            self.0[0].local_position,
+            self.0[2].local_position,
+            self.0[1].local_position,
+        )
+    }
+
+    // sortCachedPoints
+    fn replacement_index(&self, new_contact: &Contact) -> usize {
+        let mut max_penetration_index = self.0.len();
+        let mut max_penetration = new_contact.depth;
+        for (i, contact) in self.0.iter().enumerate() {
+            if contact.depth < max_penetration {
+                max_penetration_index = i;
+                max_penetration = contact.depth;
+            }
+        }
+
+        let res = match max_penetration_index {
+            0 => [
+                0.,
+                self.get_res_1(new_contact.local_position),
+                self.get_res_2(new_contact.local_position),
+                self.get_res_3(new_contact.local_position),
+            ],
+            1 => [
+                self.get_res_0(new_contact.local_position),
+                0.,
+                self.get_res_2(new_contact.local_position),
+                self.get_res_3(new_contact.local_position),
+            ],
+            2 => [
+                self.get_res_0(new_contact.local_position),
+                self.get_res_1(new_contact.local_position),
+                0.,
+                self.get_res_3(new_contact.local_position),
+            ],
+            3 => [
+                self.get_res_0(new_contact.local_position),
+                self.get_res_1(new_contact.local_position),
+                self.get_res_2(new_contact.local_position),
+                0.,
+            ],
+            _ => [
+                self.get_res_0(new_contact.local_position),
+                self.get_res_1(new_contact.local_position),
+                self.get_res_2(new_contact.local_position),
+                self.get_res_3(new_contact.local_position),
+            ],
+        };
+
+        let (mut biggest_area, mut biggest_area_index) = if res[1] > res[0] { (res[1], 1) } else { (res[0], 0) };
+
+        if res[2] > biggest_area {
+            biggest_area = res[2];
+            biggest_area_index = 2;
+        }
+
+        if res[3] > biggest_area {
+            biggest_area_index = 3;
+        }
+
+        biggest_area_index
+    }
+
+    // addManifoldPoint
+    pub fn push(&mut self, contact: Contact) {
+        if self.0.len() == Constraints::MAX_CONTACTS {
+            let index = self.replacement_index(&contact);
+            self.0[index] = contact;
+        } else {
+            self.0.push(contact);
+        }
+    }
+
+    #[inline]
+    pub const fn inner(self) -> ReArr<Contact, { Constraints::MAX_CONTACTS }> {
+        self.0
+    }
+}
 
 #[repr(transparent)]
 /// A triangle made from 3 points.
@@ -23,23 +161,11 @@ impl Tri {
         Self::new([iter.next().unwrap(), iter.next().unwrap(), iter.next().unwrap()])
     }
 
-    #[must_use]
-    /// Get the normal of the triangle.
-    pub fn unit_normal(self) -> Vec3A {
-        (self.points[1] - self.points[0])
-            .cross(self.points[2] - self.points[0])
-            .normalize()
-    }
-
     /// Check if a point projected onto the same place as the triangle
     /// is within the bounds of it.
     /// This is used instead of bullet's method because it's much faster:
     /// <https://gamedev.stackexchange.com/a/152476>
-    fn face_contains(&self, point: Vec3A) -> bool {
-        let u = self.points[1] - self.points[0];
-        let v = self.points[2] - self.points[0];
-        let n = u.cross(v);
-        let w = point - self.points[0];
+    fn face_contains(u: Vec3A, v: Vec3A, n: Vec3A, w: Vec3A) -> bool {
         let gamma = u.cross(w).dot(n) / n.dot(n);
         let beta = w.cross(v).dot(n) / n.dot(n);
         let alpha = 1. - gamma - beta;
@@ -51,11 +177,7 @@ impl Tri {
     /// Instead of using bullet's method,
     /// we use the method described here which is much faster:
     /// <https://stackoverflow.com/a/74395029/10930209>
-    fn closest_point(&self, point: Vec3A) -> Vec3A {
-        let ab = self.points[1] - self.points[0];
-        let ac = self.points[2] - self.points[0];
-        let ap = point - self.points[0];
-
+    fn closest_point(&self, point: Vec3A, ab: Vec3A, ac: Vec3A, ap: Vec3A) -> Vec3A {
         let d1 = ab.dot(ap);
         let d2 = ac.dot(ap);
         if d1 <= 0. && d2 <= 0. {
@@ -102,35 +224,39 @@ impl Tri {
 
     #[must_use]
     /// Check if a sphere intersects the triangle.
-    pub fn intersect_sphere(&self, obj: Sphere) -> Option<Ray> {
-        let mut normal = self.unit_normal();
+    pub fn intersect_sphere(&self, obj: Sphere) -> Option<Contact> {
+        let u = self.points[1] - self.points[0];
+        let v = self.points[2] - self.points[0];
+        let n = u.cross(v);
+        let mut triangle_normal = n.normalize();
 
         let p1_to_center = obj.center - self.points[0];
-        let mut distance_from_plane = p1_to_center.dot(normal);
+        let mut distance_from_plane = p1_to_center.dot(triangle_normal);
 
         if distance_from_plane < 0. {
             distance_from_plane *= -1.;
-            normal *= -1.;
+            triangle_normal *= -1.;
         }
 
         if distance_from_plane >= obj.radius_with_threshold {
             return None;
         }
 
-        let contact_point = if self.face_contains(obj.center) {
-            Some(obj.center - normal * distance_from_plane)
+        let w = obj.center - self.points[0];
+
+        let contact_point = if Self::face_contains(u, v, n, w) {
+            obj.center - triangle_normal * distance_from_plane
         } else {
             let min_dist_sqr = obj.radius_with_threshold.powi(2);
-
-            let closest_point = self.closest_point(obj.center);
+            let closest_point = self.closest_point(obj.center, u, v, w);
             let distance_sqr = (closest_point - obj.center).length_squared();
 
             if distance_sqr < min_dist_sqr {
-                Some(closest_point)
+                closest_point
             } else {
-                None
+                return None;
             }
-        }?;
+        };
 
         let contact_to_center = obj.center - contact_point;
         let distance_sqr = contact_to_center.length_squared();
@@ -139,13 +265,22 @@ impl Tri {
             return None;
         }
 
-        let result_normal = if distance_sqr > f32::EPSILON {
-            contact_to_center / distance_sqr.sqrt()
+        let (result_normal, depth) = if distance_sqr > f32::EPSILON {
+            let distance = distance_sqr.sqrt();
+            (contact_to_center / distance, -(obj.radius - distance))
         } else {
-            normal
+            (triangle_normal, -obj.radius)
         };
 
-        Some(Ray::new(contact_point, result_normal))
+        // println!("CONTACT");
+
+        let point_in_world = contact_point + result_normal * depth;
+
+        Some(Contact {
+            local_position: point_in_world - obj.center,
+            triangle_normal,
+            depth,
+        })
     }
 }
 
@@ -247,36 +382,12 @@ impl From<Sphere> for Aabb {
     }
 }
 
-/// A ray starting at `start` and going in `direction`.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct Ray {
-    /// Starting location of the ray.
-    pub start: Vec3A,
-    /// Direction the ray is pointing.
-    pub direction: Vec3A,
-}
-
-impl AddAssign<Self> for Ray {
-    #[inline]
-    fn add_assign(&mut self, rhs: Self) {
-        self.start += rhs.start;
-        self.direction += rhs.direction;
-    }
-}
-
-impl Ray {
-    #[inline]
-    pub const fn new(start: Vec3A, direction: Vec3A) -> Self {
-        Self { start, direction }
-    }
-}
-
 /// A Sphere-like object.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Sphere {
-    pub center: Vec3A,
-    pub radius: f32,
-    pub radius_with_threshold: f32,
+    center: Vec3A,
+    radius: f32,
+    radius_with_threshold: f32,
 }
 
 impl Sphere {
@@ -296,7 +407,6 @@ impl Sphere {
 #[cfg(test)]
 mod test {
     use super::*;
-    use glam::Vec3A;
 
     const TRI: Tri = Tri::new([
         Vec3A::new(-1.0, 5.0, 0.0),

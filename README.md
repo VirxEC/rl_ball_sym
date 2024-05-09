@@ -6,9 +6,8 @@
 
 Rust implementation of Rocket League's ball physics;
 Inspired by Samuel P. Mish's C++ utils called [RLUtilities](https://github.com/samuelpmish/RLUtilities)
+with accuracy improvements from [RocketSim](https://github.com/ZealanL/RocketSim)
 and other miscellaneous performance improvements.
-
-This crate also contains fixes to discovered errors stemming from the original repo.
 
 ## Running
 
@@ -38,11 +37,11 @@ Numbers _will_ vary depending on your system.
 + `load_hoops`: Loads 15732 triangles, executes in around `1.30ms`
 + `load_dropshot`: Loads 3616 triangles, executes in around `300µs`
 + `load_standard_throwback`: Loads 9272 triangles, executes in around `805µs`
-+ `get_ball_prediction_struct_for_time`: standard + 8 seconds, executes in around `130µs`
-+ `get_ball_prediction`: standard + 6 seconds, executes in around `90µs`
-+ `get_ball_prediction`: Hoops + 6 seconds, executes in around `120µs`
-+ `get_ball_prediction`: Dropshot + 6 seconds, executes in around `110µs`
-+ `get_ball_prediction`: standard + Throwback Stadium + 6 seconds, executes in around `100µs`
++ `get_ball_prediction_struct_for_time`: standard + 8 seconds, executes in around `220µs`
++ `get_ball_prediction`: standard + 6 seconds, executes in around `165µs`
++ `get_ball_prediction`: Hoops + 6 seconds, executes in around `160µs`
++ `get_ball_prediction`: Dropshot + 6 seconds, executes in around `140µs`
++ `get_ball_prediction`: standard + Throwback Stadium + 6 seconds, executes in around `175µs`
 
 ## Features
 

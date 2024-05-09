@@ -40,7 +40,7 @@ fn main() {
             }
         }
 
-        if i % 500 == 0 {
+        if i % 1000 == 0 {
             print!(
                 "\rNumber of out of bounds: {count}/{i} ({:.6}%)",
                 count as f32 / i as f32 * 100.

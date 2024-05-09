@@ -14,8 +14,8 @@ fn z_axis_to_rotation(axis: f32) -> Mat3A {
 #[inline]
 fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
     Mesh::new(
-        vec![0, 1, 3, 1, 2, 3],
-        vec![p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2],
+        Box::from([0, 1, 3, 1, 2, 3]),
+        Box::from([p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2]),
     )
 }
 
@@ -45,34 +45,34 @@ pub fn get_standard_walls() -> [Mesh; 4] {
 #[must_use]
 /// Get a BVH generated from the given standard field meshes.
 pub fn initialize_standard(
-    standard_corner: &Mesh,
-    standard_goal: &Mesh,
-    standard_ramps_0: &Mesh,
-    standard_ramps_1: &Mesh,
+    standard_corner: Mesh,
+    standard_goal: Mesh,
+    standard_ramps_0: Mesh,
+    standard_ramps_1: Mesh,
 ) -> TriangleBvh {
-    const SCALE: f32 = 100.;
-    const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
+    const Y_OFFSET: f32 = -5120.;
 
-    const Y_OFFSET: Vec3A = Vec3A::new(0., -5120., 0.);
-
-    let standard_corner_tf = standard_corner.transform(S);
-    let standard_goal_tf = standard_goal.transform(S);
-    let standard_ramps_0_tf = standard_ramps_0.transform(S);
-    let standard_ramps_1_tf = standard_ramps_1.transform(S);
+    let standard_goal_tf = standard_goal.translate_y(Y_OFFSET);
 
     let [floor, ceiling, side_wall_0, side_wall_1] = get_standard_walls();
 
     let field_mesh = Mesh::combine([
-        standard_corner_tf.transform(FLIP_X),
-        standard_corner_tf.transform(FLIP_Y),
-        standard_corner_tf.transform(FLIP_X * FLIP_Y),
-        standard_corner_tf,
-        standard_goal_tf.translate(Y_OFFSET),
-        standard_goal_tf.translate(Y_OFFSET).transform(FLIP_Y),
-        standard_ramps_0_tf.transform(FLIP_X),
-        standard_ramps_0_tf,
-        standard_ramps_1_tf.transform(FLIP_X),
-        standard_ramps_1_tf,
+        standard_corner.clone().transform(FLIP_X),
+        standard_corner.clone().transform(FLIP_Y),
+        standard_corner.clone().transform(FLIP_X * FLIP_Y),
+        standard_corner,
+        standard_goal_tf.clone().transform(FLIP_X),
+        standard_goal_tf.clone().transform(FLIP_Y),
+        standard_goal_tf.clone().transform(FLIP_X * FLIP_Y),
+        standard_goal_tf,
+        standard_ramps_0.clone().transform(FLIP_X),
+        standard_ramps_0.clone().transform(FLIP_Y),
+        standard_ramps_0.clone().transform(FLIP_X * FLIP_Y),
+        standard_ramps_0,
+        standard_ramps_1.clone().transform(FLIP_X),
+        standard_ramps_1.clone().transform(FLIP_Y),
+        standard_ramps_1.clone().transform(FLIP_X * FLIP_Y),
+        standard_ramps_1,
         floor,
         ceiling,
         side_wall_0,
@@ -119,33 +119,33 @@ pub fn get_hoops_walls() -> [Mesh; 6] {
 /// Get a BVH generated from the given hoops field meshes.
 pub fn initialize_hoops(
     hoops_corner: Mesh,
-    hoops_net: &Mesh,
-    hoops_rim: &Mesh,
+    hoops_net: Mesh,
+    hoops_rim: Mesh,
     hoops_ramps_0: Mesh,
     hoops_ramps_1: Mesh,
 ) -> TriangleBvh {
     const SCALE: f32 = 0.9;
     const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
 
-    const Y_OFFSET: Vec3A = Vec3A::new(0., 431.664, 0.);
+    const Y_OFFSET: f32 = 431.664;
 
-    let hoops_net_tf = hoops_net.transform(S).translate(Y_OFFSET);
-    let hoops_rim_tf = hoops_rim.transform(S).translate(Y_OFFSET);
+    let hoops_net_tf = hoops_net.transform(S).translate_y(Y_OFFSET);
+    let hoops_rim_tf = hoops_rim.transform(S).translate_y(Y_OFFSET);
 
     let [floor, ceiling, side_wall_0, side_wall_1, back_wall_0, back_wall_1] = get_hoops_walls();
 
     let field_mesh = Mesh::combine([
-        hoops_corner.transform(FLIP_X),
-        hoops_corner.transform(FLIP_Y),
-        hoops_corner.transform(FLIP_X * FLIP_Y),
+        hoops_corner.clone().transform(FLIP_X),
+        hoops_corner.clone().transform(FLIP_Y),
+        hoops_corner.clone().transform(FLIP_X * FLIP_Y),
         hoops_corner,
-        hoops_net_tf.transform(FLIP_Y),
+        hoops_net_tf.clone().transform(FLIP_Y),
         hoops_net_tf,
-        hoops_rim_tf.transform(FLIP_Y),
+        hoops_rim_tf.clone().transform(FLIP_Y),
         hoops_rim_tf,
-        hoops_ramps_0.transform(FLIP_X),
+        hoops_ramps_0.clone().transform(FLIP_X),
         hoops_ramps_0,
-        hoops_ramps_1.transform(FLIP_Y),
+        hoops_ramps_1.clone().transform(FLIP_Y),
         hoops_ramps_1,
         floor,
         ceiling,
@@ -160,11 +160,10 @@ pub fn initialize_hoops(
 
 #[must_use]
 /// Get a BVH generated from the given dropshot field meshes.
-pub fn initialize_dropshot(dropshot: &Mesh) -> TriangleBvh {
+pub fn initialize_dropshot(dropshot: Mesh) -> TriangleBvh {
     const SCALE: f32 = 0.393;
     const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
     const Z_OFFSET: f32 = -207.565;
-    const DZ: Vec3A = Vec3A::new(0., 0., Z_OFFSET);
     const Z: Vec3A = Vec3A::new(0., 0., 1010.);
 
     let q = z_axis_to_rotation(FRAC_PI_6);
@@ -188,7 +187,7 @@ pub fn initialize_dropshot(dropshot: &Mesh) -> TriangleBvh {
     };
 
     let field_mesh = Mesh::combine([
-        dropshot.transform(q * S).translate(DZ),
+        dropshot.transform(q * S).translate_z(Z_OFFSET),
         floor,
         ceiling,
         // it is critical that this operation only happens 6 times
@@ -279,35 +278,35 @@ pub fn initialize_throwback(
     let corner_wall_2_tf = corner_wall_2.transform(S);
 
     let field_mesh = Mesh::combine([
-        corner_ramps_lower_tf.transform(FLIP_X),
-        corner_ramps_lower_tf.transform(FLIP_Y),
-        corner_ramps_lower_tf.transform(FLIP_Y).transform(FLIP_X),
+        corner_ramps_lower_tf.clone().transform(FLIP_X),
+        corner_ramps_lower_tf.clone().transform(FLIP_Y),
+        corner_ramps_lower_tf.clone().transform(FLIP_X * FLIP_Y),
         corner_ramps_lower_tf,
-        corner_ramps_upper_tf.transform(FLIP_X),
-        corner_ramps_upper_tf.transform(FLIP_Y),
-        corner_ramps_upper_tf.transform(FLIP_Y).transform(FLIP_X),
+        corner_ramps_upper_tf.clone().transform(FLIP_X),
+        corner_ramps_upper_tf.clone().transform(FLIP_Y),
+        corner_ramps_upper_tf.clone().transform(FLIP_X * FLIP_Y),
         corner_ramps_upper_tf,
-        goal_tf.transform(FLIP_Y),
+        goal_tf.clone().transform(FLIP_Y),
         goal_tf,
-        side_ramps_lower_tf.transform(FLIP_X),
+        side_ramps_lower_tf.clone().transform(FLIP_X),
         side_ramps_lower_tf,
-        side_ramps_upper_tf.transform(FLIP_X),
+        side_ramps_upper_tf.clone().transform(FLIP_X),
         side_ramps_upper_tf,
-        back_ramps_lower_tf.transform(FLIP_Y),
+        back_ramps_lower_tf.clone().transform(FLIP_Y),
         back_ramps_lower_tf,
-        back_ramps_upper_tf.transform(FLIP_Y),
+        back_ramps_upper_tf.clone().transform(FLIP_Y),
         back_ramps_upper_tf,
-        corner_wall_0_tf.transform(FLIP_X),
-        corner_wall_0_tf.transform(FLIP_Y),
-        corner_wall_0_tf.transform(FLIP_Y).transform(FLIP_X),
+        corner_wall_0_tf.clone().transform(FLIP_X),
+        corner_wall_0_tf.clone().transform(FLIP_Y),
+        corner_wall_0_tf.clone().transform(FLIP_X * FLIP_Y),
         corner_wall_0_tf,
-        corner_wall_1_tf.transform(FLIP_X),
-        corner_wall_1_tf.transform(FLIP_Y),
-        corner_wall_1_tf.transform(FLIP_Y).transform(FLIP_X),
+        corner_wall_1_tf.clone().transform(FLIP_X),
+        corner_wall_1_tf.clone().transform(FLIP_Y),
+        corner_wall_1_tf.clone().transform(FLIP_X * FLIP_Y),
         corner_wall_1_tf,
-        corner_wall_2_tf.transform(FLIP_X),
-        corner_wall_2_tf.transform(FLIP_Y),
-        corner_wall_2_tf.transform(FLIP_Y).transform(FLIP_X),
+        corner_wall_2_tf.clone().transform(FLIP_X),
+        corner_wall_2_tf.clone().transform(FLIP_Y),
+        corner_wall_2_tf.clone().transform(FLIP_X * FLIP_Y),
         corner_wall_2_tf,
         floor,
         ceiling,

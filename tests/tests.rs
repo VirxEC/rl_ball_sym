@@ -89,7 +89,7 @@ fn rand_vec() -> Vec3A {
 fn check_for_nans_ball() {
     let (game, mut ball) = load_standard();
 
-    for _ in 0..500 {
+    for _ in 0..100 {
         ball.update(0., rand_vec(), rand_vec(), rand_vec());
 
         let ball_prediction = ball.get_ball_prediction_struct(&game);

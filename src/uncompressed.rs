@@ -31,7 +31,7 @@ pub fn load_standard() -> (Game, Ball) {
         "../assets/standard/standard_ramps_1_vertices.bin"
     );
 
-    let triangle_collisions = initialize_standard(&standard_corner, &standard_goal, &standard_ramps_0, &standard_ramps_1);
+    let triangle_collisions = initialize_standard(standard_corner, standard_goal, standard_ramps_0, standard_ramps_1);
 
     (Game::new(triangle_collisions), Ball::initialize_standard())
 }
@@ -55,7 +55,7 @@ pub fn load_hoops() -> (Game, Ball) {
         "../assets/hoops/hoops_ramps_1_vertices.bin"
     );
 
-    let triangle_collisions = initialize_hoops(hoops_corner, &hoops_net, &hoops_rim, hoops_ramps_0, hoops_ramps_1);
+    let triangle_collisions = initialize_hoops(hoops_corner, hoops_net, hoops_rim, hoops_ramps_0, hoops_ramps_1);
 
     (Game::new(triangle_collisions), Ball::initialize_hoops())
 }
@@ -69,7 +69,7 @@ pub fn load_dropshot() -> (Game, Ball) {
         "../assets/dropshot/dropshot_vertices.bin"
     );
 
-    let triangle_collisions = initialize_dropshot(&dropshot);
+    let triangle_collisions = initialize_dropshot(dropshot);
 
     (Game::new(triangle_collisions), Ball::initialize_dropshot())
 }
