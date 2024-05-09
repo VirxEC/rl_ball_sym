@@ -29,19 +29,19 @@ cargo run --example basic
 
 ## Performance numbers
 
-Numbers are with default features from a system running Ubuntu 23.10 with a Ryzen 9 5900X with 3600MHz CL18 RAM.
+Numbers are from a system running Ubuntu 23.10 with a Ryzen 9 5900X and 3600MHz CL18 RAM.
 
-Numbers _will_ vary depending on your system.
+Numbers _will_ vary depending on your system. Only default features are enabled.
 
-+ `load_standard`: Loads 8028 triangles, executes in around `640µs`
++ `load_standard`: Loads 8028 triangles, executes in around `650µs`
 + `load_hoops`: Loads 15732 triangles, executes in around `1.30ms`
 + `load_dropshot`: Loads 3616 triangles, executes in around `300µs`
-+ `load_standard_throwback`: Loads 9272 triangles, executes in around `805µs`
-+ `get_ball_prediction_struct_for_time`: standard + 8 seconds, executes in around `220µs`
-+ `get_ball_prediction`: standard + 6 seconds, executes in around `165µs`
++ `load_standard_throwback`: Loads 9272 triangles, executes in around `810µs`
++ `get_ball_prediction_struct_for_time`: standard + 8 seconds, executes in around `200µs`
++ `get_ball_prediction`: standard + 6 seconds, executes in around `150µs`
 + `get_ball_prediction`: Hoops + 6 seconds, executes in around `160µs`
 + `get_ball_prediction`: Dropshot + 6 seconds, executes in around `140µs`
-+ `get_ball_prediction`: standard + Throwback Stadium + 6 seconds, executes in around `175µs`
++ `get_ball_prediction`: standard + Throwback Stadium + 6 seconds, executes in around `155µs`
 
 ## Features
 
