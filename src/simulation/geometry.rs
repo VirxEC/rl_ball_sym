@@ -166,12 +166,13 @@ impl Tri {
     /// This is used instead of bullet's method because it's much faster:
     /// <https://gamedev.stackexchange.com/a/152476>
     fn face_contains(u: Vec3A, v: Vec3A, n: Vec3A, w: Vec3A) -> bool {
-        let gamma = u.cross(w).dot(n) / n.dot(n);
-        let beta = w.cross(v).dot(n) / n.dot(n);
+        let dot_n = n.dot(n);
+
+        let gamma = u.cross(w).dot(n) / dot_n;
+        let beta = w.cross(v).dot(n) / dot_n;
         let alpha = 1. - gamma - beta;
 
-        let gba = Vec3A::new(gamma, beta, alpha);
-        gba.cmple(Vec3A::ONE).all() && gba.cmpge(Vec3A::ZERO).all()
+        (gamma >= 0. && beta >= 0. && alpha >= 0.) && (gamma <= 1. && beta <= 1. && alpha <= 1.)
     }
 
     /// Instead of using bullet's method,
