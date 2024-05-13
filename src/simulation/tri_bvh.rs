@@ -110,15 +110,11 @@ impl TriangleBvh {
                 }
             }
 
-            node = if let Some(branch) = traverse_left {
-                branch
-            } else {
-                let Some(next_node) = stack.pop() else {
-                    break;
-                };
-
-                next_node
+            let Some(next_node) = traverse_left.or_else(|| stack.pop()) else {
+                break;
             };
+
+            node = next_node;
         }
 
         hits.inner()

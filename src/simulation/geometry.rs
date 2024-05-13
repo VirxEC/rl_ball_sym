@@ -294,9 +294,9 @@ pub struct Aabb {
 }
 
 impl Aabb {
-    #[must_use]
     #[inline]
-    #[allow(dead_code)]
+    #[must_use]
+    #[cfg(test)]
     /// Create a new AABB.
     ///
     /// Used in tests.
@@ -304,22 +304,22 @@ impl Aabb {
         Self { min, max }
     }
 
-    #[must_use]
     #[inline]
+    #[must_use]
     /// The minimum point contained in the AABB.
     pub const fn min(self) -> Vec3A {
         self.min
     }
 
-    #[must_use]
     #[inline]
+    #[must_use]
     /// The maximum point contained in the AABB.
     pub const fn max(self) -> Vec3A {
         self.max
     }
 
-    #[must_use]
     #[inline]
+    #[must_use]
     /// Create an AABB from a triangle.
     pub fn from_tri(t: Tri) -> Self {
         Self {
@@ -328,8 +328,8 @@ impl Aabb {
         }
     }
 
-    #[must_use]
     #[inline]
+    #[must_use]
     /// Create an AABB from a sphere
     pub fn from_sphere(s: Sphere) -> Self {
         Self {
@@ -343,17 +343,6 @@ impl Aabb {
     /// Check if another AABB intersects this one.
     pub fn intersect_self(self, b: &Self) -> bool {
         self.min.cmple(b.max).all() && self.max.cmpge(b.min).all()
-    }
-
-    #[must_use]
-    #[cfg(test)]
-    /// Check if a sphere intersects this AABB.
-    ///
-    /// Used in tests.
-    pub fn intersect_sphere(&self, b: Sphere) -> bool {
-        let nearest = b.center.clamp(self.min, self.max);
-
-        (b.center - nearest).length() < b.radius
     }
 }
 
@@ -460,44 +449,6 @@ mod test {
 
             assert!(TRI.intersect_sphere(sphere).is_none());
         }
-    }
-
-    #[test]
-    fn aabb_sphere_intersect() {
-        {
-            let aabb = Aabb {
-                min: Vec3A::new(2.0, 1.0, 2.0),
-                max: Vec3A::new(4.0, 3.0, 4.0),
-            };
-
-            assert!(aabb.intersect_sphere(Sphere::new(Vec3A::new(1.0, 0.0, 1.0), 2.0)));
-        }
-        {
-            let aabb = Aabb {
-                min: Vec3A::new(0.0, -1.0, 0.0),
-                max: Vec3A::new(1.0, 0.0, 1.0),
-            };
-
-            assert!(aabb.intersect_sphere(Sphere::new(Vec3A::new(1.0, 0.0, 1.0), 2.0)));
-        }
-        {
-            let aabb = Aabb {
-                min: Vec3A::splat(-5.0),
-                max: Vec3A::splat(5.0),
-            };
-
-            assert!(aabb.intersect_sphere(Sphere::new(Vec3A::new(1.0, 0.0, 1.0), 2.0)));
-        }
-    }
-
-    #[test]
-    fn aabb_sphere_not_intersect() {
-        let aabb = Aabb {
-            min: Vec3A::splat(-2.0),
-            max: Vec3A::splat(-1.0),
-        };
-
-        assert!(!aabb.intersect_sphere(Sphere::new(Vec3A::new(1.0, 0.0, 1.0), 2.0)));
     }
 
     #[test]
