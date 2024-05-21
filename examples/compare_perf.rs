@@ -1,6 +1,5 @@
 use glam::Vec3A;
 use rocketsim_rs::{
-    autocxx::WithinUniquePtr,
     init,
     math::Vec3,
     sim::{Arena, ArenaConfig, BallState, GameMode},
@@ -13,14 +12,13 @@ fn main() {
     init(None);
 
     let mut arena = Arena::new(
-        GameMode::SOCCAR,
+        GameMode::Soccar,
         ArenaConfig {
             no_ball_rot: false,
             ..Default::default()
         },
-        120.,
-    )
-    .within_unique_ptr();
+        120,
+    );
 
     arena.pin_mut().set_ball(BallState {
         pos: Vec3::new(0., 0., 200.),
@@ -30,7 +28,7 @@ fn main() {
 
     let start_time = Instant::now();
 
-    arena.pin_mut().step(STEPS as i32);
+    arena.pin_mut().step(STEPS);
 
     let elapsed = start_time.elapsed();
 
