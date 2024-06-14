@@ -74,7 +74,7 @@ impl Mesh {
             |(mut ids, mut vertices), m| {
                 ids.extend(m.ids.iter().map(|id| id + id_offset));
                 id_offset += m.vertices.len();
-                vertices.extend(m.vertices);
+                vertices.extend(m.vertices.iter());
                 (ids, vertices)
             },
         );
