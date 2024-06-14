@@ -1,14 +1,17 @@
 use super::{mesh::Mesh, tri_bvh::TriangleBvh};
-use glam::{Mat3A, Vec3, Vec3A};
+use glam::{Mat3A, Vec3A};
+
+#[cfg(feature = "dropshot")]
 use std::f32::consts::{FRAC_PI_3, FRAC_PI_6};
 
 const FLIP_X: Mat3A = Mat3A::from_cols(Vec3A::NEG_X, Vec3A::Y, Vec3A::Z);
 const FLIP_Y: Mat3A = Mat3A::from_cols(Vec3A::X, Vec3A::NEG_Y, Vec3A::Z);
 
 #[inline]
+#[cfg(feature = "dropshot")]
 /// Convert an axis-angle vector to a rotation matrix.
 fn z_axis_to_rotation(axis: f32) -> Mat3A {
-    Mat3A::from_axis_angle(Vec3::new(0., 0., axis), axis)
+    Mat3A::from_axis_angle(glam::Vec3::new(0., 0., axis), axis)
 }
 
 #[inline]
@@ -21,6 +24,7 @@ fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
 
 #[inline]
 #[must_use]
+#[cfg(feature = "standard")]
 pub fn get_standard_walls() -> [Mesh; 4] {
     [
         quad(Vec3A::ZERO, Vec3A::new(4096., 0., 0.), Vec3A::new(0., 5500., 0.)),
@@ -43,6 +47,7 @@ pub fn get_standard_walls() -> [Mesh; 4] {
 }
 
 #[must_use]
+#[cfg(feature = "standard")]
 /// Get a BVH generated from the given standard field meshes.
 pub fn initialize_standard(
     standard_corner: Mesh,
@@ -84,6 +89,7 @@ pub fn initialize_standard(
 
 #[inline]
 #[must_use]
+#[cfg(feature = "hoops")]
 pub fn get_hoops_walls() -> [Mesh; 6] {
     [
         quad(Vec3A::ZERO, Vec3A::new(2966., 0., 0.), Vec3A::new(0., 3581., 0.)),
@@ -116,6 +122,7 @@ pub fn get_hoops_walls() -> [Mesh; 6] {
 }
 
 #[must_use]
+#[cfg(feature = "hoops")]
 /// Get a BVH generated from the given hoops field meshes.
 pub fn initialize_hoops(
     hoops_corner: Mesh,
@@ -125,7 +132,7 @@ pub fn initialize_hoops(
     hoops_ramps_1: Mesh,
 ) -> TriangleBvh {
     const SCALE: f32 = 0.9;
-    const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
+    const S: Mat3A = Mat3A::from_diagonal(glam::Vec3::splat(SCALE));
 
     const Y_OFFSET: f32 = 431.664;
 
@@ -159,10 +166,11 @@ pub fn initialize_hoops(
 }
 
 #[must_use]
+#[cfg(feature = "dropshot")]
 /// Get a BVH generated from the given dropshot field meshes.
 pub fn initialize_dropshot(dropshot: Mesh) -> TriangleBvh {
     const SCALE: f32 = 0.393;
-    const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
+    const S: Mat3A = Mat3A::from_diagonal(glam::Vec3::splat(SCALE));
     const Z_OFFSET: f32 = -207.565;
     const Z: Vec3A = Vec3A::new(0., 0., 1010.);
 
@@ -203,6 +211,7 @@ pub fn initialize_dropshot(dropshot: Mesh) -> TriangleBvh {
     TriangleBvh::new(field_mesh.into_triangles())
 }
 
+#[cfg(feature = "throwback")]
 pub struct InitializeThrowbackParams {
     pub back_ramps_lower: Mesh,
     pub back_ramps_upper: Mesh,
@@ -217,6 +226,7 @@ pub struct InitializeThrowbackParams {
 }
 
 #[must_use]
+#[cfg(feature = "throwback")]
 /// Get a BVH generated from the given throwback stadium meshes.
 pub fn initialize_throwback(
     InitializeThrowbackParams {
@@ -233,7 +243,7 @@ pub fn initialize_throwback(
     }: InitializeThrowbackParams,
 ) -> TriangleBvh {
     const SCALE: f32 = 100.;
-    const S: Mat3A = Mat3A::from_diagonal(Vec3::splat(SCALE));
+    const S: Mat3A = Mat3A::from_diagonal(glam::Vec3::splat(SCALE));
 
     let floor = quad(Vec3A::ZERO, Vec3A::new(4096.6, 0., 0.), Vec3A::new(0., 6910., 0.));
     let ceiling = quad(

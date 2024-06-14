@@ -5,6 +5,55 @@ use combo_vec::ReArr;
 use glam::Vec3A;
 use std::ops::Add;
 
+#[cfg(feature = "heatseeker")]
+use glam::Vec3Swizzles;
+#[cfg(feature = "heatseeker")]
+use std::f32::consts::{FRAC_PI_2, PI};
+
+#[cfg(feature = "heatseeker")]
+fn wrap_normalize_float(val: f32, minmax: f32) -> f32 {
+    let r = val % (minmax * 2.);
+
+    if r > minmax {
+        r - minmax * 2.
+    } else if r < -minmax {
+        r + minmax * 2.
+    } else {
+        r
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+#[cfg(feature = "heatseeker")]
+pub struct Angle {
+    pub yaw: f32,
+    pub pitch: f32,
+}
+
+#[cfg(feature = "heatseeker")]
+impl Angle {
+    #[must_use]
+    pub fn from_vec(forward: Vec3A) -> Self {
+        Self {
+            yaw: forward.y.atan2(forward.x),
+            pitch: forward.z.atan2(forward.xy().length()),
+        }
+    }
+
+    #[must_use]
+    pub fn get_forward_vec(self) -> Vec3A {
+        let (sp, cp) = self.pitch.sin_cos();
+        let (sy, cy) = self.yaw.sin_cos();
+
+        Vec3A::new(cp * cy, cp * sy, sp)
+    }
+
+    pub fn normalize_fix(&mut self) {
+        self.yaw = wrap_normalize_float(self.yaw, PI);
+        self.pitch = wrap_normalize_float(self.pitch, FRAC_PI_2);
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct Contact {
     pub local_position: Vec3A,

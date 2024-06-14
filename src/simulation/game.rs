@@ -349,7 +349,7 @@ impl Constraints {
     }
 
     // convertContactSpecial
-    fn process_special_contact(&self, ball: &Ball) -> ConstraintPair {
+    fn process_special_contact(&self, ball: &Ball) -> (ConstraintPair, Vec3A) {
         debug_assert!(self.count > 0);
 
         let count = Vec3A::splat(f32::from(self.count));
@@ -357,7 +357,7 @@ impl Constraints {
         let average_distance = self.depth_sum / count;
 
         let rel_pos = average_normal * -average_distance;
-        let vel: Vec3A = ball.get_velocity_in_local_point_no_delta(rel_pos, self.external_force_impulse);
+        let vel = self.external_force_impulse + ball.get_velocity_in_local_point(rel_pos);
         let rel_vel = average_normal.dot(vel);
 
         let contact_constraint = self.setup_special_contact_constraint(ball, average_normal, rel_pos);
@@ -373,20 +373,21 @@ impl Constraints {
 
         let friction_constraint = self.setup_friction_constraint(ball, lateral_friction_dir, rel_pos);
 
-        ConstraintPair {
-            contact: contact_constraint,
-            friction: friction_constraint,
-        }
+        (
+            ConstraintPair {
+                contact: contact_constraint,
+                friction: friction_constraint,
+            },
+            average_normal,
+        )
     }
 
     #[must_use]
-    pub fn solve(mut self, ball: &Ball) -> (VelocityPair, Vec3A) {
-        let mut average_constraint = self.process_special_contact(ball);
-
+    pub fn solve(mut self, ball: &Ball) -> (VelocityPair, Vec3A, Vec3A) {
+        let (mut average_constraint, normal) = self.process_special_contact(ball);
         let velocities = self.solve_split_impulse_iterations();
 
         let mut deltas = VelocityPair::ZERO;
-
         for _ in 0..Self::NUM_ITERATIONS {
             let least_squares_residual = average_constraint.solve_single_iteration(&mut deltas, self.inv_mass);
 
@@ -395,7 +396,7 @@ impl Constraints {
             }
         }
 
-        (deltas, velocities)
+        (deltas, velocities, normal)
     }
 
     // solveGroupCacheFriendlySplitImpulseIterations

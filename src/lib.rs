@@ -38,6 +38,7 @@ pub use compressed::*;
 #[cfg(not(feature = "compression"))]
 pub use uncompressed::*;
 
+mod loading;
 mod simulation;
 
 pub use crate::simulation::{
@@ -45,3 +46,4 @@ pub use crate::simulation::{
     game::Game,
 };
 pub use glam::Vec3A;
+pub use loading::*;

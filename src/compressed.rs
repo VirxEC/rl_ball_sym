@@ -1,10 +1,7 @@
-//! Tools for compressing the binary field data at compile time and lazy-static decompressing it at runtime.
+//! Tools for compressing the binary field data at compile time and decompressing it at runtime.
 
-use crate::simulation::{
-    field::{initialize_dropshot, initialize_hoops, initialize_standard, initialize_throwback, InitializeThrowbackParams},
-    mesh::Mesh,
-};
-use crate::{Ball, Game};
+use crate::simulation::{field, mesh::Mesh};
+use crate::Game;
 use include_flate::flate;
 
 #[cfg(feature = "compression")]
@@ -21,7 +18,7 @@ macro_rules! include_mesh {
 /// Returns a Game object with a standard standard field and standard ball.
 #[must_use]
 #[cfg(feature = "standard")]
-pub fn load_standard() -> (Game, Ball) {
+pub fn standard_field() -> Game {
     let standard_corner = include_mesh!(
         "assets/standard/standard_corner_ids.bin",
         "assets/standard/standard_corner_vertices.bin"
@@ -39,15 +36,14 @@ pub fn load_standard() -> (Game, Ball) {
         "assets/standard/standard_ramps_1_vertices.bin"
     );
 
-    let triangle_collisions = initialize_standard(standard_corner, standard_goal, standard_ramps_0, standard_ramps_1);
-
-    (Game::new(triangle_collisions), Ball::initialize_standard())
+    let triangle_collisions = field::initialize_standard(standard_corner, standard_goal, standard_ramps_0, standard_ramps_1);
+    Game::new(triangle_collisions)
 }
 
 /// Returns a Game object with a standard hoops field and hoops ball.
 #[must_use]
 #[cfg(feature = "hoops")]
-pub fn load_hoops() -> (Game, Ball) {
+pub fn hoops_field() -> Game {
     let hoops_corner = include_mesh!("assets/hoops/hoops_corner_ids.bin", "assets/hoops/hoops_corner_vertices.bin");
     let hoops_net = include_mesh!("assets/hoops/hoops_net_ids.bin", "assets/hoops/hoops_net_vertices.bin");
     let hoops_rim = include_mesh!("assets/hoops/hoops_rim_ids.bin", "assets/hoops/hoops_rim_vertices.bin");
@@ -60,26 +56,24 @@ pub fn load_hoops() -> (Game, Ball) {
         "assets/hoops/hoops_ramps_1_vertices.bin"
     );
 
-    let triangle_collisions = initialize_hoops(hoops_corner, hoops_net, hoops_rim, hoops_ramps_0, hoops_ramps_1);
-
-    (Game::new(triangle_collisions), Ball::initialize_hoops())
+    let triangle_collisions = field::initialize_hoops(hoops_corner, hoops_net, hoops_rim, hoops_ramps_0, hoops_ramps_1);
+    Game::new(triangle_collisions)
 }
 
-/// Returns a Game object with a standard dropshot field and dropshot ball.
+/// Returns a Game object with a standard dropshot field.
 #[must_use]
 #[cfg(feature = "dropshot")]
-pub fn load_dropshot() -> (Game, Ball) {
+pub fn dropshot_field() -> Game {
     let dropshot = include_mesh!("assets/dropshot/dropshot_ids.bin", "assets/dropshot/dropshot_vertices.bin");
 
-    let triangle_collisions = initialize_dropshot(dropshot);
-
-    (Game::new(triangle_collisions), Ball::initialize_dropshot())
+    let triangle_collisions = field::initialize_dropshot(dropshot);
+    Game::new(triangle_collisions)
 }
 
-/// Returns a Game object with throwback stadium and a standard ball.
+/// Returns a Game object with throwback stadium.
 #[must_use]
 #[cfg(feature = "throwback")]
-pub fn load_standard_throwback() -> (Game, Ball) {
+pub fn throwback_stadium() -> Game {
     let back_ramps_lower = include_mesh!(
         "assets/throwback/throwback_back_ramps_lower_ids.bin",
         "assets/throwback/throwback_back_ramps_lower_vertices.bin"
@@ -121,7 +115,7 @@ pub fn load_standard_throwback() -> (Game, Ball) {
         "assets/throwback/throwback_side_ramps_upper_vertices.bin"
     );
 
-    let params = InitializeThrowbackParams {
+    let params = field::InitializeThrowbackParams {
         back_ramps_lower,
         back_ramps_upper,
         corner_ramps_lower,
@@ -133,7 +127,6 @@ pub fn load_standard_throwback() -> (Game, Ball) {
         side_ramps_lower,
         side_ramps_upper,
     };
-    let triangle_collisions = initialize_throwback(params);
-
-    (Game::new(triangle_collisions), Ball::initialize_standard())
+    let triangle_collisions = field::initialize_throwback(params);
+    Game::new(triangle_collisions)
 }

@@ -74,7 +74,7 @@ impl Mesh {
             |(mut ids, mut vertices), m| {
                 ids.extend(m.ids.iter().map(|id| id + id_offset));
                 id_offset += m.vertices.len();
-                vertices.extend(m.vertices.iter());
+                vertices.extend(m.vertices);
                 (ids, vertices)
             },
         );
@@ -90,7 +90,7 @@ impl Mesh {
     pub fn transform(mut self, a: Mat3A) -> Self {
         debug_assert_eq!(self.ids.len() % 3, 0);
 
-        for vertex in self.vertices.iter_mut() {
+        for vertex in &mut *self.vertices {
             *vertex = a * *vertex;
         }
 
@@ -109,7 +109,7 @@ impl Mesh {
     #[inline]
     /// Translate the mesh on the z axis by the given value.
     pub fn translate_z(mut self, p: f32) -> Self {
-        for vertex in self.vertices.iter_mut() {
+        for vertex in &mut *self.vertices {
             vertex.z += p;
         }
 
@@ -120,7 +120,7 @@ impl Mesh {
     #[inline]
     /// Translate the mesh on the y axis by the given value.
     pub fn translate_y(mut self, p: f32) -> Self {
-        for vertex in self.vertices.iter_mut() {
+        for vertex in &mut *self.vertices {
             vertex.y += p;
         }
 
