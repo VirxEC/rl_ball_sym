@@ -28,7 +28,7 @@ const TRIES: usize = 1_000_000;
 const NUM_TICKS: i32 = 120;
 
 fn main() -> io::Result<()> {
-    rocketsim_rs::init(None);
+    rocketsim_rs::init(None, true);
 
     let mut arena = Arena::default_standard();
     let (game, mut ball) = load_standard();

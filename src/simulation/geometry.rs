@@ -52,6 +52,24 @@ impl Angle {
         self.yaw = wrap_normalize_float(self.yaw, PI);
         self.pitch = wrap_normalize_float(self.pitch, FRAC_PI_2);
     }
+
+    fn get_delta_to(self, other: Self) -> Self {
+        let mut delta = Self {
+            yaw: other.yaw - self.yaw,
+            pitch: other.pitch - self.pitch,
+        };
+        delta.normalize_fix();
+        delta
+    }
+}
+
+#[cfg(feature = "heatseeker")]
+impl std::ops::Sub for Angle {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self {
+        rhs.get_delta_to(self)
+    }
 }
 
 #[derive(Clone, Copy, Debug)]

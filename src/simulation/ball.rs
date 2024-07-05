@@ -11,7 +11,7 @@ use super::geometry::Angle;
 
 #[cfg(feature = "heatseeker")]
 mod heatseeker {
-    use glam::Vec3A;
+    use std::f32::consts::PI;
 
     pub const INITIAL_TARGET_SPEED: f32 = 2900.;
     pub const TARGET_SPEED_INCREMENT: f32 = 85.;
@@ -20,11 +20,12 @@ mod heatseeker {
     pub const HORIZONTAL_BLEND: f32 = 1.45;
     pub const VERTICAL_BLEND: f32 = 0.78;
     pub const SPEED_BLEND: f32 = 0.3;
-    pub const MAX_TURN_PITCH: f32 = 0.671;
+    pub const MAX_TURN_PITCH: f32 = 7000. * PI / (1u16 << 15) as f32;
     pub const MAX_SPEED: f32 = 4600.;
-    pub const WALL_BOUNCE_CHANGE_NORMAL_Y: f32 = 0.75;
-    pub const BALL_START_POS: Vec3A = Vec3A::new(-1000., -2220., 92.75);
-    pub const BALL_START_VEL: Vec3A = Vec3A::new(0., -65., 650.);
+    pub const WALL_BOUNCE_CHANGE_Y_THRESH: f32 = 300.;
+    pub const WALL_BOUNCE_CHANGE_NORMAL_Y: f32 = 0.5;
+    pub const WALL_BOUNCE_FORCE_SCALE: f32 = 1. / 3.;
+    pub const WALL_BOUNCE_UP_FRAC: f32 = 0.3;
 }
 
 /// Represents the game's ball
@@ -111,8 +112,8 @@ impl Ball {
         Self {
             radius: Self::STANDARD_RADIUS,
             inv_inertia: Self::get_inv_inertia(Self::STANDARD_RADIUS),
-            location: heatseeker::BALL_START_POS,
-            velocity: heatseeker::BALL_START_VEL,
+            location: Vec3A::new(-1000., -2220., 92.75),
+            velocity: Vec3A::new(0., -65., 650.),
             ..Default::default()
         }
     }
@@ -184,6 +185,11 @@ impl Ball {
         self.velocity + self.angular_velocity.cross(rel_pos)
     }
 
+    fn limit_velocities(&mut self) {
+        self.angular_velocity = self.angular_velocity.clamp_length_max(Self::W_MAX);
+        self.velocity = self.velocity.clamp_length_max(Self::V_MAX);
+    }
+
     /// Simulate the ball for one game tick,
     /// returning whether the ball has made contact with the world
     fn internal_step(&mut self, game: &Game, dt: f32) -> Option<Vec3A> {
@@ -209,8 +215,6 @@ impl Ball {
 
         self.velocity += external_force_impulse;
         self.location += self.velocity * dt;
-        self.angular_velocity = self.angular_velocity.clamp_length_max(Self::W_MAX);
-        self.velocity = self.velocity.clamp_length_max(Self::V_MAX);
 
         world_contact_normal
     }
@@ -223,6 +227,22 @@ impl Ball {
         self.y_target_dir = if blue_goal { -1. } else { 1. };
     }
 
+    /// Reset the target direction for the ball in Heatseeker mode
+    ///
+    /// This will make the ball behave normally and not target any goal
+    #[cfg(feature = "heatseeker")]
+    pub fn reset_heatseeker_target(&mut self) {
+        self.y_target_dir = 0.;
+    }
+
+    /// Get the target position for the ball in Heatseeker mode
+    #[inline]
+    #[must_use]
+    #[cfg(feature = "heatseeker")]
+    pub fn get_heatseeker_target(&self) -> Vec3A {
+        Vec3A::new(0., heatseeker::TARGET_Y * self.y_target_dir, heatseeker::TARGET_Z)
+    }
+
     /// Simulate the ball for one game tick in Heatseeker mode
     ///
     /// `dt` - The delta time (game tick length)
@@ -231,17 +251,16 @@ impl Ball {
         self.time += dt;
 
         if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
-            if self.velocity.x != 0. || self.velocity.y.abs() > 70. {
-                let vel_angle = Angle::from_vec(self.velocity.normalize());
+            if self.y_target_dir != 0. {
+                let vel = self.velocity.length();
+                let vel_norm = self.velocity / vel;
 
-                // Determine angle to goal
-                let goal_target_pos = Vec3A::new(0., heatseeker::TARGET_Y * self.velocity.y.signum(), heatseeker::TARGET_Z);
-                let angle_to_goal = (goal_target_pos - self.location).normalize();
-                let delta_angle = Angle::from_vec(angle_to_goal - self.velocity.normalize());
+                let vel_angle = Angle::from_vec(vel_norm);
+                let angle_to_goal = Angle::from_vec((self.get_heatseeker_target() - self.location).normalize());
+                let delta_angle = angle_to_goal - vel_angle;
 
                 // Determine speed ratio
-                let cur_speed = self.velocity.length();
-                let speed_ratio = cur_speed / heatseeker::MAX_SPEED;
+                let speed_ratio = vel / heatseeker::MAX_SPEED;
 
                 // Interpolate delta
                 let base_interp_factor = speed_ratio * dt;
@@ -254,21 +273,38 @@ impl Ball {
                 new_angle.pitch = new_angle.pitch.clamp(-heatseeker::MAX_TURN_PITCH, heatseeker::MAX_TURN_PITCH);
 
                 // Determine new interpolated speed
-                let current_state = ((cur_speed - heatseeker::INITIAL_TARGET_SPEED) / heatseeker::TARGET_SPEED_INCREMENT)
+                let current_state = ((vel - heatseeker::INITIAL_TARGET_SPEED) / heatseeker::TARGET_SPEED_INCREMENT)
                     .floor()
                     .clamp(0., 20.);
                 let target_speed = current_state * heatseeker::TARGET_SPEED_INCREMENT + heatseeker::INITIAL_TARGET_SPEED;
-                let new_speed = cur_speed + ((target_speed - cur_speed) * heatseeker::SPEED_BLEND);
+                let new_speed = vel + ((target_speed - vel) * heatseeker::SPEED_BLEND);
 
                 // Update velocity
+                // dbg!(new_angle);
                 self.velocity = new_angle.get_forward_vec() * new_speed;
             }
 
             if let Some(normal) = self.internal_step(game, dt) {
-                if normal.y > heatseeker::WALL_BOUNCE_CHANGE_NORMAL_Y {
-                    self.y_target_dir = normal.y.signum();
+                if self.y_target_dir != 0. {
+                    let rel_normal_y = normal.y * self.y_target_dir;
+                    let rel_y = self.location.y * self.y_target_dir;
+
+                    if rel_y >= 5120. - heatseeker::WALL_BOUNCE_CHANGE_Y_THRESH
+                        && rel_normal_y <= -heatseeker::WALL_BOUNCE_CHANGE_NORMAL_Y
+                    {
+                        self.y_target_dir *= -1.;
+
+                        let dir_to_goal = (self.get_heatseeker_target() - self.location).normalize();
+
+                        let bounce_dir = dir_to_goal * (1. - heatseeker::WALL_BOUNCE_UP_FRAC)
+                            + Vec3A::Z * heatseeker::WALL_BOUNCE_UP_FRAC;
+                        let bounce_impulse = bounce_dir * self.velocity.length() * heatseeker::WALL_BOUNCE_FORCE_SCALE;
+                        self.velocity += bounce_impulse;
+                    }
                 }
             }
+
+            self.limit_velocities();
         }
     }
 
@@ -280,6 +316,7 @@ impl Ball {
 
         if self.velocity.length_squared() != 0. || self.angular_velocity.length_squared() != 0. {
             self.internal_step(game, dt);
+            self.limit_velocities();
         }
     }
 
