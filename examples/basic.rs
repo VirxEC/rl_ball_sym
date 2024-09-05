@@ -1,11 +1,9 @@
-use once_cell::sync::Lazy;
 use rand::Rng;
 use rl_ball_sym::{load_standard, Ball, Game, Predictions, Vec3A};
-use std::sync::RwLock;
+use std::sync::{LazyLock, RwLock};
 
-// We only need to initialize everything once,
-// and OnceCell's Lazy type is perfect for this
-static GAME: RwLock<Lazy<(Game, Ball)>> = RwLock::new(Lazy::new(load_standard));
+// We only need to initialize everything once
+static GAME: RwLock<LazyLock<(Game, Ball)>> = RwLock::new(LazyLock::new(load_standard));
 
 fn main() {
     let mut rng = rand::thread_rng();
