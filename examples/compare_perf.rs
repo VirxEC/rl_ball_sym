@@ -7,7 +7,7 @@ use rocketsim_rs::{
 use std::time::Instant;
 
 const SECONDS: u32 = 25;
-const STEPS: u32 = 120 * 30;
+const STEPS: u32 = 120 * SECONDS;
 const NUM_ITERS: u32 = 2000;
 
 fn main() {
