@@ -33,7 +33,9 @@ impl Mesh {
             let ids_len = ids_dat.len() / 4;
             let mut ids_cursor = Cursor::new(ids_dat);
 
-            (0..ids_len).map(|_| extract_usize(&mut ids_cursor)).collect()
+            (0..ids_len)
+                .map(|_| extract_usize(&mut ids_cursor))
+                .collect()
         };
 
         let vertices = {

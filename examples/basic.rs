@@ -22,7 +22,11 @@ fn main() {
                 rng.gen_range(-2000.0..2000.),
                 rng.gen_range(-2000.0..2000.),
             ),
-            Vec3A::new(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)),
+            Vec3A::new(
+                rng.gen_range(-3.0..3.),
+                rng.gen_range(-3.0..3.),
+                rng.gen_range(-3.0..3.),
+            ),
             time,
         );
         time += 1. / 120.;

@@ -36,7 +36,12 @@ pub fn standard_field() -> Game {
         "assets/standard/standard_ramps_1_vertices.bin"
     );
 
-    let triangle_collisions = field::initialize_standard(standard_corner, standard_goal, standard_ramps_0, standard_ramps_1);
+    let triangle_collisions = field::initialize_standard(
+        standard_corner,
+        standard_goal,
+        standard_ramps_0,
+        standard_ramps_1,
+    );
     Game::new(triangle_collisions)
 }
 
@@ -44,9 +49,18 @@ pub fn standard_field() -> Game {
 #[must_use]
 #[cfg(feature = "hoops")]
 pub fn hoops_field() -> Game {
-    let hoops_corner = include_mesh!("assets/hoops/hoops_corner_ids.bin", "assets/hoops/hoops_corner_vertices.bin");
-    let hoops_net = include_mesh!("assets/hoops/hoops_net_ids.bin", "assets/hoops/hoops_net_vertices.bin");
-    let hoops_rim = include_mesh!("assets/hoops/hoops_rim_ids.bin", "assets/hoops/hoops_rim_vertices.bin");
+    let hoops_corner = include_mesh!(
+        "assets/hoops/hoops_corner_ids.bin",
+        "assets/hoops/hoops_corner_vertices.bin"
+    );
+    let hoops_net = include_mesh!(
+        "assets/hoops/hoops_net_ids.bin",
+        "assets/hoops/hoops_net_vertices.bin"
+    );
+    let hoops_rim = include_mesh!(
+        "assets/hoops/hoops_rim_ids.bin",
+        "assets/hoops/hoops_rim_vertices.bin"
+    );
     let hoops_ramps_0 = include_mesh!(
         "assets/hoops/hoops_ramps_0_ids.bin",
         "assets/hoops/hoops_ramps_0_vertices.bin"
@@ -56,7 +70,13 @@ pub fn hoops_field() -> Game {
         "assets/hoops/hoops_ramps_1_vertices.bin"
     );
 
-    let triangle_collisions = field::initialize_hoops(hoops_corner, hoops_net, hoops_rim, hoops_ramps_0, hoops_ramps_1);
+    let triangle_collisions = field::initialize_hoops(
+        hoops_corner,
+        hoops_net,
+        hoops_rim,
+        hoops_ramps_0,
+        hoops_ramps_1,
+    );
     Game::new(triangle_collisions)
 }
 
@@ -64,7 +84,10 @@ pub fn hoops_field() -> Game {
 #[must_use]
 #[cfg(feature = "dropshot")]
 pub fn dropshot_field() -> Game {
-    let dropshot = include_mesh!("assets/dropshot/dropshot_ids.bin", "assets/dropshot/dropshot_vertices.bin");
+    let dropshot = include_mesh!(
+        "assets/dropshot/dropshot_ids.bin",
+        "assets/dropshot/dropshot_vertices.bin"
+    );
 
     let triangle_collisions = field::initialize_dropshot(dropshot);
     Game::new(triangle_collisions)

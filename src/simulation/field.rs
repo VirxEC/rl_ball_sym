@@ -27,7 +27,11 @@ fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
 #[cfg(feature = "standard")]
 pub fn get_standard_walls() -> [Mesh; 4] {
     [
-        quad(Vec3A::ZERO, Vec3A::new(4096., 0., 0.), Vec3A::new(0., 5500., 0.)),
+        quad(
+            Vec3A::ZERO,
+            Vec3A::new(4096., 0., 0.),
+            Vec3A::new(0., 5500., 0.),
+        ),
         quad(
             Vec3A::new(0., 0., 2048.),
             Vec3A::new(-4096., 0., 0.),
@@ -92,7 +96,11 @@ pub fn initialize_standard(
 #[cfg(feature = "hoops")]
 pub fn get_hoops_walls() -> [Mesh; 6] {
     [
-        quad(Vec3A::ZERO, Vec3A::new(2966., 0., 0.), Vec3A::new(0., 3581., 0.)),
+        quad(
+            Vec3A::ZERO,
+            Vec3A::new(2966., 0., 0.),
+            Vec3A::new(0., 3581., 0.),
+        ),
         quad(
             Vec3A::new(0., 0., 1820.),
             Vec3A::new(-2966., 0., 0.),
@@ -176,7 +184,11 @@ pub fn initialize_dropshot(dropshot: Mesh) -> TriangleBvh {
 
     let q = z_axis_to_rotation(FRAC_PI_6);
 
-    let floor = quad(Vec3A::new(0., 0., 2.), Vec3A::new(10000., 0., 0.), Vec3A::new(0., 7000., 0.));
+    let floor = quad(
+        Vec3A::new(0., 0., 2.),
+        Vec3A::new(10000., 0., 0.),
+        Vec3A::new(0., 7000., 0.),
+    );
     let ceiling = quad(
         Vec3A::new(0., 0., 2020.),
         Vec3A::new(-10000., 0., 0.),
@@ -245,7 +257,11 @@ pub fn initialize_throwback(
     const SCALE: f32 = 100.;
     const S: Mat3A = Mat3A::from_diagonal(glam::Vec3::splat(SCALE));
 
-    let floor = quad(Vec3A::ZERO, Vec3A::new(4096.6, 0., 0.), Vec3A::new(0., 6910., 0.));
+    let floor = quad(
+        Vec3A::ZERO,
+        Vec3A::new(4096.6, 0., 0.),
+        Vec3A::new(0., 6910., 0.),
+    );
     let ceiling = quad(
         Vec3A::new(0., 0., 2048.),
         Vec3A::new(-4096.6, 0., 0.),

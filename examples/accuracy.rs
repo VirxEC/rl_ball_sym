@@ -61,7 +61,11 @@ fn main() -> io::Result<()> {
 
     fs::write(
         "analysis/accuracy.json",
-        serde_json::to_string(&BallDump { rocketsim, rl_ball_sym }).unwrap(),
+        serde_json::to_string(&BallDump {
+            rocketsim,
+            rl_ball_sym,
+        })
+        .unwrap(),
     )?;
 
     Ok(())

@@ -21,10 +21,14 @@ impl TriangleBvh {
     #[must_use]
     /// Creates a new BVH from a list of primitives.
     pub fn new(primitives: Box<[Tri]>) -> Self {
-        let aabbs: Box<[Aabb]> = primitives.iter().copied().map(Into::into).collect();
+        let aabbs: Vec<Aabb> = primitives.iter().copied().map(Into::into).collect();
         let morton = Morton::new(global_aabb(&aabbs));
 
-        let mut sorted_leaves: Box<[_]> = aabbs.iter().map(|aabb| morton.get_code(aabb)).enumerate().collect();
+        let mut sorted_leaves: Box<[_]> = aabbs
+            .iter()
+            .map(|aabb| morton.get_code(aabb))
+            .enumerate()
+            .collect();
         radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.1);
 
         let root = Self::generate_hierarchy(&sorted_leaves, &aabbs);
@@ -84,7 +88,8 @@ impl TriangleBvh {
             if left.aabb().intersect_self(&query_box) {
                 match left {
                     Node::Leaf(left) => {
-                        if let Some(info) = self.primitives[left.idx].intersect_sphere(query_object) {
+                        if let Some(info) = self.primitives[left.idx].intersect_sphere(query_object)
+                        {
                             hits.push(info);
                         }
                     }
@@ -96,7 +101,9 @@ impl TriangleBvh {
             if right.aabb().intersect_self(&query_box) {
                 match right {
                     Node::Leaf(right) => {
-                        if let Some(info) = self.primitives[right.idx].intersect_sphere(query_object) {
+                        if let Some(info) =
+                            self.primitives[right.idx].intersect_sphere(query_object)
+                        {
                             hits.push(info);
                         }
                     }
@@ -268,10 +275,13 @@ mod test {
             assert!((position.y - 5119.).abs() < f32::EPSILON);
             assert!((position.z - -1.).abs() < f32::EPSILON);
 
-            let ray_normal = rays.iter().skip(1).fold(rays[0].triangle_normal, |mut acc, ray| {
-                acc += ray.triangle_normal;
-                acc
-            });
+            let ray_normal = rays
+                .iter()
+                .skip(1)
+                .fold(rays[0].triangle_normal, |mut acc, ray| {
+                    acc += ray.triangle_normal;
+                    acc
+                });
             let direction = ray_normal.normalize();
 
             assert!((direction.x - -0.816_496_55).abs() < f32::EPSILON);
@@ -308,7 +318,7 @@ mod test {
         assert_eq!(ball.angular_velocity.x as i64, 0);
         assert_eq!(ball.angular_velocity.y as i64, 0);
         assert_eq!(ball.angular_velocity.z as i64, 0);
-        assert_eq!(ball.radius as i64, 91);
+        assert_eq!(ball.radius() as i64, 91);
 
         ball.update(
             0.098_145,
@@ -344,7 +354,11 @@ mod test {
                     rng.gen_range(-2000.0..2000.),
                     rng.gen_range(-2000.0..2000.),
                 ),
-                Vec3A::new(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)),
+                Vec3A::new(
+                    rng.gen_range(-3.0..3.),
+                    rng.gen_range(-3.0..3.),
+                    rng.gen_range(-3.0..3.),
+                ),
             );
 
             let ball_prediction = ball.get_ball_prediction_struct(&game);
@@ -365,14 +379,26 @@ mod test {
         dbg!(*z_locs.iter().min().unwrap());
         dbg!(*z_locs.iter().max().unwrap());
 
-        assert!(*z_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().z as isize);
-        assert!(*z_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().z as isize);
+        assert!(
+            *z_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().z as isize
+        );
+        assert!(
+            *z_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().z as isize
+        );
 
-        assert!(*y_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().y as isize);
-        assert!(*y_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().y as isize);
+        assert!(
+            *y_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().y as isize
+        );
+        assert!(
+            *y_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().y as isize
+        );
 
-        assert!(*x_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().x as isize);
-        assert!(*x_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().x as isize);
+        assert!(
+            *x_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().x as isize
+        );
+        assert!(
+            *x_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().x as isize
+        );
     }
 
     #[test]
@@ -389,7 +415,7 @@ mod test {
         assert_eq!(ball.angular_velocity.x as i64, 0);
         assert_eq!(ball.angular_velocity.y as i64, 0);
         assert_eq!(ball.angular_velocity.z as i64, 0);
-        assert_eq!(ball.radius as i64, 91);
+        assert_eq!(ball.radius() as i64, 91);
 
         ball.update(
             0.098_145,
@@ -426,13 +452,17 @@ mod test {
                     rng.gen_range(-2000.0..2000.),
                     rng.gen_range(-2000.0..2000.),
                 ),
-                Vec3A::new(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.)),
+                Vec3A::new(
+                    rng.gen_range(-3.0..3.),
+                    rng.gen_range(-3.0..3.),
+                    rng.gen_range(-3.0..3.),
+                ),
             );
 
             let ball_prediction = ball.get_ball_prediction_struct(&game);
 
             for slice in ball_prediction {
-                if slice.location.y.abs() > 5120. + slice.radius {
+                if slice.location.y.abs() > 5120. + slice.radius() {
                     break;
                 }
 
@@ -451,14 +481,26 @@ mod test {
         dbg!(*z_locs.iter().min().unwrap());
         dbg!(*z_locs.iter().max().unwrap());
 
-        assert!(*z_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().z as isize);
-        assert!(*z_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().z as isize);
+        assert!(
+            *z_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().z as isize
+        );
+        assert!(
+            *z_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().z as isize
+        );
 
-        assert!(*y_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().y as isize);
-        assert!(*y_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().y as isize);
+        assert!(
+            *y_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().y as isize
+        );
+        assert!(
+            *y_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().y as isize
+        );
 
-        assert!(*x_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().x as isize);
-        assert!(*x_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().x as isize);
+        assert!(
+            *x_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().x as isize
+        );
+        assert!(
+            *x_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().x as isize
+        );
     }
 
     #[test]
@@ -485,7 +527,7 @@ mod test {
         assert_eq!(ball.angular_velocity.x as i64, 0);
         assert_eq!(ball.angular_velocity.y as i64, 0);
         assert_eq!(ball.angular_velocity.z as i64, 0);
-        assert_eq!(ball.radius as i64, 91);
+        assert_eq!(ball.radius() as i64, 91);
     }
 
     #[test]
@@ -512,7 +554,7 @@ mod test {
         assert_eq!(ball.angular_velocity.x as i64, 0);
         assert_eq!(ball.angular_velocity.y as i64, 0);
         assert_eq!(ball.angular_velocity.z as i64, 0);
-        assert_eq!(ball.radius as i64, 96);
+        assert_eq!(ball.radius() as i64, 96);
     }
 
     #[test]
@@ -539,7 +581,7 @@ mod test {
         assert_eq!(ball.angular_velocity.x as i64, 0);
         assert_eq!(ball.angular_velocity.y as i64, 0);
         assert_eq!(ball.angular_velocity.z as i64, 0);
-        assert_eq!(ball.radius as i64, 100);
+        assert_eq!(ball.radius() as i64, 100);
     }
 
     #[test]
@@ -570,7 +612,7 @@ mod test {
         assert_eq!(ball.angular_velocity.x as i64, 0);
         assert_eq!(ball.angular_velocity.y as i64, 0);
         assert_eq!(ball.angular_velocity.z as i64, 0);
-        assert_eq!(ball.radius as i64, 91);
+        assert_eq!(ball.radius() as i64, 91);
     }
 
     fn recurse_bvhnode(node: &Node, depth: usize, max_depth: &mut usize) {

@@ -68,10 +68,15 @@ pub struct Constraint {
 
 impl Constraint {
     // gResolveSingleConstraintRowLowerLimit_sse2
-    fn resolve_single_constraint_row_lower_limit(&mut self, deltas: &mut VelocityPair, inv_mass: f32) -> f32 {
+    fn resolve_single_constraint_row_lower_limit(
+        &mut self,
+        deltas: &mut VelocityPair,
+        inv_mass: f32,
+    ) -> f32 {
         let mut delta_impulse: f32 = self.rhs;
 
-        let delta_vel_1_dot_n = self.contact_normal.dot(deltas.linear) + self.rel_pos_cross_normal.dot(deltas.angular);
+        let delta_vel_1_dot_n =
+            self.contact_normal.dot(deltas.linear) + self.rel_pos_cross_normal.dot(deltas.angular);
         delta_impulse -= delta_vel_1_dot_n * self.jac_diag_ab_inv;
 
         let sum = self.applied_impulse + delta_impulse;
@@ -94,11 +99,16 @@ impl Constraint {
     }
 
     // gResolveSingleConstraintRowGeneric_sse2
-    fn resolve_single_constraint_row_generic(&mut self, deltas: &mut VelocityPair, inv_mass: f32) -> f32 {
+    fn resolve_single_constraint_row_generic(
+        &mut self,
+        deltas: &mut VelocityPair,
+        inv_mass: f32,
+    ) -> f32 {
         let applied_impulse = self.applied_impulse;
 
         let mut delta_impulse = self.rhs;
-        let delta_vel_1_dot_n = self.contact_normal.dot(deltas.linear) + self.rel_pos_cross_normal.dot(deltas.angular);
+        let delta_vel_1_dot_n =
+            self.contact_normal.dot(deltas.linear) + self.rel_pos_cross_normal.dot(deltas.angular);
         delta_impulse -= delta_vel_1_dot_n * self.jac_diag_ab_inv;
 
         let sum = applied_impulse + delta_impulse;
@@ -133,15 +143,19 @@ impl Constraint {
     }
 
     // gResolveSplitPenetrationImpulse_sse2
-    fn resolve_split_penetration_impulse(&mut self, velocities: &mut VelocityPair, inv_mass: f32) -> f32 {
+    fn resolve_split_penetration_impulse(
+        &mut self,
+        velocities: &mut VelocityPair,
+        inv_mass: f32,
+    ) -> f32 {
         if self.rhs_penetration == 0. {
             return 0.;
         }
 
         let mut delta_impulse = self.rhs_penetration;
 
-        let delta_vel_1_dot_n =
-            self.contact_normal.dot(velocities.linear) + self.rel_pos_cross_normal.dot(velocities.angular);
+        let delta_vel_1_dot_n = self.contact_normal.dot(velocities.linear)
+            + self.rel_pos_cross_normal.dot(velocities.angular);
         delta_impulse -= delta_vel_1_dot_n * self.jac_diag_ab_inv;
 
         let sum = self.applied_push_impulse + delta_impulse;
@@ -171,7 +185,9 @@ pub struct ConstraintPair {
 
 impl ConstraintPair {
     fn solve_single_iteration(&mut self, deltas: &mut VelocityPair, inv_mass: f32) -> f32 {
-        let residual = self.contact.resolve_single_constraint_row_lower_limit(deltas, inv_mass);
+        let residual = self
+            .contact
+            .resolve_single_constraint_row_lower_limit(deltas, inv_mass);
         let mut least_squares_residual = residual * residual;
 
         let total_impulse = self.contact.applied_impulse;
@@ -179,7 +195,9 @@ impl ConstraintPair {
             self.friction.lower_limit = -COEFF_FRICTION * total_impulse;
             self.friction.upper_limit = COEFF_FRICTION * total_impulse;
 
-            let residual = self.friction.resolve_single_constraint_row_generic(deltas, inv_mass);
+            let residual = self
+                .friction
+                .resolve_single_constraint_row_generic(deltas, inv_mass);
             least_squares_residual = least_squares_residual.max(residual * residual);
         }
 
@@ -233,14 +251,20 @@ impl Constraints {
         }
     }
 
-    pub fn add_contacts(&mut self, contacts: ReArr<Contact, { Self::MAX_CONTACTS }>, ball: &Ball, dt: f32) {
+    pub fn add_contacts(
+        &mut self,
+        contacts: ReArr<Contact, { Self::MAX_CONTACTS }>,
+        ball: &Ball,
+        dt: f32,
+    ) {
         self.contacts.reserve(contacts.len());
 
         for contact in contacts {
             self.normal_sum += contact.triangle_normal;
             self.depth_sum += contact.local_position.length();
             self.count += 1;
-            self.contacts.push(self.setup_contact_constraint(ball, contact, dt));
+            self.contacts
+                .push(self.setup_contact_constraint(ball, contact, dt));
         }
     }
 
@@ -258,7 +282,9 @@ impl Constraints {
         let rel_vel = contact.triangle_normal.dot(abs_vel);
         let restitution = Game::restitution_curve(rel_vel);
 
-        let rel_vel = contact.triangle_normal.dot(ball.velocity + self.external_force_impulse)
+        let rel_vel = contact
+            .triangle_normal
+            .dot(ball.velocity + self.external_force_impulse)
             + rel_pos_cross_normal.dot(ball.angular_velocity);
 
         let velocity_error = restitution - rel_vel;
@@ -285,7 +311,12 @@ impl Constraints {
         }
     }
 
-    fn setup_special_contact_constraint(&self, ball: &Ball, normal_world_on_b: Vec3A, rel_pos: Vec3A) -> Constraint {
+    fn setup_special_contact_constraint(
+        &self,
+        ball: &Ball,
+        normal_world_on_b: Vec3A,
+        rel_pos: Vec3A,
+    ) -> Constraint {
         let torque_axis = rel_pos.cross(normal_world_on_b);
         let angular_component = ball.inv_inertia * torque_axis;
         let vec = angular_component.cross(rel_pos);
@@ -298,8 +329,8 @@ impl Constraints {
 
         let restitution = Game::restitution_curve(rel_vel);
 
-        let rel_vel =
-            normal_world_on_b.dot(ball.velocity + self.external_force_impulse) + torque_axis.dot(ball.angular_velocity);
+        let rel_vel = normal_world_on_b.dot(ball.velocity + self.external_force_impulse)
+            + torque_axis.dot(ball.angular_velocity);
 
         let velocity_error = restitution - rel_vel;
         let velocity_impulse = velocity_error * jac_diag_ab_inv;
@@ -319,7 +350,12 @@ impl Constraints {
     }
 
     // setupFrictionConstraint
-    fn setup_friction_constraint(&self, ball: &Ball, normal_axis: Vec3A, rel_pos: Vec3A) -> Constraint {
+    fn setup_friction_constraint(
+        &self,
+        ball: &Ball,
+        normal_axis: Vec3A,
+        rel_pos: Vec3A,
+    ) -> Constraint {
         let contact_normal = normal_axis;
         let rel_pos_cross_normal = rel_pos.cross(contact_normal);
         let angular_component = ball.inv_inertia * rel_pos_cross_normal;
@@ -360,7 +396,8 @@ impl Constraints {
         let vel = self.external_force_impulse + ball.get_velocity_in_local_point(rel_pos);
         let rel_vel = average_normal.dot(vel);
 
-        let contact_constraint = self.setup_special_contact_constraint(ball, average_normal, rel_pos);
+        let contact_constraint =
+            self.setup_special_contact_constraint(ball, average_normal, rel_pos);
 
         let mut lateral_friction_dir = vel - average_normal * rel_vel;
         let lat_rel_vel = lateral_friction_dir.length_squared();
@@ -371,7 +408,8 @@ impl Constraints {
             lateral_friction_dir = Game::plane_space_1(average_normal);
         }
 
-        let friction_constraint = self.setup_friction_constraint(ball, lateral_friction_dir, rel_pos);
+        let friction_constraint =
+            self.setup_friction_constraint(ball, lateral_friction_dir, rel_pos);
 
         (
             ConstraintPair {
@@ -389,7 +427,8 @@ impl Constraints {
 
         let mut deltas = VelocityPair::ZERO;
         for _ in 0..Self::NUM_ITERATIONS {
-            let least_squares_residual = average_constraint.solve_single_iteration(&mut deltas, self.inv_mass);
+            let least_squares_residual =
+                average_constraint.solve_single_iteration(&mut deltas, self.inv_mass);
 
             if least_squares_residual <= f32::EPSILON {
                 break;
@@ -412,7 +451,8 @@ impl Constraints {
                     continue;
                 }
 
-                let residual = contact.resolve_split_penetration_impulse(&mut velocities, self.inv_mass);
+                let residual =
+                    contact.resolve_split_penetration_impulse(&mut velocities, self.inv_mass);
 
                 if residual * residual <= f32::EPSILON {
                     *should_run = false;

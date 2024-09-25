@@ -51,7 +51,9 @@ impl Morton {
         // Allowing these warnings is ok because:
         // We have offset the values so they're all greater than 0
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        (Self::expand3(u.x as u32) | Self::expand3(u.y as u32) << 1 | Self::expand3(u.z as u32) << 2)
+        (Self::expand3(u.x as u32)
+            | Self::expand3(u.y as u32) << 1
+            | Self::expand3(u.z as u32) << 2)
     }
 }
 
@@ -64,11 +66,17 @@ mod test {
 
     #[test]
     fn morton() {
-        let global_box = Aabb::new(Vec3A::new(-4096., -5120., 0.), Vec3A::new(4096., 5120., 2044.));
+        let global_box = Aabb::new(
+            Vec3A::new(-4096., -5120., 0.),
+            Vec3A::new(4096., 5120., 2044.),
+        );
 
         let morton = Morton::new(global_box);
 
-        let aabb = Aabb::new(Vec3A::new(-4095., -5119., 1.), Vec3A::new(-4094., -5118., 2.));
+        let aabb = Aabb::new(
+            Vec3A::new(-4095., -5119., 1.),
+            Vec3A::new(-4094., -5118., 2.),
+        );
 
         let c = (aabb.min() + aabb.max()) / 2.;
 
@@ -95,6 +103,9 @@ mod test {
 
         let code = code_z | code_y | code_x;
         dbg!(&code); // 610317903
-        assert_eq!(format!("{:b}", code as u32), "100100011000001011011001001111");
+        assert_eq!(
+            format!("{:b}", code as u32),
+            "100100011000001011011001001111"
+        );
     }
 }

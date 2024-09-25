@@ -41,7 +41,7 @@ pub struct Ball {
     /// Rotational velocity of the ball
     pub angular_velocity: Vec3A,
     /// Size of the ball
-    pub(crate) radius: f32,
+    radius: f32,
     /// 1 / Moment of inertia of the ball in the form of a diagonal matrix
     pub(crate) inv_inertia: f32,
     #[cfg(feature = "heatseeker")]
@@ -240,7 +240,11 @@ impl Ball {
     #[must_use]
     #[cfg(feature = "heatseeker")]
     pub fn get_heatseeker_target(&self) -> Vec3A {
-        Vec3A::new(0., heatseeker::TARGET_Y * self.y_target_dir, heatseeker::TARGET_Z)
+        Vec3A::new(
+            0.,
+            heatseeker::TARGET_Y * self.y_target_dir,
+            heatseeker::TARGET_Z,
+        )
     }
 
     /// Simulate the ball for one game tick in Heatseeker mode
@@ -256,7 +260,8 @@ impl Ball {
                 let vel_norm = self.velocity / vel;
 
                 let vel_angle = Angle::from_vec(vel_norm);
-                let angle_to_goal = Angle::from_vec((self.get_heatseeker_target() - self.location).normalize());
+                let angle_to_goal =
+                    Angle::from_vec((self.get_heatseeker_target() - self.location).normalize());
                 let delta_angle = angle_to_goal - vel_angle;
 
                 // Determine speed ratio
@@ -265,18 +270,24 @@ impl Ball {
                 // Interpolate delta
                 let base_interp_factor = speed_ratio * dt;
                 let mut new_angle = vel_angle;
-                new_angle.yaw += delta_angle.yaw * base_interp_factor * heatseeker::HORIZONTAL_BLEND;
-                new_angle.pitch += delta_angle.pitch * base_interp_factor * heatseeker::VERTICAL_BLEND;
+                new_angle.yaw +=
+                    delta_angle.yaw * base_interp_factor * heatseeker::HORIZONTAL_BLEND;
+                new_angle.pitch +=
+                    delta_angle.pitch * base_interp_factor * heatseeker::VERTICAL_BLEND;
                 new_angle.normalize_fix();
 
                 // Limit pitch
-                new_angle.pitch = new_angle.pitch.clamp(-heatseeker::MAX_TURN_PITCH, heatseeker::MAX_TURN_PITCH);
+                new_angle.pitch = new_angle
+                    .pitch
+                    .clamp(-heatseeker::MAX_TURN_PITCH, heatseeker::MAX_TURN_PITCH);
 
                 // Determine new interpolated speed
-                let current_state = ((vel - heatseeker::INITIAL_TARGET_SPEED) / heatseeker::TARGET_SPEED_INCREMENT)
+                let current_state = ((vel - heatseeker::INITIAL_TARGET_SPEED)
+                    / heatseeker::TARGET_SPEED_INCREMENT)
                     .floor()
                     .clamp(0., 20.);
-                let target_speed = current_state * heatseeker::TARGET_SPEED_INCREMENT + heatseeker::INITIAL_TARGET_SPEED;
+                let target_speed = current_state * heatseeker::TARGET_SPEED_INCREMENT
+                    + heatseeker::INITIAL_TARGET_SPEED;
                 let new_speed = vel + ((target_speed - vel) * heatseeker::SPEED_BLEND);
 
                 // Update velocity
@@ -294,11 +305,14 @@ impl Ball {
                     {
                         self.y_target_dir *= -1.;
 
-                        let dir_to_goal = (self.get_heatseeker_target() - self.location).normalize();
+                        let dir_to_goal =
+                            (self.get_heatseeker_target() - self.location).normalize();
 
                         let bounce_dir = dir_to_goal * (1. - heatseeker::WALL_BOUNCE_UP_FRAC)
                             + Vec3A::Z * heatseeker::WALL_BOUNCE_UP_FRAC;
-                        let bounce_impulse = bounce_dir * self.velocity.length() * heatseeker::WALL_BOUNCE_FORCE_SCALE;
+                        let bounce_impulse = bounce_dir
+                            * self.velocity.length()
+                            * heatseeker::WALL_BOUNCE_FORCE_SCALE;
                         self.velocity += bounce_impulse;
                     }
                 }
@@ -329,7 +343,10 @@ impl Ball {
         // We are rounding up to the nearest integer so no truncation will occur
         // We are making sure that the minimum possible value is 0 so no sign loss will occur
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        self.get_ball_prediction_struct_for_slices(game, (time / Self::SIMULATION_DT).round() as usize)
+        self.get_ball_prediction_struct_for_slices(
+            game,
+            (time / Self::SIMULATION_DT).round() as usize,
+        )
     }
 
     /// Simulate the ball for the standard amount of time (6 seconds)
@@ -342,7 +359,11 @@ impl Ball {
     /// Simulate the ball for a given amount of ticks
     #[inline]
     #[must_use]
-    pub fn get_ball_prediction_struct_for_slices(mut self, game: &Game, num_slices: usize) -> Predictions {
+    pub fn get_ball_prediction_struct_for_slices(
+        mut self,
+        game: &Game,
+        num_slices: usize,
+    ) -> Predictions {
         (0..num_slices)
             .map(|_| {
                 self.step(game, Self::SIMULATION_DT);
@@ -361,7 +382,10 @@ impl Ball {
         // We are rounding up to the nearest integer so no truncation will occur
         // We are making sure that the minimum possible value is 0 so no sign loss will occur
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        self.get_heatseeker_prediction_struct_for_slices(game, (time / Self::SIMULATION_DT).round() as usize)
+        self.get_heatseeker_prediction_struct_for_slices(
+            game,
+            (time / Self::SIMULATION_DT).round() as usize,
+        )
     }
 
     /// Simulate the ball in Heatseeker mode for the standard amount of time (6 seconds)
@@ -376,7 +400,11 @@ impl Ball {
     #[inline]
     #[must_use]
     #[cfg(feature = "heatseeker")]
-    pub fn get_heatseeker_prediction_struct_for_slices(mut self, game: &Game, num_slices: usize) -> Predictions {
+    pub fn get_heatseeker_prediction_struct_for_slices(
+        mut self,
+        game: &Game,
+        num_slices: usize,
+    ) -> Predictions {
         (0..num_slices)
             .map(|_| {
                 self.step_heatseeker(game, Self::SIMULATION_DT);

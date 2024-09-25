@@ -53,7 +53,11 @@ impl Node {
     #[inline]
     /// Creates a new branch for the BVH given two children.
     pub fn branch(right: Self, left: Self) -> Self {
-        Self::Branch(Branch::new(right.aabb() + left.aabb(), Box::new(left), Box::new(right)))
+        Self::Branch(Branch::new(
+            right.aabb() + left.aabb(),
+            Box::new(left),
+            Box::new(right),
+        ))
     }
 
     #[must_use]
@@ -111,8 +115,14 @@ mod test {
     #[test]
     fn global_bounding_box_min() {
         let bounding_boxes = vec![
-            Aabb::new(Vec3A::new(MIN_X, MIN_Y, MIN_Z), Vec3A::new(MIN_X, MIN_Y, MIN_Z)),
-            Aabb::new(Vec3A::new(MIN_X, MIN_Y, MIN_Z), Vec3A::new(MIN_X, MIN_Y, MIN_Z)),
+            Aabb::new(
+                Vec3A::new(MIN_X, MIN_Y, MIN_Z),
+                Vec3A::new(MIN_X, MIN_Y, MIN_Z),
+            ),
+            Aabb::new(
+                Vec3A::new(MIN_X, MIN_Y, MIN_Z),
+                Vec3A::new(MIN_X, MIN_Y, MIN_Z),
+            ),
         ];
         let global = global_aabb(&bounding_boxes);
 
@@ -127,8 +137,14 @@ mod test {
     #[test]
     fn global_bounding_box_max() {
         let bounding_boxes = vec![
-            Aabb::new(Vec3A::new(MAX_X, MAX_Y, MAX_Z), Vec3A::new(MAX_X, MAX_Y, MAX_Z)),
-            Aabb::new(Vec3A::new(MAX_X, MAX_Y, MAX_Z), Vec3A::new(MAX_X, MAX_Y, MAX_Z)),
+            Aabb::new(
+                Vec3A::new(MAX_X, MAX_Y, MAX_Z),
+                Vec3A::new(MAX_X, MAX_Y, MAX_Z),
+            ),
+            Aabb::new(
+                Vec3A::new(MAX_X, MAX_Y, MAX_Z),
+                Vec3A::new(MAX_X, MAX_Y, MAX_Z),
+            ),
         ];
         let global = global_aabb(&bounding_boxes);
 

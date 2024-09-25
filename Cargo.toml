@@ -1,6 +1,6 @@
 [package]
 name = "rl_ball_sym"
-version = "4.2.0"
+version = "4.2.1"
 authors = ["VirxEC"]
 edition = "2021"
 description = "rl_ball_sym is a Rust implementation of Rocket League's ball physics"

@@ -49,7 +49,11 @@ fn main() -> io::Result<()> {
             rng.gen_range(0.0..2000.),
             rng.gen_range(-2000.0..2000.),
         );
-        let angular_velocity = Vec3::new(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.));
+        let angular_velocity = Vec3::new(
+            rng.gen_range(-3.0..3.),
+            rng.gen_range(-3.0..3.),
+            rng.gen_range(-3.0..3.),
+        );
 
         let mut rocketsim_ball = arena.pin_mut().get_ball();
         rocketsim_ball.pos = location;
@@ -57,7 +61,12 @@ fn main() -> io::Result<()> {
         rocketsim_ball.ang_vel = angular_velocity;
         arena.pin_mut().set_ball(rocketsim_ball);
 
-        ball.update(0., location.into(), velocity.into(), angular_velocity.into());
+        ball.update(
+            0.,
+            location.into(),
+            velocity.into(),
+            angular_velocity.into(),
+        );
         for _ in 0..NUM_TICKS {
             let last_ball = arena.pin_mut().get_ball();
             ball.step(&game, 1. / 120.);

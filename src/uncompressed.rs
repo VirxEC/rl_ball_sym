@@ -3,7 +3,10 @@ use crate::Game;
 
 macro_rules! include_mesh {
     ($ids:literal, $verts:literal) => {
-        Mesh::from_bytes(include_bytes!($ids).as_slice(), include_bytes!($verts).as_slice())
+        Mesh::from_bytes(
+            include_bytes!($ids).as_slice(),
+            include_bytes!($verts).as_slice(),
+        )
     };
 }
 
@@ -28,7 +31,12 @@ pub fn standard_field() -> Game {
         "../assets/standard/standard_ramps_1_vertices.bin"
     );
 
-    let triangle_collisions = field::initialize_standard(standard_corner, standard_goal, standard_ramps_0, standard_ramps_1);
+    let triangle_collisions = field::initialize_standard(
+        standard_corner,
+        standard_goal,
+        standard_ramps_0,
+        standard_ramps_1,
+    );
     Game::new(triangle_collisions)
 }
 
@@ -40,8 +48,14 @@ pub fn hoops_field() -> Game {
         "../assets/hoops/hoops_corner_ids.bin",
         "../assets/hoops/hoops_corner_vertices.bin"
     );
-    let hoops_net = include_mesh!("../assets/hoops/hoops_net_ids.bin", "../assets/hoops/hoops_net_vertices.bin");
-    let hoops_rim = include_mesh!("../assets/hoops/hoops_rim_ids.bin", "../assets/hoops/hoops_rim_vertices.bin");
+    let hoops_net = include_mesh!(
+        "../assets/hoops/hoops_net_ids.bin",
+        "../assets/hoops/hoops_net_vertices.bin"
+    );
+    let hoops_rim = include_mesh!(
+        "../assets/hoops/hoops_rim_ids.bin",
+        "../assets/hoops/hoops_rim_vertices.bin"
+    );
     let hoops_ramps_0 = include_mesh!(
         "../assets/hoops/hoops_ramps_0_ids.bin",
         "../assets/hoops/hoops_ramps_0_vertices.bin"
@@ -51,7 +65,13 @@ pub fn hoops_field() -> Game {
         "../assets/hoops/hoops_ramps_1_vertices.bin"
     );
 
-    let triangle_collisions = field::initialize_hoops(hoops_corner, hoops_net, hoops_rim, hoops_ramps_0, hoops_ramps_1);
+    let triangle_collisions = field::initialize_hoops(
+        hoops_corner,
+        hoops_net,
+        hoops_rim,
+        hoops_ramps_0,
+        hoops_ramps_1,
+    );
     Game::new(triangle_collisions)
 }
 

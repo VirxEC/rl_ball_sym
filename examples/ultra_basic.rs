@@ -6,7 +6,12 @@ fn main() {
     dbg!(ball.location);
 
     // the current state of the ball in the game
-    ball.update(0., Vec3A::new(0., 0., 200.), Vec3A::new(0., 0., -0.1), Vec3A::new(0., 0., 0.));
+    ball.update(
+        0.,
+        Vec3A::new(0., 0., 200.),
+        Vec3A::new(0., 0., -0.1),
+        Vec3A::new(0., 0., 0.),
+    );
 
     // generate the ball prediction struct
     // this is a list of 720 slices

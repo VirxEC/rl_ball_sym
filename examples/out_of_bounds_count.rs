@@ -21,7 +21,11 @@ fn main() {
             rng.gen_range(-2000.0..2000.),
             rng.gen_range(-2000.0..2000.),
         );
-        let angular_velocity = Vec3A::new(rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.), rng.gen_range(-3.0..3.));
+        let angular_velocity = Vec3A::new(
+            rng.gen_range(-3.0..3.),
+            rng.gen_range(-3.0..3.),
+            rng.gen_range(-3.0..3.),
+        );
 
         ball.update(0., location, velocity, angular_velocity);
 

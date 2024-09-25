@@ -15,7 +15,9 @@ fn load_dropshot_benchmark(c: &mut Criterion) {
 }
 
 fn load_standard_throwback_benchmark(c: &mut Criterion) {
-    c.bench_function("load_standard_throwback", |b| b.iter(load_standard_throwback));
+    c.bench_function("load_standard_throwback", |b| {
+        b.iter(load_standard_throwback)
+    });
 }
 
 const BALL_VEL: Vec3A = Vec3A::new(600., 1550., 0.);

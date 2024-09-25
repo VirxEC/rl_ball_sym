@@ -37,7 +37,12 @@ fn main() {
 
     let mut times = Vec::new();
     for _ in 0..NUM_ITERS {
-        ball.update(0., Vec3A::new(0., 0., 200.), Vec3A::new(2000., 2000., 2000.), Vec3A::ZERO);
+        ball.update(
+            0.,
+            Vec3A::new(0., 0., 200.),
+            Vec3A::new(2000., 2000., 2000.),
+            Vec3A::ZERO,
+        );
 
         let start_time = Instant::now();
 
