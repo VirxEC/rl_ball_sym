@@ -475,14 +475,14 @@ impl Sphere {
     pub const CONTACT_BREAKING_THRESHOLD: f32 = 1.905;
 
     #[must_use]
-    pub fn new(center: Vec3A, radius: f32) -> Self {
+    pub const fn new(center: Vec3A, radius: f32) -> Self {
         let radius_with_threshold = radius + Self::CONTACT_BREAKING_THRESHOLD;
 
         Self {
             center,
             radius,
             radius_with_threshold,
-            radius_with_threshold_squared: radius_with_threshold.powi(2),
+            radius_with_threshold_squared: radius_with_threshold * radius_with_threshold,
         }
     }
 }

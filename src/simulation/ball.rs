@@ -51,7 +51,7 @@ pub struct Ball {
 impl Default for Ball {
     #[inline]
     fn default() -> Self {
-        Self::const_default()
+        Self::DEFAULT_STANDARD
     }
 }
 
@@ -74,90 +74,66 @@ impl Ball {
     const SIMULATION_DT: f32 = 1. / 120.;
     const STANDARD_NUM_SLICES: usize = 720;
 
-    const DEFAULT_INERTIA: f32 = 1. / (0.4 * Self::M);
+    const DEFAULT: Self = Self {
+        time: 0.,
+        location: Vec3A::Z,
+        velocity: Vec3A::ZERO,
+        angular_velocity: Vec3A::ZERO,
+        radius: 1.,
+        inv_inertia: 1. / (0.4 * Self::M),
+        #[cfg(feature = "heatseeker")]
+        y_target_dir: 0.,
+    };
 
-    #[inline]
-    #[must_use]
-    /// `Ball::default()`, but const
-    pub const fn const_default() -> Self {
-        Self {
-            time: 0.,
-            location: Vec3A::Z,
-            velocity: Vec3A::ZERO,
-            angular_velocity: Vec3A::ZERO,
-            radius: 1.,
-            inv_inertia: Self::DEFAULT_INERTIA,
-            #[cfg(feature = "heatseeker")]
-            y_target_dir: 0.,
-        }
-    }
-
-    #[inline]
-    #[must_use]
-    /// Sets the default values for a standard ball
-    pub fn initialize_standard() -> Self {
-        Self {
-            radius: Self::STANDARD_RADIUS,
-            inv_inertia: Self::get_inv_inertia(Self::STANDARD_RADIUS),
-            location: Self::default_height(Self::STANDARD_RADIUS),
-            ..Default::default()
-        }
-    }
-
-    #[inline]
-    #[must_use]
-    #[cfg(feature = "heatseeker")]
-    /// Sets the default values for a heatseeker ball
-    pub fn initialize_heatseeker() -> Self {
-        Self {
-            radius: Self::STANDARD_RADIUS,
-            inv_inertia: Self::get_inv_inertia(Self::STANDARD_RADIUS),
-            location: Vec3A::new(-1000., -2220., 92.75),
-            velocity: Vec3A::new(0., -65., 650.),
-            ..Default::default()
-        }
-    }
-
-    #[inline]
-    #[must_use]
-    /// Sets the default values for a hoops ball
-    pub fn initialize_hoops() -> Self {
-        Self {
-            radius: Self::HOOPS_RADIUS,
-            inv_inertia: Self::get_inv_inertia(Self::HOOPS_RADIUS),
-            location: Self::default_height(Self::HOOPS_RADIUS),
-            ..Default::default()
-        }
-    }
-
-    #[inline]
-    #[must_use]
-    /// Sets the default values for a dropshot ball
-    pub fn initialize_dropshot() -> Self {
-        Self {
-            radius: Self::DROPSHOT_RADIUS,
-            inv_inertia: Self::get_inv_inertia(Self::DROPSHOT_RADIUS),
-            location: Self::default_height(Self::DROPSHOT_RADIUS),
-            ..Default::default()
-        }
-    }
-
-    /// Set a custom radius for the ball
-    pub fn set_radius(&mut self, radius: f32) {
-        debug_assert!(radius > 0.);
-        self.radius = radius;
-        self.inv_inertia = Self::get_inv_inertia(radius);
-    }
-
-    #[inline]
     /// Calculates the default ball height based on the collision radius (arbitrary)
-    fn default_height(radius: f32) -> Vec3A {
+    const fn default_height(radius: f32) -> Vec3A {
         Vec3A::new(0., 0., 1.1 * radius)
     }
 
-    #[inline]
-    fn get_inv_inertia(radius: f32) -> f32 {
-        1. / (0.4 * Self::M * radius.powi(2))
+    /// Calculates the inverse inertia of the ball based on the collision radius
+    const fn get_inv_inertia(radius: f32) -> f32 {
+        1. / (0.4 * Self::M * radius * radius)
+    }
+
+    /// A ball with default values for the standard game mode
+    pub const DEFAULT_STANDARD: Self = Self {
+        radius: Self::STANDARD_RADIUS,
+        inv_inertia: Self::get_inv_inertia(Self::STANDARD_RADIUS),
+        location: Self::default_height(Self::STANDARD_RADIUS),
+        ..Self::DEFAULT
+    };
+
+    /// A ball with default values for the heatseeker game mode
+    #[cfg(feature = "heatseeker")]
+    pub const DEFAULT_HEATSEEKER: Self = Self {
+        radius: Self::STANDARD_RADIUS,
+        inv_inertia: Self::get_inv_inertia(Self::STANDARD_RADIUS),
+        location: Vec3A::new(-1000., -2220., 92.75),
+        velocity: Vec3A::new(0., -65., 650.),
+        ..Self::DEFAULT
+    };
+
+    /// A ball with default values for the hoops game mode
+    pub const DEFAULT_HOOPS: Self = Self {
+        radius: Self::HOOPS_RADIUS,
+        inv_inertia: Self::get_inv_inertia(Self::HOOPS_RADIUS),
+        location: Self::default_height(Self::HOOPS_RADIUS),
+        ..Self::DEFAULT
+    };
+
+    /// A ball with default values for the dropshot game mode
+    pub const DEFAULT_DROPSHOT: Self = Self {
+        radius: Self::DROPSHOT_RADIUS,
+        inv_inertia: Self::get_inv_inertia(Self::DROPSHOT_RADIUS),
+        location: Self::default_height(Self::DROPSHOT_RADIUS),
+        ..Self::DEFAULT
+    };
+
+    /// Set a custom radius for the ball
+    pub const fn set_radius(&mut self, radius: f32) {
+        debug_assert!(radius > 0.);
+        self.radius = radius;
+        self.inv_inertia = Self::get_inv_inertia(radius);
     }
 
     #[inline]
@@ -168,7 +144,7 @@ impl Ball {
     }
 
     /// Updates the ball with everything that changes from game tick to game tick
-    pub fn update(&mut self, time: f32, location: Vec3A, velocity: Vec3A, angular_velocity: Vec3A) {
+    pub const fn update(&mut self, time: f32, location: Vec3A, velocity: Vec3A, angular_velocity: Vec3A) {
         self.time = time;
         self.location = location;
         self.velocity = velocity;
@@ -176,7 +152,7 @@ impl Ball {
     }
 
     #[inline]
-    fn hitbox(&self) -> Sphere {
+    const fn hitbox(&self) -> Sphere {
         Sphere::new(self.location, self.radius)
     }
 
@@ -223,7 +199,7 @@ impl Ball {
     ///
     /// `blue_goal` - Whether the ball should target the blue goal
     #[cfg(feature = "heatseeker")]
-    pub fn set_heatseeker_target(&mut self, blue_goal: bool) {
+    pub const fn set_heatseeker_target(&mut self, blue_goal: bool) {
         self.y_target_dir = if blue_goal { -1. } else { 1. };
     }
 
@@ -231,7 +207,7 @@ impl Ball {
     ///
     /// This will make the ball behave normally and not target any goal
     #[cfg(feature = "heatseeker")]
-    pub fn reset_heatseeker_target(&mut self) {
+    pub const fn reset_heatseeker_target(&mut self) {
         self.y_target_dir = 0.;
     }
 
@@ -239,7 +215,7 @@ impl Ball {
     #[inline]
     #[must_use]
     #[cfg(feature = "heatseeker")]
-    pub fn get_heatseeker_target(&self) -> Vec3A {
+    pub const fn get_heatseeker_target(&self) -> Vec3A {
         Vec3A::new(
             0.,
             heatseeker::TARGET_Y * self.y_target_dir,

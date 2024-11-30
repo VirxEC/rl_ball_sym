@@ -19,11 +19,12 @@ pub struct Game {
 impl Game {
     const RESTITUTION: f32 = 0.6;
     const RESTITUTION_VELOCITY_THRESHOLD: f32 = 0.2;
+    const GRAVITY: Vec3A = Vec3A::new(0., 0., -650.);
 
     #[inline]
     pub(crate) const fn new(triangle_collisions: TriangleBvh) -> Self {
         Self {
-            gravity: Vec3A::new(0., 0., -650.),
+            gravity: Self::GRAVITY,
             triangle_collisions,
         }
     }
@@ -67,7 +68,6 @@ pub struct Constraint {
 }
 
 impl Constraint {
-    // gResolveSingleConstraintRowLowerLimit_sse2
     fn resolve_single_constraint_row_lower_limit(
         &mut self,
         deltas: &mut VelocityPair,
@@ -98,7 +98,6 @@ impl Constraint {
         delta_impulse / self.jac_diag_ab_inv
     }
 
-    // gResolveSingleConstraintRowGeneric_sse2
     fn resolve_single_constraint_row_generic(
         &mut self,
         deltas: &mut VelocityPair,
@@ -142,7 +141,6 @@ impl Constraint {
         delta_impulse / self.jac_diag_ab_inv
     }
 
-    // gResolveSplitPenetrationImpulse_sse2
     fn resolve_split_penetration_impulse(
         &mut self,
         velocities: &mut VelocityPair,
@@ -268,7 +266,6 @@ impl Constraints {
         }
     }
 
-    // setupContactConstraint
     fn setup_contact_constraint(&self, ball: &Ball, contact: Contact, dt: f32) -> Constraint {
         let torque_axis = contact.local_position.cross(contact.triangle_normal);
         let angular_component = ball.inv_inertia * torque_axis;
@@ -349,7 +346,6 @@ impl Constraints {
         }
     }
 
-    // setupFrictionConstraint
     fn setup_friction_constraint(
         &self,
         ball: &Ball,
@@ -384,7 +380,6 @@ impl Constraints {
         }
     }
 
-    // convertContactSpecial
     fn process_special_contact(&self, ball: &Ball) -> (ConstraintPair, Vec3A) {
         debug_assert!(self.count > 0);
 
@@ -438,7 +433,6 @@ impl Constraints {
         (deltas, velocities, normal)
     }
 
-    // solveGroupCacheFriendlySplitImpulseIterations
     fn solve_split_impulse_iterations(&mut self) -> Vec3A {
         let mut velocities = VelocityPair::ZERO;
         let mut should_runs = [true; Self::MAX_CONTACTS];

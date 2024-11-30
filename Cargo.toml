@@ -1,6 +1,6 @@
 [package]
 name = "rl_ball_sym"
-version = "4.2.0"
+version = "5.0.0"
 authors = ["VirxEC"]
 edition = "2021"
 description = "rl_ball_sym is a Rust implementation of Rocket League's ball physics"
@@ -10,6 +10,7 @@ license = "MIT"
 keywords = ["rocket-league", "rlbot", "physics", "simulation"]
 categories = ["science", "simulation", "mathematics"]
 include = ["src/", "assets/"]
+rust-version = "1.83"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
