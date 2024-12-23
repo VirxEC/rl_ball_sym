@@ -144,7 +144,13 @@ impl Ball {
     }
 
     /// Updates the ball with everything that changes from game tick to game tick
-    pub const fn update(&mut self, time: f32, location: Vec3A, velocity: Vec3A, angular_velocity: Vec3A) {
+    pub const fn update(
+        &mut self,
+        time: f32,
+        location: Vec3A,
+        velocity: Vec3A,
+        angular_velocity: Vec3A,
+    ) {
         self.time = time;
         self.location = location;
         self.velocity = velocity;

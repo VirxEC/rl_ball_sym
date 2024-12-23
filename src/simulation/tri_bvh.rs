@@ -26,8 +26,8 @@ impl TriangleBvh {
 
         let mut sorted_leaves: Box<[_]> = aabbs
             .iter()
-            .map(|aabb| morton.get_code(aabb))
             .enumerate()
+            .map(|(i, aabb)| (u16::try_from(i).unwrap(), morton.get_code(aabb)))
             .collect();
         radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.1);
 
@@ -36,10 +36,10 @@ impl TriangleBvh {
         Self { root, primitives }
     }
 
-    fn generate_hierarchy(sorted_leaves: &[(usize, u64)], aabbs: &[Aabb]) -> Node {
+    fn generate_hierarchy(sorted_leaves: &[(u16, u64)], aabbs: &[Aabb]) -> Node {
         // If we're dealing with a single object, return the leaf node
         if sorted_leaves.len() == 1 {
-            let idx = sorted_leaves[0].0;
+            let idx = sorted_leaves[0].0 as usize;
             let leaf = Leaf::new(aabbs[idx], idx);
             return Node::Leaf(leaf);
         }
