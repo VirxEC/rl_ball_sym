@@ -263,6 +263,8 @@ impl Ball {
                     .pitch
                     .clamp(-heatseeker::MAX_TURN_PITCH, heatseeker::MAX_TURN_PITCH);
 
+                new_angle = new_angle.round();
+
                 // Determine new interpolated speed
                 let current_state = ((vel - heatseeker::INITIAL_TARGET_SPEED)
                     / heatseeker::TARGET_SPEED_INCREMENT)
@@ -273,7 +275,6 @@ impl Ball {
                 let new_speed = vel + ((target_speed - vel) * heatseeker::SPEED_BLEND);
 
                 // Update velocity
-                // dbg!(new_angle);
                 self.velocity = new_angle.get_forward_vec() * new_speed;
             }
 

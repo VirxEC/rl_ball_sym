@@ -61,6 +61,23 @@ impl Angle {
         delta.normalize_fix();
         delta
     }
+
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_possible_truncation)]
+    #[must_use]
+    pub fn round(self) -> Self {
+        const TO_INTS: f32 = (1 << 15) as f32 / PI;
+        const BACK_TO_RADIANS: f32 = (1. / TO_INTS) * 4.;
+        const ROUNDING_MASK: i32 = 0x4000 - 1;
+
+        let r_yaw = ((self.yaw * TO_INTS) as i32 >> 2) & ROUNDING_MASK;
+        let r_pitch = ((self.pitch * TO_INTS) as i32 >> 2) & ROUNDING_MASK;
+
+        Self {
+            yaw: r_yaw as f32 * BACK_TO_RADIANS,
+            pitch: r_pitch as f32 * BACK_TO_RADIANS,
+        }
+    }
 }
 
 #[cfg(feature = "heatseeker")]
