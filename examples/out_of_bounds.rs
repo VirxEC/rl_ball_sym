@@ -5,23 +5,23 @@ use rl_ball_sym::{glam::Vec3A, load_standard};
 fn main() {
     let (game, mut ball) = load_standard();
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     'outer: for _ in 0..1_000_000 {
         let location = Vec3A::new(
-            rng.gen_range(-2900.0..2900.),
-            rng.gen_range(-3900.0..3900.),
-            rng.gen_range(100.0..1900.),
+            rng.random_range(-2900.0..2900.),
+            rng.random_range(-3900.0..3900.),
+            rng.random_range(100.0..1900.),
         );
         let velocity = Vec3A::new(
-            rng.gen_range(-2000.0..2000.),
-            rng.gen_range(-2000.0..2000.),
-            rng.gen_range(-2000.0..2000.),
+            rng.random_range(-2000.0..2000.),
+            rng.random_range(-2000.0..2000.),
+            rng.random_range(-2000.0..2000.),
         );
         let angular_velocity = Vec3A::new(
-            rng.gen_range(-3.0..3.),
-            rng.gen_range(-3.0..3.),
-            rng.gen_range(-3.0..3.),
+            rng.random_range(-3.0..3.),
+            rng.random_range(-3.0..3.),
+            rng.random_range(-3.0..3.),
         );
 
         ball.update(0., location, velocity, angular_velocity);

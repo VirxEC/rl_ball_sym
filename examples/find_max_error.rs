@@ -33,26 +33,26 @@ fn main() -> io::Result<()> {
     let mut arena = Arena::default_standard();
     let (game, mut ball) = load_standard();
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let mut max_error = 0.;
     let mut error_values = [Vec3::ZERO; 3];
 
     'outer: for i in 0..TRIES {
         let location = Vec3::new(
-            rng.gen_range(0.0..2900.),
-            rng.gen_range(0.0..3900.),
-            rng.gen_range(100.0..1900.),
+            rng.random_range(0.0..2900.),
+            rng.random_range(0.0..3900.),
+            rng.random_range(100.0..1900.),
         );
         let velocity = Vec3::new(
-            rng.gen_range(0.0..2000.),
-            rng.gen_range(0.0..2000.),
-            rng.gen_range(-2000.0..2000.),
+            rng.random_range(0.0..2000.),
+            rng.random_range(0.0..2000.),
+            rng.random_range(-2000.0..2000.),
         );
         let angular_velocity = Vec3::new(
-            rng.gen_range(-3.0..3.),
-            rng.gen_range(-3.0..3.),
-            rng.gen_range(-3.0..3.),
+            rng.random_range(-3.0..3.),
+            rng.random_range(-3.0..3.),
+            rng.random_range(-3.0..3.),
         );
 
         let mut rocketsim_ball = arena.pin_mut().get_ball();

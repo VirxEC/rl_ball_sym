@@ -6,26 +6,26 @@ use std::sync::{LazyLock, RwLock};
 static GAME: RwLock<LazyLock<(Game, Ball)>> = RwLock::new(LazyLock::new(load_standard));
 
 fn main() {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut time = 0.;
 
     // Generate random inputs for our get_output function - you just ignore this
     for _ in 0..240 {
         get_output(
             Vec3A::new(
-                rng.gen_range(-4000.0..4000.),
-                rng.gen_range(-5020.0..5020.),
-                rng.gen_range(0.0..1944.),
+                rng.random_range(-4000.0..4000.),
+                rng.random_range(-5020.0..5020.),
+                rng.random_range(0.0..1944.),
             ),
             Vec3A::new(
-                rng.gen_range(-2000.0..2000.),
-                rng.gen_range(-2000.0..2000.),
-                rng.gen_range(-2000.0..2000.),
+                rng.random_range(-2000.0..2000.),
+                rng.random_range(-2000.0..2000.),
+                rng.random_range(-2000.0..2000.),
             ),
             Vec3A::new(
-                rng.gen_range(-3.0..3.),
-                rng.gen_range(-3.0..3.),
-                rng.gen_range(-3.0..3.),
+                rng.random_range(-3.0..3.),
+                rng.random_range(-3.0..3.),
+                rng.random_range(-3.0..3.),
             ),
             time,
         );

@@ -333,7 +333,7 @@ mod test {
 
         let iters = 200;
         let num_slices = 6 * 120 * iters;
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         let mut x_locs = Vec::with_capacity(num_slices);
         let mut y_locs = Vec::with_capacity(num_slices);
@@ -345,19 +345,19 @@ mod test {
             ball.update(
                 0.,
                 Vec3A::new(
-                    rng.gen_range(-3200.0..3200.),
-                    rng.gen_range(-4500.0..4500.),
-                    rng.gen_range(100.0..1900.),
+                    rng.random_range(-3200.0..3200.),
+                    rng.random_range(-4500.0..4500.),
+                    rng.random_range(100.0..1900.),
                 ),
                 Vec3A::new(
-                    rng.gen_range(-2000.0..2000.),
-                    rng.gen_range(-2000.0..2000.),
-                    rng.gen_range(-2000.0..2000.),
+                    rng.random_range(-2000.0..2000.),
+                    rng.random_range(-2000.0..2000.),
+                    rng.random_range(-2000.0..2000.),
                 ),
                 Vec3A::new(
-                    rng.gen_range(-3.0..3.),
-                    rng.gen_range(-3.0..3.),
-                    rng.gen_range(-3.0..3.),
+                    rng.random_range(-3.0..3.),
+                    rng.random_range(-3.0..3.),
+                    rng.random_range(-3.0..3.),
                 ),
             );
 
@@ -431,7 +431,7 @@ mod test {
         let iters = 200;
         let time = 10.; // 10 seconds
         let num_slices = time as usize * 120 * iters;
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         let mut x_locs = Vec::with_capacity(num_slices);
         let mut y_locs = Vec::with_capacity(num_slices);
@@ -443,19 +443,19 @@ mod test {
             ball.update(
                 0.,
                 Vec3A::new(
-                    rng.gen_range(-3900.0..3900.),
-                    rng.gen_range(-5000.0..5000.),
-                    rng.gen_range(100.0..1900.),
+                    rng.random_range(-3900.0..3900.),
+                    rng.random_range(-5000.0..5000.),
+                    rng.random_range(100.0..1900.),
                 ),
                 Vec3A::new(
-                    rng.gen_range(-2000.0..2000.),
-                    rng.gen_range(-2000.0..2000.),
-                    rng.gen_range(-2000.0..2000.),
+                    rng.random_range(-2000.0..2000.),
+                    rng.random_range(-2000.0..2000.),
+                    rng.random_range(-2000.0..2000.),
                 ),
                 Vec3A::new(
-                    rng.gen_range(-3.0..3.),
-                    rng.gen_range(-3.0..3.),
-                    rng.gen_range(-3.0..3.),
+                    rng.random_range(-3.0..3.),
+                    rng.random_range(-3.0..3.),
+                    rng.random_range(-3.0..3.),
                 ),
             );
 
