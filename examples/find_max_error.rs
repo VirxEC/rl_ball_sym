@@ -84,7 +84,9 @@ fn main() -> io::Result<()> {
                 error_values[2] = last_ball.ang_vel;
 
                 if (max_error > 30. && i > TRIES / 2) || max_error > 80. {
-                    println!("Breaking early with an error of {max_error}; Location error: {pos_error}, Velocity error: {vel_error}");
+                    println!(
+                        "Breaking early with an error of {max_error}; Location error: {pos_error}, Velocity error: {vel_error}"
+                    );
                     break 'outer;
                 }
 

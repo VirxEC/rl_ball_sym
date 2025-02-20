@@ -1,4 +1,4 @@
-use rl_ball_sym::{load_standard, Vec3A};
+use rl_ball_sym::{Vec3A, load_standard};
 use std::hint::black_box;
 
 fn main() {

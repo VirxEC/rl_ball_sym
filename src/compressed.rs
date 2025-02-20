@@ -1,7 +1,6 @@
 //! Tools for compressing the binary field data at compile time and decompressing it at runtime.
 
-use crate::simulation::{field, mesh::Mesh};
-use crate::Game;
+use crate::{Game, simulation::{field, mesh::Mesh}};
 use include_flate::flate;
 
 #[cfg(feature = "compression")]

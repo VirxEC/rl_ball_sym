@@ -1,6 +1,6 @@
 use byteorder::{LittleEndian, ReadBytesExt};
 use colored::Colorize;
-use rl_ball_sym::{load_standard, Ball};
+use rl_ball_sym::{Ball, load_standard};
 use std::{fs, io};
 
 fn read_balls(file_name: &str, mut ball: Ball) -> io::Result<Vec<Ball>> {

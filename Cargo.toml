@@ -2,7 +2,7 @@
 name = "rl_ball_sym"
 version = "5.0.0"
 authors = ["VirxEC"]
-edition = "2021"
+edition = "2024"
 description = "rl_ball_sym is a Rust implementation of Rocket League's ball physics"
 readme = "README.md"
 repository = "https://github.com/VirxEC/rl_ball_sym"
@@ -10,7 +10,7 @@ license = "MIT"
 keywords = ["rocket-league", "rlbot", "physics", "simulation"]
 categories = ["science", "simulation", "mathematics"]
 include = ["src/", "assets/"]
-rust-version = "1.83"
+rust-version = "1.85"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -25,11 +25,11 @@ rand = "0.9"
 criterion = { version = "0.5.0", features = ["html_reports"] }
 serde_json = "1.0.107"
 colored = "3.0.0"
-rocketsim_rs = { version = "0.33.0", features = ["glam"] }
+rocketsim_rs = { version = "0.34.0", features = ["glam"] }
 
 [dependencies]
 byteorder = "1"
-glam = "0.29.0"
+glam = "0.30.0"
 radsort = "0.1"
 combo_vec = { version = "0.7.1", default-features = false }
 include-flate = { version = "0.3.0", optional = true }

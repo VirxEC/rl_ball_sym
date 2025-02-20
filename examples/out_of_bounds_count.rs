@@ -1,6 +1,6 @@
 use rand::Rng;
 use rl_ball_sym::{glam::Vec3A, load_standard};
-use std::io::{stdout, Write};
+use std::io::{Write, stdout};
 
 fn main() {
     let (game, mut ball) = load_standard();

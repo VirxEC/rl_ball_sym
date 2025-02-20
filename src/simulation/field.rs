@@ -147,7 +147,14 @@ pub fn initialize_hoops(
     let hoops_net_tf = hoops_net.transform(S).translate_y(Y_OFFSET);
     let hoops_rim_tf = hoops_rim.transform(S).translate_y(Y_OFFSET);
 
-    let [floor, ceiling, side_wall_0, side_wall_1, back_wall_0, back_wall_1] = get_hoops_walls();
+    let [
+        floor,
+        ceiling,
+        side_wall_0,
+        side_wall_1,
+        back_wall_0,
+        back_wall_1,
+    ] = get_hoops_walls();
 
     let field_mesh = Mesh::combine([
         hoops_corner.clone().transform(FLIP_X),

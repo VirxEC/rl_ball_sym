@@ -1,12 +1,12 @@
 //! Tools for calculating collisions between objects and the Rocket League field.
 
 use super::{
-    bvh::{global_aabb, Branch, Leaf, Node},
+    bvh::{Branch, Leaf, Node, global_aabb},
     game::Constraints,
     geometry::{Aabb, Contact, Hits, Sphere, Tri},
     morton::Morton,
 };
-use combo_vec::{re_arr, ReArr};
+use combo_vec::{ReArr, re_arr};
 
 /// A bounding volume hierarchy.
 #[derive(Clone, Debug)]

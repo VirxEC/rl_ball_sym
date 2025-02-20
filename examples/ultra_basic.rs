@@ -1,4 +1,4 @@
-use rl_ball_sym::{load_standard, Predictions, Vec3A};
+use rl_ball_sym::{Predictions, Vec3A, load_standard};
 
 fn main() {
     // load a standard standard match

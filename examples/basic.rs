@@ -1,5 +1,5 @@
 use rand::Rng;
-use rl_ball_sym::{load_standard, Ball, Game, Predictions, Vec3A};
+use rl_ball_sym::{Ball, Game, Predictions, Vec3A, load_standard};
 use std::sync::{LazyLock, RwLock};
 
 // We only need to initialize everything once
