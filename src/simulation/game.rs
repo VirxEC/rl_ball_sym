@@ -1,7 +1,7 @@
 //! All the data about the game to simulate it.
 
 use super::{ball::Ball, geometry::Contact, tri_bvh::TriangleBvh};
-use combo_vec::ReArr;
+use arrayvec::ArrayVec;
 use glam::Vec3A;
 use std::f32::consts::FRAC_1_SQRT_2;
 
@@ -221,7 +221,7 @@ impl VelocityPair {
 
 #[derive(Clone, Debug)]
 pub struct Constraints {
-    contacts: Vec<Constraint>,
+    contacts: ArrayVec<Constraint, { Self::MAX_CONTACTS }>,
     normal_sum: Vec3A,
     depth_sum: f32,
     count: u8,
@@ -240,7 +240,7 @@ impl Constraints {
     #[must_use]
     pub const fn new(inv_mass: f32, external_force_impulse: Vec3A) -> Self {
         Self {
-            contacts: Vec::new(),
+            contacts: const { ArrayVec::new_const() },
             normal_sum: Vec3A::ZERO,
             depth_sum: 0.,
             count: 0,
@@ -251,12 +251,10 @@ impl Constraints {
 
     pub fn add_contacts(
         &mut self,
-        contacts: ReArr<Contact, { Self::MAX_CONTACTS }>,
+        contacts: ArrayVec<Contact, { Self::MAX_CONTACTS }>,
         ball: &Ball,
         dt: f32,
     ) {
-        self.contacts.reserve(contacts.len());
-
         for contact in contacts {
             self.normal_sum += contact.triangle_normal;
             self.depth_sum += contact.local_position.length();
@@ -435,7 +433,7 @@ impl Constraints {
 
     fn solve_split_impulse_iterations(&mut self) -> Vec3A {
         let mut velocities = VelocityPair::ZERO;
-        let mut should_runs = [true; Self::MAX_CONTACTS];
+        let mut should_runs = const { [true; Self::MAX_CONTACTS] };
 
         for _ in 0..Self::NUM_ITERATIONS {
             let mut any_run_next = false;

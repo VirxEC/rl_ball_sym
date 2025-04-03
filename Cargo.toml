@@ -31,7 +31,7 @@ rocketsim_rs = { version = "0.34.0", features = ["glam"] }
 byteorder = "1"
 glam = "0.30.0"
 radsort = "0.1"
-combo_vec = { version = "0.7.1", default-features = false }
+arrayvec = "0.7.6"
 include-flate = { version = "0.3.0", optional = true }
 serde = { version = "1.0.188", features = ["derive"], optional = true }
 

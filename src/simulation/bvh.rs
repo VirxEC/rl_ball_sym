@@ -51,6 +51,13 @@ pub enum Node {
 impl Node {
     #[must_use]
     #[inline]
+    /// Creates a new leaf node for the BVH.
+    pub const fn leaf(aabb: Aabb, idx: usize) -> Self {
+        Self::Leaf(Leaf::new(aabb, idx))
+    }
+
+    #[must_use]
+    #[inline]
     /// Creates a new branch for the BVH given two children.
     pub fn branch(right: Self, left: Self) -> Self {
         Self::Branch(Branch::new(

@@ -1,7 +1,7 @@
 //! Various geometrical objects and tools.
 
 use crate::simulation::game::Constraints;
-use combo_vec::ReArr;
+use arrayvec::ArrayVec;
 use glam::Vec3A;
 use std::ops::Add;
 
@@ -98,12 +98,12 @@ pub struct Contact {
 
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct Hits(ReArr<Contact, { Constraints::MAX_CONTACTS }>);
+pub struct Hits(ArrayVec<Contact, { Constraints::MAX_CONTACTS }>);
 
 impl Hits {
     #[inline]
     pub const fn new() -> Self {
-        Self(ReArr::new())
+        Self(ArrayVec::new_const())
     }
 
     #[inline]
@@ -155,7 +155,7 @@ impl Hits {
 
     // sortCachedPoints
     fn replacement_index(&self, new_contact: &Contact) -> usize {
-        let mut max_penetration_index = self.0.len();
+        let mut max_penetration_index = Constraints::MAX_CONTACTS;
         let mut max_penetration = new_contact.depth;
         for (i, contact) in self.0.iter().enumerate() {
             if contact.depth < max_penetration {
@@ -226,7 +226,7 @@ impl Hits {
     }
 
     #[inline]
-    pub const fn inner(self) -> ReArr<Contact, { Constraints::MAX_CONTACTS }> {
+    pub fn inner(self) -> ArrayVec<Contact, { Constraints::MAX_CONTACTS }> {
         self.0
     }
 }
@@ -427,7 +427,7 @@ impl Aabb {
     #[inline]
     #[must_use]
     /// Create an AABB from a triangle.
-    pub fn from_tri(t: Tri) -> Self {
+    pub fn from_tri(t: &Tri) -> Self {
         Self {
             min: t.points[0].min(t.points[1]).min(t.points[2]),
             max: t.points[0].max(t.points[1]).max(t.points[2]),
@@ -447,7 +447,7 @@ impl Aabb {
     #[inline]
     #[must_use]
     /// Check if another AABB intersects this one.
-    pub fn intersect_self(self, b: &Self) -> bool {
+    pub fn intersect_self(&self, b: &Self) -> bool {
         self.min.cmple(b.max).all() && self.max.cmpge(b.min).all()
     }
 }
@@ -464,9 +464,9 @@ impl Add for Aabb {
     }
 }
 
-impl From<Tri> for Aabb {
+impl From<&Tri> for Aabb {
     #[inline]
-    fn from(value: Tri) -> Self {
+    fn from(value: &Tri) -> Self {
         Self::from_tri(value)
     }
 }

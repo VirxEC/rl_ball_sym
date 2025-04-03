@@ -1,18 +1,18 @@
 //! Tools for calculating collisions between objects and the Rocket League field.
 
 use super::{
-    bvh::{Branch, Leaf, Node, global_aabb},
+    bvh::{Branch, Node, global_aabb},
     game::Constraints,
     geometry::{Aabb, Contact, Hits, Sphere, Tri},
     morton::Morton,
 };
-use combo_vec::{ReArr, re_arr};
+use arrayvec::ArrayVec;
 
 /// A bounding volume hierarchy.
 #[derive(Clone, Debug)]
 pub struct TriangleBvh {
     /// The root of the BVH.
-    root: Node,
+    root: Branch,
     /// The primitive triangles that the BVH is built from.
     primitives: Box<[Tri]>,
 }
@@ -21,64 +21,82 @@ impl TriangleBvh {
     #[must_use]
     /// Creates a new BVH from a list of primitives.
     pub fn new(primitives: Box<[Tri]>) -> Self {
-        let aabbs: Vec<Aabb> = primitives.iter().copied().map(Into::into).collect();
+        assert!(
+            primitives.len() > 1,
+            "Cannot build a BVH with fewer than 2 triangles."
+        );
+        assert!(
+            u16::try_from(primitives.len()).is_ok(),
+            "The number of triangles exceeds the maximum supported by the BVH ({}).",
+            u16::MAX
+        );
+
+        let aabbs: Vec<Aabb> = primitives.iter().map(Into::into).collect();
         let morton = Morton::new(global_aabb(&aabbs));
 
-        let mut sorted_leaves: Box<[_]> = aabbs
+        // The assert at the beginning of this function ensures that the number of triangles
+        // fits within the u16 range, so we can disable the clippy lint for casting truncation here.
+        #[allow(clippy::cast_possible_truncation)]
+        let mut sorted_leaves: Vec<_> = aabbs
             .iter()
             .enumerate()
-            .map(|(i, aabb)| (u16::try_from(i).unwrap(), morton.get_code(aabb)))
+            .map(|(i, aabb)| (i as u16, morton.get_code(aabb)))
             .collect();
+
         radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.1);
 
-        let root = Self::generate_hierarchy(&sorted_leaves, &aabbs);
+        let Node::Branch(root) = Self::generate_hierarchy(&aabbs, &sorted_leaves) else {
+            // at the start of this function, we asserted that the number of triangles > 1
+            unreachable!();
+        };
 
         Self { root, primitives }
     }
 
-    fn generate_hierarchy(sorted_leaves: &[(u16, u64)], aabbs: &[Aabb]) -> Node {
-        // If we're dealing with a single object, return the leaf node
-        if sorted_leaves.len() == 1 {
-            let idx = sorted_leaves[0].0 as usize;
-            let leaf = Leaf::new(aabbs[idx], idx);
-            return Node::Leaf(leaf);
+    fn generate_leaf(aabbs: &[Aabb], sorted_leaves: &[(u16, u64)]) -> Node {
+        debug_assert!(sorted_leaves.len() == 1);
+
+        let idx = sorted_leaves[0].0 as usize;
+        Node::leaf(aabbs[idx], idx)
+    }
+
+    fn generate_hierarchy(aabbs: &[Aabb], sorted_leaves: &[(u16, u64)]) -> Node {
+        debug_assert!(!sorted_leaves.is_empty());
+        match sorted_leaves.len() {
+            1 => {
+                // If we're dealing with a single object, return the leaf node
+                Self::generate_leaf(aabbs, sorted_leaves)
+            }
+            2 => {
+                // Special case for two leaves, create a branch directly
+                Node::branch(
+                    Self::generate_leaf(aabbs, &sorted_leaves[..1]),
+                    Self::generate_leaf(aabbs, &sorted_leaves[1..]),
+                )
+            }
+            i => {
+                let (first_half, last_half) = sorted_leaves.split_at(i / 2);
+
+                // Process the resulting sub-ranges recursively
+                let right = Self::generate_hierarchy(aabbs, first_half);
+                let left = Self::generate_hierarchy(aabbs, last_half);
+
+                Node::branch(right, left)
+            }
         }
-
-        // Determine where to split the range
-        let mid = sorted_leaves.len() / 2;
-        let (first_half, last_half) = sorted_leaves.split_at(mid);
-
-        // Process the resulting sub-ranges recursively
-        let right = Self::generate_hierarchy(first_half, aabbs);
-        let left = Self::generate_hierarchy(last_half, aabbs);
-
-        Node::branch(right, left)
     }
 
     #[must_use]
     /// Returns a Vec of the collision rays and triangle normals from the triangles intersecting with the `query_object`.
-    pub fn collide(&self, query_object: Sphere) -> ReArr<Contact, { Constraints::MAX_CONTACTS }> {
-        const STACK: ReArr<&Branch, 12> = re_arr![];
-        const HITS: Hits = Hits::new();
-
-        let mut hits = HITS;
-
-        // Traverse nodes starting from the root
-        // If the node is a leaf, check for intersection
-        let mut node = match &self.root {
-            Node::Branch(branch) => branch,
-            Node::Leaf(leaf) => {
-                if let Some(hit) = self.primitives[leaf.idx].intersect_sphere(query_object) {
-                    hits.push(hit);
-                }
-                return hits.inner();
-            }
-        };
-
+    pub fn collide(
+        &self,
+        query_object: Sphere,
+    ) -> ArrayVec<Contact, { Constraints::MAX_CONTACTS }> {
         let query_box = Aabb::from(query_object);
 
-        // Allocate traversal stack from thread-local memory
-        let mut stack = STACK;
+        let mut node = &self.root;
+        let mut hits = const { Hits::new() };
+        let mut stack = const { ArrayVec::<_, 12>::new_const() };
 
         // Check each child node for overlap.
         loop {
@@ -283,6 +301,7 @@ mod test {
                     acc
                 });
             let direction = ray_normal.normalize();
+            dbg!(direction);
 
             assert!((direction.x - -0.816_496_55).abs() < f32::EPSILON);
             assert!((direction.y - -0.408_248_28).abs() < f32::EPSILON);
@@ -339,8 +358,6 @@ mod test {
         let mut y_locs = Vec::with_capacity(num_slices);
         let mut z_locs = Vec::with_capacity(num_slices);
 
-        dbg!(game.triangle_collisions.root.aabb());
-
         for _ in 0..iters {
             ball.update(
                 0.,
@@ -379,26 +396,17 @@ mod test {
         dbg!(*z_locs.iter().min().unwrap());
         dbg!(*z_locs.iter().max().unwrap());
 
-        assert!(
-            *z_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().z as isize
-        );
-        assert!(
-            *z_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().z as isize
-        );
+        let root_aabb = game.triangle_collisions.root.aabb;
+        dbg!(root_aabb);
 
-        assert!(
-            *y_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().y as isize
-        );
-        assert!(
-            *y_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().y as isize
-        );
+        assert!(*z_locs.iter().min().unwrap() > root_aabb.min().z as isize);
+        assert!(*z_locs.iter().max().unwrap() < root_aabb.max().z as isize);
 
-        assert!(
-            *x_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().x as isize
-        );
-        assert!(
-            *x_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().x as isize
-        );
+        assert!(*y_locs.iter().min().unwrap() > root_aabb.min().y as isize);
+        assert!(*y_locs.iter().max().unwrap() < root_aabb.max().y as isize);
+
+        assert!(*x_locs.iter().min().unwrap() > root_aabb.min().x as isize);
+        assert!(*x_locs.iter().max().unwrap() < root_aabb.max().x as isize);
     }
 
     #[test]
@@ -436,8 +444,6 @@ mod test {
         let mut x_locs = Vec::with_capacity(num_slices);
         let mut y_locs = Vec::with_capacity(num_slices);
         let mut z_locs = Vec::with_capacity(num_slices);
-
-        dbg!(game.triangle_collisions.root.aabb());
 
         for _ in 0..iters {
             ball.update(
@@ -481,26 +487,17 @@ mod test {
         dbg!(*z_locs.iter().min().unwrap());
         dbg!(*z_locs.iter().max().unwrap());
 
-        assert!(
-            *z_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().z as isize
-        );
-        assert!(
-            *z_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().z as isize
-        );
+        let root_aabb = game.triangle_collisions.root.aabb;
+        dbg!(root_aabb);
 
-        assert!(
-            *y_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().y as isize
-        );
-        assert!(
-            *y_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().y as isize
-        );
+        assert!(*z_locs.iter().min().unwrap() > root_aabb.min().z as isize);
+        assert!(*z_locs.iter().max().unwrap() < root_aabb.max().z as isize);
 
-        assert!(
-            *x_locs.iter().min().unwrap() > game.triangle_collisions.root.aabb().min().x as isize
-        );
-        assert!(
-            *x_locs.iter().max().unwrap() < game.triangle_collisions.root.aabb().max().x as isize
-        );
+        assert!(*y_locs.iter().min().unwrap() > root_aabb.min().y as isize);
+        assert!(*y_locs.iter().max().unwrap() < root_aabb.max().y as isize);
+
+        assert!(*x_locs.iter().min().unwrap() > root_aabb.min().x as isize);
+        assert!(*x_locs.iter().max().unwrap() < root_aabb.max().x as isize);
     }
 
     #[test]
@@ -513,7 +510,7 @@ mod test {
         assert_eq!(game.gravity.y as i64, 0);
         assert_eq!(game.gravity.z as i64, -650);
 
-        dbg!(game.triangle_collisions.root.aabb());
+        dbg!(game.triangle_collisions.root.aabb);
 
         assert_eq!(game.triangle_collisions.primitives.len(), 8028);
 
@@ -540,7 +537,7 @@ mod test {
         assert_eq!(game.gravity.y as i64, 0);
         assert_eq!(game.gravity.z as i64, -650);
 
-        dbg!(game.triangle_collisions.root.aabb());
+        dbg!(game.triangle_collisions.root.aabb);
 
         assert_eq!(game.triangle_collisions.primitives.len(), 15732);
 
@@ -567,7 +564,7 @@ mod test {
         assert_eq!(game.gravity.y as i64, 0);
         assert_eq!(game.gravity.z as i64, -650);
 
-        dbg!(game.triangle_collisions.root.aabb());
+        dbg!(game.triangle_collisions.root.aabb);
 
         assert_eq!(game.triangle_collisions.primitives.len(), 3616);
 
@@ -594,11 +591,9 @@ mod test {
         assert_eq!(game.gravity.y as i64, 0);
         assert_eq!(game.gravity.z as i64, -650);
 
-        dbg!(&game.triangle_collisions.root.aabb());
-        if let Node::Branch(branch) = &game.triangle_collisions.root {
-            dbg!(branch.left.aabb());
-            dbg!(branch.right.aabb());
-        }
+        dbg!(game.triangle_collisions.root.aabb);
+        dbg!(game.triangle_collisions.root.left.aabb());
+        dbg!(game.triangle_collisions.root.right.aabb());
 
         assert_eq!(game.triangle_collisions.primitives.len(), 9272);
 
@@ -631,7 +626,11 @@ mod test {
         let (game, _) = load_standard_throwback();
         let mut max_depth = 0;
 
-        recurse_bvhnode(&game.triangle_collisions.root, 0, &mut max_depth);
+        recurse_bvhnode(
+            &Node::Branch(game.triangle_collisions.root),
+            0,
+            &mut max_depth,
+        );
         assert_eq!(max_depth, 14);
     }
 
@@ -640,7 +639,11 @@ mod test {
         let (game, _) = load_hoops();
         let mut max_depth = 0;
 
-        recurse_bvhnode(&game.triangle_collisions.root, 0, &mut max_depth);
+        recurse_bvhnode(
+            &Node::Branch(game.triangle_collisions.root),
+            0,
+            &mut max_depth,
+        );
         assert_eq!(max_depth, 14);
     }
 
@@ -649,7 +652,11 @@ mod test {
         let (game, _) = load_standard();
         let mut max_depth = 0;
 
-        recurse_bvhnode(&game.triangle_collisions.root, 0, &mut max_depth);
+        recurse_bvhnode(
+            &Node::Branch(game.triangle_collisions.root),
+            0,
+            &mut max_depth,
+        );
         assert_eq!(max_depth, 13);
     }
 
@@ -658,7 +665,11 @@ mod test {
         let (game, _) = load_dropshot();
         let mut max_depth = 0;
 
-        recurse_bvhnode(&game.triangle_collisions.root, 0, &mut max_depth);
+        recurse_bvhnode(
+            &Node::Branch(game.triangle_collisions.root),
+            0,
+            &mut max_depth,
+        );
         assert_eq!(max_depth, 12);
     }
 }

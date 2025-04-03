@@ -1,4 +1,7 @@
-use crate::{Game, simulation::{field, mesh::Mesh}};
+use crate::{
+    Game,
+    simulation::{field, mesh::Mesh},
+};
 
 macro_rules! include_mesh {
     ($ids:literal, $verts:literal) => {

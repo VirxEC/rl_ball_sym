@@ -21,7 +21,7 @@ impl Morton {
         Self { offset, scale }
     }
 
-    /// Prepare a 21-bit unsigned int for inverweaving.
+    /// Prepare a 21-bit unsigned int for interweaving.
     #[must_use]
     pub fn expand3(a: u32) -> u64 {
         let mut x = u64::from(a) & 0x001f_ffff; // we only look at the first 21 bits
