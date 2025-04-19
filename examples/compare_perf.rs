@@ -8,7 +8,7 @@ use std::time::Instant;
 
 const SECONDS: u32 = 25;
 const STEPS: u32 = 120 * SECONDS;
-const NUM_ITERS: u32 = 2000;
+const NUM_ITERS: u32 = 5000;
 
 fn main() {
     init(None, true);
@@ -30,6 +30,7 @@ fn main() {
         times.push(start_time.elapsed());
     }
 
+    times.sort();
     let best_elapsed = times[NUM_ITERS as usize / 1000];
     println!("RocketSim simulates {SECONDS} seconds in {best_elapsed:?}");
 
@@ -53,6 +54,7 @@ fn main() {
         times.push(start_time.elapsed());
     }
 
+    times.sort();
     let best_elapsed = times[NUM_ITERS as usize / 1000];
     println!("RLBallSym simulates {SECONDS} seconds in {best_elapsed:?}");
 }
