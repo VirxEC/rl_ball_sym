@@ -2,8 +2,8 @@
 
 use crate::simulation::game::Constraints;
 use arrayvec::ArrayVec;
-use glam::Vec3A;
-use std::ops::Add;
+use glam::{Vec3A, Vec4};
+use std::ops::{Add, AddAssign};
 
 #[cfg(feature = "heatseeker")]
 use glam::Vec3Swizzles;
@@ -165,54 +165,39 @@ impl Hits {
         }
 
         let res = match max_penetration_index {
-            0 => [
+            0 => Vec4::new(
                 0.,
                 self.get_res_1(new_contact.local_position),
                 self.get_res_2(new_contact.local_position),
                 self.get_res_3(new_contact.local_position),
-            ],
-            1 => [
+            ),
+            1 => Vec4::new(
                 self.get_res_0(new_contact.local_position),
                 0.,
                 self.get_res_2(new_contact.local_position),
                 self.get_res_3(new_contact.local_position),
-            ],
-            2 => [
+            ),
+            2 => Vec4::new(
                 self.get_res_0(new_contact.local_position),
                 self.get_res_1(new_contact.local_position),
                 0.,
                 self.get_res_3(new_contact.local_position),
-            ],
-            3 => [
+            ),
+            3 => Vec4::new(
                 self.get_res_0(new_contact.local_position),
                 self.get_res_1(new_contact.local_position),
                 self.get_res_2(new_contact.local_position),
                 0.,
-            ],
-            _ => [
+            ),
+            _ => Vec4::new(
                 self.get_res_0(new_contact.local_position),
                 self.get_res_1(new_contact.local_position),
                 self.get_res_2(new_contact.local_position),
                 self.get_res_3(new_contact.local_position),
-            ],
+            ),
         };
 
-        let (mut biggest_area, mut biggest_area_index) = if res[1] > res[0] {
-            (res[1], 1)
-        } else {
-            (res[0], 0)
-        };
-
-        if res[2] > biggest_area {
-            biggest_area = res[2];
-            biggest_area_index = 2;
-        }
-
-        if res[3] > biggest_area {
-            biggest_area_index = 3;
-        }
-
-        biggest_area_index
+        res.max_position()
     }
 
     // addManifoldPoint
@@ -402,7 +387,6 @@ pub struct Aabb {
 impl Aabb {
     #[inline]
     #[must_use]
-    #[cfg(test)]
     /// Create a new AABB.
     ///
     /// Used in tests.
@@ -464,6 +448,13 @@ impl Add for Aabb {
     }
 }
 
+impl AddAssign for Aabb {
+    fn add_assign(&mut self, rhs: Self) {
+        self.min = self.min.min(rhs.min);
+        self.max = self.max.max(rhs.max);
+    }
+}
+
 impl From<&Tri> for Aabb {
     #[inline]
     fn from(value: &Tri) -> Self {
@@ -482,10 +473,10 @@ impl From<Sphere> for Aabb {
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Sphere {
-    center: Vec3A,
-    radius: f32,
-    radius_with_threshold: f32,
-    radius_with_threshold_squared: f32,
+    pub center: Vec3A,
+    pub radius: f32,
+    pub radius_with_threshold: f32,
+    pub radius_with_threshold_squared: f32,
 }
 
 impl Sphere {

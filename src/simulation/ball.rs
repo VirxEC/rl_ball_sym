@@ -178,11 +178,8 @@ impl Ball {
         self.velocity *= (1. - Self::DRAG).powf(dt);
         let external_force_impulse = game.gravity * dt;
 
-        let contacts = game.triangle_collisions.collide(self.hitbox());
-
-        let world_contact_normal = if contacts.is_empty() {
-            None
-        } else {
+        let contacts = game.collider.collide(self.hitbox());
+        let world_contact_normal = contacts.map(|contacts| {
             let mut constraints = Constraints::new(Self::INV_M, external_force_impulse);
             constraints.add_contacts(contacts, self, dt);
 
@@ -192,8 +189,8 @@ impl Ball {
             self.angular_velocity += delta_velocity.angular;
             self.location += push_velocity * dt;
 
-            Some(normal)
-        };
+            normal
+        });
 
         self.velocity += external_force_impulse;
         self.location += self.velocity * dt;

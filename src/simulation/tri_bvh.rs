@@ -1,88 +1,136 @@
 //! Tools for calculating collisions between objects and the Rocket League field.
 
 use super::{
-    bvh::{Branch, Node, global_aabb},
+    bvh::{Branch, Node, NodeType, global_aabb},
     game::Constraints,
     geometry::{Aabb, Contact, Hits, Sphere, Tri},
     morton::Morton,
 };
 use arrayvec::ArrayVec;
 
-/// A bounding volume hierarchy.
+/// A bounding volume hierarchy built from only triangles.
 #[derive(Clone, Debug)]
 pub struct TriangleBvh {
-    /// The root of the BVH.
-    root: Branch,
-    /// The primitive triangles that the BVH is built from.
-    primitives: Box<[Tri]>,
+    /// All the nodes in the bvh (branches & leaves)
+    pub nodes: Box<[Node]>,
 }
 
 impl TriangleBvh {
     #[must_use]
     /// Creates a new BVH from a list of primitives.
-    pub fn new(primitives: Box<[Tri]>) -> Self {
+    pub fn new(aabbs: &[Aabb]) -> Self {
         assert!(
-            primitives.len() > 1,
+            aabbs.len() > 1,
             "Cannot build a BVH with fewer than 2 triangles."
         );
         assert!(
-            u16::try_from(primitives.len()).is_ok(),
+            u16::try_from(aabbs.len()).is_ok(),
             "The number of triangles exceeds the maximum supported by the BVH ({}).",
             u16::MAX
         );
 
-        let aabbs: Vec<Aabb> = primitives.iter().map(Into::into).collect();
-        let morton = Morton::new(global_aabb(&aabbs));
+        let morton = Morton::new(global_aabb(aabbs));
+        let codes: Vec<_> = aabbs.iter().map(|aabb| morton.get_code(aabb)).collect();
 
         // The assert at the beginning of this function ensures that the number of triangles
         // fits within the u16 range, so we can disable the clippy lint for casting truncation here.
         #[allow(clippy::cast_possible_truncation)]
-        let mut sorted_leaves: Vec<_> = aabbs
-            .iter()
-            .enumerate()
-            .map(|(i, aabb)| (i as u16, morton.get_code(aabb)))
-            .collect();
+        let mut sorted_leaves: Vec<_> = (0..codes.len()).map(|i| i as u16).collect();
+        radsort::sort_by_key(&mut sorted_leaves, |idx| codes[*idx as usize]);
 
-        radsort::sort_by_key(&mut sorted_leaves, |leaf| leaf.1);
+        let mut nodes = Vec::with_capacity(2 * aabbs.len() + 1);
+        nodes.extend(
+            aabbs
+                .iter()
+                .enumerate()
+                .map(|(idx, aabb)| Node::leaf(*aabb, idx)),
+        );
+        Self::generate_hierarchy(&mut nodes, &sorted_leaves);
 
-        let Node::Branch(root) = Self::generate_hierarchy(&aabbs, &sorted_leaves) else {
-            // at the start of this function, we asserted that the number of triangles > 1
-            unreachable!();
-        };
-
-        Self { root, primitives }
+        Self {
+            nodes: nodes.into_boxed_slice(),
+        }
     }
 
-    fn generate_leaf(aabbs: &[Aabb], sorted_leaves: &[(u16, u64)]) -> Node {
-        debug_assert!(sorted_leaves.len() == 1);
-
-        let idx = sorted_leaves[0].0 as usize;
-        Node::leaf(aabbs[idx], idx)
-    }
-
-    fn generate_hierarchy(aabbs: &[Aabb], sorted_leaves: &[(u16, u64)]) -> Node {
+    fn generate_hierarchy(nodes: &mut Vec<Node>, sorted_leaves: &[u16]) -> usize {
         debug_assert!(!sorted_leaves.is_empty());
         match sorted_leaves.len() {
             1 => {
                 // If we're dealing with a single object, return the leaf node
-                Self::generate_leaf(aabbs, sorted_leaves)
+                sorted_leaves[0] as usize
             }
             2 => {
                 // Special case for two leaves, create a branch directly
-                Node::branch(
-                    Self::generate_leaf(aabbs, &sorted_leaves[..1]),
-                    Self::generate_leaf(aabbs, &sorted_leaves[1..]),
-                )
+                let right = sorted_leaves[0] as usize;
+                let left = sorted_leaves[1] as usize;
+
+                let num_nodes = nodes.len();
+                let aabb = nodes[right].aabb + nodes[left].aabb;
+                nodes.push(Node::branch(aabb, right, left));
+
+                num_nodes
             }
             i => {
                 let (first_half, last_half) = sorted_leaves.split_at(i / 2);
 
                 // Process the resulting sub-ranges recursively
-                let right = Self::generate_hierarchy(aabbs, first_half);
-                let left = Self::generate_hierarchy(aabbs, last_half);
+                let right = Self::generate_hierarchy(nodes, first_half);
+                let left = Self::generate_hierarchy(nodes, last_half);
 
-                Node::branch(right, left)
+                let num_nodes = nodes.len();
+                let aabb = nodes[right].aabb + nodes[left].aabb;
+                nodes.push(Node::branch(aabb, right, left));
+
+                num_nodes
             }
+        }
+    }
+
+    #[must_use]
+    pub fn get_child_bvh(&self, aabbs: &[Aabb], query_box: Aabb) -> Option<Self> {
+        let mut stack = ArrayVec::<&Branch, 16>::new();
+        match &self.nodes[self.nodes.len() - 1].node_type {
+            NodeType::Branch(node) => stack.push(node),
+            NodeType::Leaf { idx: _ } => unreachable!(),
+        }
+
+        let mut leaves = Vec::with_capacity(64);
+
+        // Check each child node for overlap.
+        while let Some(node) = stack.pop() {
+            let right = &self.nodes[node.right];
+            let left = &self.nodes[node.left];
+
+            if right.aabb.intersect_self(&query_box) {
+                match &right.node_type {
+                    NodeType::Leaf { idx } => leaves.push(*idx),
+                    NodeType::Branch(right) => stack.push(right),
+                }
+            }
+
+            if left.aabb.intersect_self(&query_box) {
+                match &left.node_type {
+                    NodeType::Leaf { idx } => leaves.push(*idx),
+                    NodeType::Branch(left) => stack.push(left),
+                }
+            }
+        }
+
+        if leaves.is_empty() {
+            None
+        } else {
+            let mut nodes = Vec::with_capacity(2 * leaves.len() + 1);
+            nodes.extend(leaves.into_iter().map(|idx| Node::leaf(aabbs[idx], idx)));
+
+            // due to the nature of our traversal,
+            // the leaves should already be sorted
+            #[allow(clippy::cast_possible_truncation)]
+            let leaves: Vec<_> = (0..nodes.len() as u16).collect();
+            Self::generate_hierarchy(&mut nodes, &leaves);
+
+            Some(Self {
+                nodes: nodes.into_boxed_slice(),
+            })
         }
     }
 
@@ -90,59 +138,60 @@ impl TriangleBvh {
     /// Returns a Vec of the collision rays and triangle normals from the triangles intersecting with the `query_object`.
     pub fn collide(
         &self,
+        primitives: &[Tri],
         query_object: Sphere,
-    ) -> ArrayVec<Contact, { Constraints::MAX_CONTACTS }> {
+    ) -> Option<ArrayVec<Contact, { Constraints::MAX_CONTACTS }>> {
         let query_box = Aabb::from(query_object);
 
-        let mut node = &self.root;
         let mut hits = const { Hits::new() };
-        let mut stack = const { ArrayVec::<_, 12>::new_const() };
-
-        // Check each child node for overlap.
-        loop {
-            let mut traverse_left = None;
-
-            let left = node.left.as_ref();
-            if left.aabb().intersect_self(&query_box) {
-                match left {
-                    Node::Leaf(left) => {
-                        if let Some(info) = self.primitives[left.idx].intersect_sphere(query_object)
-                        {
-                            hits.push(info);
-                        }
-                    }
-                    Node::Branch(left) => traverse_left = Some(left),
-                }
+        let mut stack = ArrayVec::<&Branch, 16>::new();
+        match &self.nodes[self.nodes.len() - 1].node_type {
+            NodeType::Branch(node) => stack.push(node),
+            NodeType::Leaf { idx } => {
+                return if self.nodes[self.nodes.len() - 1]
+                    .aabb
+                    .intersect_self(&query_box)
+                {
+                    primitives[*idx].intersect_sphere(query_object).map(|node| {
+                        hits.push(node);
+                        hits.inner()
+                    })
+                } else {
+                    None
+                };
             }
-
-            let right = node.right.as_ref();
-            if right.aabb().intersect_self(&query_box) {
-                match right {
-                    Node::Leaf(right) => {
-                        if let Some(info) =
-                            self.primitives[right.idx].intersect_sphere(query_object)
-                        {
-                            hits.push(info);
-                        }
-                    }
-                    Node::Branch(right) => {
-                        node = traverse_left.map_or(right, |branch| {
-                            stack.push(right);
-                            branch
-                        });
-                        continue;
-                    }
-                }
-            }
-
-            let Some(next_node) = traverse_left.or_else(|| stack.pop()) else {
-                break;
-            };
-
-            node = next_node;
         }
 
-        hits.inner()
+        // Check each child node for overlap.
+        while let Some(node) = stack.pop() {
+            let right = &self.nodes[node.right];
+            let left = &self.nodes[node.left];
+
+            if right.aabb.intersect_self(&query_box) {
+                match &right.node_type {
+                    NodeType::Leaf { idx } => {
+                        if let Some(info) = primitives[*idx].intersect_sphere(query_object) {
+                            hits.push(info);
+                        }
+                    }
+                    NodeType::Branch(right) => stack.push(right),
+                }
+            }
+
+            if left.aabb.intersect_self(&query_box) {
+                match &left.node_type {
+                    NodeType::Leaf { idx } => {
+                        if let Some(info) = primitives[*idx].intersect_sphere(query_object) {
+                            hits.push(info);
+                        }
+                    }
+                    NodeType::Branch(left) => stack.push(left),
+                }
+            }
+        }
+
+        let hits = hits.inner();
+        if hits.is_empty() { None } else { Some(hits) }
     }
 }
 
@@ -151,9 +200,9 @@ impl TriangleBvh {
 mod test {
     use super::*;
     use crate::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
-    use criterion::black_box;
     use glam::Vec3A;
     use rand::Rng;
+    use std::hint::black_box;
 
     const VERT_MAP: &[[usize; 3]; 12] = &[
         [1, 0, 2],
@@ -190,64 +239,66 @@ mod test {
     #[test]
     fn test_bvh_build() {
         let triangles = generate_tris();
+        let aabbs: Vec<Aabb> = triangles.iter().map(Into::into).collect();
 
-        let _ = black_box(TriangleBvh::new(triangles));
+        let _ = black_box(TriangleBvh::new(&aabbs));
     }
 
     #[test]
     fn test_bvh_collide_count() {
         let triangles = generate_tris();
+        let aabbs: Vec<Aabb> = triangles.iter().map(Into::into).collect();
+        let bvh = TriangleBvh::new(&aabbs);
 
-        let bvh = TriangleBvh::new(triangles);
         {
             // Sphere hits nothing
             let sphere = Sphere::new(Vec3A::new(0., 0., 1022.), 100.);
-            let hits = bvh.collide(sphere);
-            assert_eq!(hits.len(), 0);
+            let hits = bvh.collide(&triangles, sphere);
+            assert!(hits.is_none());
         }
         {
             // Sphere hits one Tri
             let sphere = Sphere::new(Vec3A::new(4096. / 2., 5120. / 2., 99.9), 100.);
-            let hits = bvh.collide(sphere);
+            let hits = bvh.collide(&triangles, sphere);
 
-            assert_eq!(hits.len(), 1);
+            assert_eq!(hits.unwrap().len(), 1);
         }
         {
             // Middle of two Tris
             let sphere = Sphere::new(Vec3A::ZERO, 100.);
-            let hits = bvh.collide(sphere);
+            let hits = bvh.collide(&triangles, sphere);
 
-            assert_eq!(hits.len(), 2);
+            assert_eq!(hits.unwrap().len(), 2);
         }
         {
             // Sphere is in a corner
             let sphere = Sphere::new(Vec3A::new(4096., 5120., 0.), 100.);
-            let hits = bvh.collide(sphere);
+            let hits = bvh.collide(&triangles, sphere);
 
-            assert_eq!(hits.len(), 4);
+            assert_eq!(hits.unwrap().len(), 4);
         }
     }
 
     #[test]
     fn test_bvh_collide() {
         let triangles = generate_tris();
-
-        let bvh = TriangleBvh::new(triangles);
+        let aabbs: Vec<Aabb> = triangles.iter().map(Into::into).collect();
+        let bvh = TriangleBvh::new(&aabbs);
 
         {
             // Sphere hits nothing
             let sphere = Sphere::new(Vec3A::new(0., 0., 1022.), 100.);
 
-            let ray = bvh.collide(sphere);
+            let ray = bvh.collide(&triangles, sphere);
 
-            assert!(ray.is_empty());
+            assert!(ray.is_none());
         }
         {
             // Sphere hits one Tri
             let center = Vec3A::new(4096. / 2., 5120. / 2., 99.);
             let sphere = Sphere::new(center, 100.);
 
-            let rays = bvh.collide(sphere);
+            let rays = bvh.collide(&triangles, sphere).unwrap();
             assert!(!rays.is_empty());
 
             let position = rays[0].local_position + center;
@@ -265,7 +316,7 @@ mod test {
             let center = Vec3A::Z;
             let sphere = Sphere::new(center, 2.);
 
-            let rays = bvh.collide(sphere);
+            let rays = bvh.collide(&triangles, sphere).unwrap();
             assert!(!rays.is_empty());
 
             let position = rays[0].local_position + center;
@@ -283,7 +334,7 @@ mod test {
             let center = Vec3A::new(4095., 5119., 5.);
             let sphere = Sphere::new(center, 6.);
 
-            let rays = bvh.collide(sphere);
+            let rays = bvh.collide(&triangles, sphere).unwrap();
             assert!(!rays.is_empty());
 
             let position = rays[0].local_position + center;
@@ -312,12 +363,12 @@ mod test {
     #[test]
     fn is_collision_ray_finite() {
         let triangles = generate_tris();
-
-        let bvh = TriangleBvh::new(triangles);
+        let aabbs: Vec<Aabb> = triangles.iter().map(Into::into).collect();
+        let bvh = TriangleBvh::new(&aabbs);
 
         {
             let sphere = Sphere::new(Vec3A::new(0., 0., 92.15 - f32::EPSILON), 92.15);
-            let ray = bvh.collide(sphere);
+            let ray = bvh.collide(&triangles, sphere).unwrap();
 
             assert_eq!(ray.len(), 2);
         }
@@ -396,7 +447,7 @@ mod test {
         dbg!(*z_locs.iter().min().unwrap());
         dbg!(*z_locs.iter().max().unwrap());
 
-        let root_aabb = game.triangle_collisions.root.aabb;
+        let root_aabb = game.collider.aabb;
         dbg!(root_aabb);
 
         assert!(*z_locs.iter().min().unwrap() > root_aabb.min().z as isize);
@@ -487,7 +538,7 @@ mod test {
         dbg!(*z_locs.iter().min().unwrap());
         dbg!(*z_locs.iter().max().unwrap());
 
-        let root_aabb = game.triangle_collisions.root.aabb;
+        let root_aabb = game.collider.aabb;
         dbg!(root_aabb);
 
         assert!(*z_locs.iter().min().unwrap() > root_aabb.min().z as isize);
@@ -510,9 +561,9 @@ mod test {
         assert_eq!(game.gravity.y as i64, 0);
         assert_eq!(game.gravity.z as i64, -650);
 
-        dbg!(game.triangle_collisions.root.aabb);
+        dbg!(game.collider.aabb);
 
-        assert_eq!(game.triangle_collisions.primitives.len(), 8028);
+        assert_eq!(game.collider.primitives.len(), 8028);
 
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
@@ -537,9 +588,9 @@ mod test {
         assert_eq!(game.gravity.y as i64, 0);
         assert_eq!(game.gravity.z as i64, -650);
 
-        dbg!(game.triangle_collisions.root.aabb);
+        dbg!(game.collider.aabb);
 
-        assert_eq!(game.triangle_collisions.primitives.len(), 15732);
+        assert_eq!(game.collider.primitives.len(), 15732);
 
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
@@ -564,9 +615,9 @@ mod test {
         assert_eq!(game.gravity.y as i64, 0);
         assert_eq!(game.gravity.z as i64, -650);
 
-        dbg!(game.triangle_collisions.root.aabb);
+        dbg!(game.collider.aabb);
 
-        assert_eq!(game.triangle_collisions.primitives.len(), 3616);
+        assert_eq!(game.collider.primitives.len(), 3616);
 
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
@@ -591,11 +642,9 @@ mod test {
         assert_eq!(game.gravity.y as i64, 0);
         assert_eq!(game.gravity.z as i64, -650);
 
-        dbg!(game.triangle_collisions.root.aabb);
-        dbg!(game.triangle_collisions.root.left.aabb());
-        dbg!(game.triangle_collisions.root.right.aabb());
+        dbg!(game.collider.aabb);
 
-        assert_eq!(game.triangle_collisions.primitives.len(), 9272);
+        assert_eq!(game.collider.primitives.len(), 9272);
 
         assert_eq!(ball.time as i64, 0);
         assert_eq!(ball.location.x as i64, 0);
@@ -608,68 +657,5 @@ mod test {
         assert_eq!(ball.angular_velocity.y as i64, 0);
         assert_eq!(ball.angular_velocity.z as i64, 0);
         assert_eq!(ball.radius() as i64, 91);
-    }
-
-    fn recurse_bvhnode(node: &Node, depth: usize, max_depth: &mut usize) {
-        if depth > *max_depth {
-            *max_depth = depth;
-        }
-
-        if let Node::Branch(branch) = node {
-            recurse_bvhnode(&branch.left, depth + 1, max_depth);
-            recurse_bvhnode(&branch.right, depth + 1, max_depth);
-        }
-    }
-
-    #[test]
-    fn hierarchy_depth_throwback_standard() {
-        let (game, _) = load_standard_throwback();
-        let mut max_depth = 0;
-
-        recurse_bvhnode(
-            &Node::Branch(game.triangle_collisions.root),
-            0,
-            &mut max_depth,
-        );
-        assert_eq!(max_depth, 14);
-    }
-
-    #[test]
-    fn hierarchy_depth_hoops() {
-        let (game, _) = load_hoops();
-        let mut max_depth = 0;
-
-        recurse_bvhnode(
-            &Node::Branch(game.triangle_collisions.root),
-            0,
-            &mut max_depth,
-        );
-        assert_eq!(max_depth, 14);
-    }
-
-    #[test]
-    fn hierarchy_depth_standard() {
-        let (game, _) = load_standard();
-        let mut max_depth = 0;
-
-        recurse_bvhnode(
-            &Node::Branch(game.triangle_collisions.root),
-            0,
-            &mut max_depth,
-        );
-        assert_eq!(max_depth, 13);
-    }
-
-    #[test]
-    fn hierarchy_depth_dropshot() {
-        let (game, _) = load_dropshot();
-        let mut max_depth = 0;
-
-        recurse_bvhnode(
-            &Node::Branch(game.triangle_collisions.root),
-            0,
-            &mut max_depth,
-        );
-        assert_eq!(max_depth, 12);
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "rl_ball_sym"
-version = "5.0.0"
+version = "5.1.0"
 authors = ["VirxEC"]
 edition = "2024"
 description = "rl_ball_sym is a Rust implementation of Rocket League's ball physics"
@@ -22,10 +22,10 @@ all = "warn"
 
 [dev-dependencies]
 rand = "0.9"
-criterion = { version = "0.5.0", features = ["html_reports"] }
+criterion = { version = "0.6.0", features = ["html_reports"] }
 serde_json = "1.0.107"
 colored = "3.0.0"
-rocketsim_rs = { version = "0.34.0", features = ["glam"] }
+rocketsim_rs = { version = "0.35.0", features = ["glam"] }
 
 [dependencies]
 byteorder = "1"

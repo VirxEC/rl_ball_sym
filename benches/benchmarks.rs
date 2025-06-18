@@ -1,6 +1,7 @@
-use criterion::{BenchmarkId, Criterion, black_box, criterion_group, criterion_main};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use glam::Vec3A;
 use rl_ball_sym::{load_dropshot, load_hoops, load_standard, load_standard_throwback};
+use std::hint::black_box;
 
 fn load_standard_benchmark(c: &mut Criterion) {
     c.bench_function("load_standard", |b| b.iter(load_standard));

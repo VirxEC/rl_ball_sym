@@ -22,8 +22,8 @@ fn extract_f32(cursor: &mut Cursor<&[u8]>) -> f32 {
 /// A collection of inter-connected triangles.
 #[derive(Clone, Debug, Default)]
 pub struct Mesh {
-    ids: Box<[usize]>,
-    vertices: Box<[Vec3A]>,
+    ids: Vec<usize>,
+    vertices: Vec<Vec3A>,
 }
 
 impl Mesh {
@@ -59,7 +59,7 @@ impl Mesh {
     #[must_use]
     #[inline]
     /// Create a new Mesh from a list of ids and vertices.
-    pub const fn new(ids: Box<[usize]>, vertices: Box<[Vec3A]>) -> Self {
+    pub const fn new(ids: Vec<usize>, vertices: Vec<Vec3A>) -> Self {
         Self { ids, vertices }
     }
 
@@ -81,10 +81,7 @@ impl Mesh {
             },
         );
 
-        Self {
-            ids: ids.into_boxed_slice(),
-            vertices: vertices.into_boxed_slice(),
-        }
+        Self { ids, vertices }
     }
 
     #[must_use]

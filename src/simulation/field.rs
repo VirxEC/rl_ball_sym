@@ -1,4 +1,4 @@
-use super::{mesh::Mesh, tri_bvh::TriangleBvh};
+use super::{geometry::Aabb, mesh::Mesh, tri_bvh::TriangleBvh, tri_grid::TriBvhGrid};
 use glam::{Mat3A, Vec3A};
 
 #[cfg(feature = "dropshot")]
@@ -17,8 +17,8 @@ fn z_axis_to_rotation(axis: f32) -> Mat3A {
 #[inline]
 fn quad(p: Vec3A, e1: Vec3A, e2: Vec3A) -> Mesh {
     Mesh::new(
-        Box::from([0, 1, 3, 1, 2, 3]),
-        Box::from([p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2]),
+        vec![0, 1, 3, 1, 2, 3],
+        vec![p + e1 + e2, p - e1 + e2, p - e1 - e2, p + e1 - e2],
     )
 }
 
@@ -58,7 +58,7 @@ pub fn initialize_standard(
     standard_goal: Mesh,
     standard_ramps_0: Mesh,
     standard_ramps_1: Mesh,
-) -> TriangleBvh {
+) -> TriBvhGrid {
     const Y_OFFSET: f32 = -5120.;
 
     let standard_goal_tf = standard_goal.translate_y(Y_OFFSET);
@@ -88,7 +88,10 @@ pub fn initialize_standard(
         side_wall_1,
     ]);
 
-    TriangleBvh::new(field_mesh.into_triangles())
+    let triangles = field_mesh.into_triangles();
+    let aabbs: Vec<Aabb> = triangles.iter().map(Into::into).collect();
+    let global_bvh = TriangleBvh::new(&aabbs);
+    TriBvhGrid::new(triangles, &aabbs, &global_bvh)
 }
 
 #[inline]
@@ -138,7 +141,7 @@ pub fn initialize_hoops(
     hoops_rim: Mesh,
     hoops_ramps_0: Mesh,
     hoops_ramps_1: Mesh,
-) -> TriangleBvh {
+) -> TriBvhGrid {
     const SCALE: f32 = 0.9;
     const S: Mat3A = Mat3A::from_diagonal(glam::Vec3::splat(SCALE));
 
@@ -177,13 +180,16 @@ pub fn initialize_hoops(
         back_wall_1,
     ]);
 
-    TriangleBvh::new(field_mesh.into_triangles())
+    let triangles = field_mesh.into_triangles();
+    let aabbs: Vec<Aabb> = triangles.iter().map(Into::into).collect();
+    let global_bvh = TriangleBvh::new(&aabbs);
+    TriBvhGrid::new(triangles, &aabbs, &global_bvh)
 }
 
 #[must_use]
 #[cfg(feature = "dropshot")]
 /// Get a BVH generated from the given dropshot field meshes.
-pub fn initialize_dropshot(dropshot: Mesh) -> TriangleBvh {
+pub fn initialize_dropshot(dropshot: Mesh) -> TriBvhGrid {
     const SCALE: f32 = 0.393;
     const S: Mat3A = Mat3A::from_diagonal(glam::Vec3::splat(SCALE));
     const Z_OFFSET: f32 = -207.565;
@@ -227,7 +233,10 @@ pub fn initialize_dropshot(dropshot: Mesh) -> TriangleBvh {
         get_wall(),
     ]);
 
-    TriangleBvh::new(field_mesh.into_triangles())
+    let triangles = field_mesh.into_triangles();
+    let aabbs: Vec<Aabb> = triangles.iter().map(Into::into).collect();
+    let global_bvh = TriangleBvh::new(&aabbs);
+    TriBvhGrid::new(triangles, &aabbs, &global_bvh)
 }
 
 #[cfg(feature = "throwback")]
@@ -260,7 +269,7 @@ pub fn initialize_throwback(
         side_ramps_lower,
         side_ramps_upper,
     }: InitializeThrowbackParams,
-) -> TriangleBvh {
+) -> TriBvhGrid {
     const SCALE: f32 = 100.;
     const S: Mat3A = Mat3A::from_diagonal(glam::Vec3::splat(SCALE));
 
@@ -349,5 +358,8 @@ pub fn initialize_throwback(
         back_wall_1,
     ]);
 
-    TriangleBvh::new(field_mesh.into_triangles())
+    let triangles = field_mesh.into_triangles();
+    let aabbs: Vec<Aabb> = triangles.iter().map(Into::into).collect();
+    let global_bvh = TriangleBvh::new(&aabbs);
+    TriBvhGrid::new(triangles, &aabbs, &global_bvh)
 }

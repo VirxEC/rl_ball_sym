@@ -8,3 +8,4 @@ mod geometry;
 pub mod mesh;
 mod morton;
 mod tri_bvh;
+mod tri_grid;

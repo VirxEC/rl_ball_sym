@@ -1,6 +1,6 @@
 //! All the data about the game to simulate it.
 
-use super::{ball::Ball, geometry::Contact, tri_bvh::TriangleBvh};
+use super::{ball::Ball, geometry::Contact, tri_grid::TriBvhGrid};
 use arrayvec::ArrayVec;
 use glam::Vec3A;
 use std::f32::consts::FRAC_1_SQRT_2;
@@ -13,7 +13,7 @@ pub struct Game {
     /// The gravity of the game
     pub gravity: Vec3A,
     /// The Bvh generated from the field
-    pub(crate) triangle_collisions: TriangleBvh,
+    pub(crate) collider: TriBvhGrid,
 }
 
 impl Game {
@@ -22,10 +22,10 @@ impl Game {
     const GRAVITY: Vec3A = Vec3A::new(0., 0., -650.);
 
     #[inline]
-    pub(crate) const fn new(triangle_collisions: TriangleBvh) -> Self {
+    pub(crate) const fn new(triangle_collisions: TriBvhGrid) -> Self {
         Self {
             gravity: Self::GRAVITY,
-            triangle_collisions,
+            collider: triangle_collisions,
         }
     }
 
@@ -73,21 +73,17 @@ impl Constraint {
         deltas: &mut VelocityPair,
         inv_mass: f32,
     ) -> f32 {
-        let mut delta_impulse: f32 = self.rhs;
-
         let delta_vel_1_dot_n =
             self.contact_normal.dot(deltas.linear) + self.rel_pos_cross_normal.dot(deltas.angular);
-        delta_impulse -= delta_vel_1_dot_n * self.jac_diag_ab_inv;
+        let mut delta_impulse = self.rhs - delta_vel_1_dot_n * self.jac_diag_ab_inv;
 
         let sum = self.applied_impulse + delta_impulse;
-        let low_min_applied = self.lower_limit - self.applied_impulse;
-        delta_impulse = if sum < self.lower_limit {
-            low_min_applied
+        if sum < self.lower_limit {
+            delta_impulse = self.lower_limit - self.applied_impulse;
+            self.applied_impulse = self.lower_limit;
         } else {
-            delta_impulse
-        };
-
-        self.applied_impulse = sum.max(self.lower_limit);
+            self.applied_impulse = sum;
+        }
 
         let linear_component_a = self.contact_normal * inv_mass;
         let impulse_magnitude = Vec3A::splat(delta_impulse);
@@ -103,34 +99,20 @@ impl Constraint {
         deltas: &mut VelocityPair,
         inv_mass: f32,
     ) -> f32 {
-        let applied_impulse = self.applied_impulse;
-
-        let mut delta_impulse = self.rhs;
         let delta_vel_1_dot_n =
             self.contact_normal.dot(deltas.linear) + self.rel_pos_cross_normal.dot(deltas.angular);
-        delta_impulse -= delta_vel_1_dot_n * self.jac_diag_ab_inv;
+        let mut delta_impulse = self.rhs - delta_vel_1_dot_n * self.jac_diag_ab_inv;
 
-        let sum = applied_impulse + delta_impulse;
-        delta_impulse = if sum < self.lower_limit {
-            self.lower_limit - applied_impulse
+        let sum = self.applied_impulse + delta_impulse;
+        if sum < self.lower_limit {
+            delta_impulse = self.lower_limit - self.applied_impulse;
+            self.applied_impulse = self.lower_limit;
+        } else if sum > self.upper_limit {
+            delta_impulse = self.upper_limit - self.applied_impulse;
+            self.applied_impulse = self.upper_limit;
         } else {
-            delta_impulse
-        };
-
-        self.applied_impulse = sum.max(self.lower_limit);
-
-        let upper_min_applied = self.upper_limit - applied_impulse;
-        delta_impulse = if sum < self.upper_limit {
-            delta_impulse
-        } else {
-            upper_min_applied
-        };
-
-        self.applied_impulse = if sum < self.upper_limit {
-            self.applied_impulse
-        } else {
-            self.upper_limit
-        };
+            self.applied_impulse = sum;
+        }
 
         let linear_component_a = self.contact_normal * inv_mass;
         let impulse_magnitude = Vec3A::splat(delta_impulse);
@@ -150,20 +132,17 @@ impl Constraint {
             return 0.;
         }
 
-        let mut delta_impulse = self.rhs_penetration;
-
         let delta_vel_1_dot_n = self.contact_normal.dot(velocities.linear)
             + self.rel_pos_cross_normal.dot(velocities.angular);
-        delta_impulse -= delta_vel_1_dot_n * self.jac_diag_ab_inv;
+        let mut delta_impulse = self.rhs_penetration - delta_vel_1_dot_n * self.jac_diag_ab_inv;
 
         let sum = self.applied_push_impulse + delta_impulse;
-        delta_impulse = if sum < self.lower_limit {
-            self.lower_limit - self.applied_push_impulse
+        if sum < self.lower_limit {
+            delta_impulse = self.lower_limit - self.applied_push_impulse;
+            self.applied_push_impulse = self.lower_limit;
         } else {
-            delta_impulse
-        };
-
-        self.applied_push_impulse = sum.max(self.lower_limit);
+            self.applied_push_impulse = sum;
+        }
 
         let linear_component_a = self.contact_normal * inv_mass;
         let impulse_magnitude = Vec3A::splat(delta_impulse);
@@ -238,9 +217,9 @@ impl Constraints {
 
     #[inline]
     #[must_use]
-    pub const fn new(inv_mass: f32, external_force_impulse: Vec3A) -> Self {
+    pub fn new(inv_mass: f32, external_force_impulse: Vec3A) -> Self {
         Self {
-            contacts: const { ArrayVec::new_const() },
+            contacts: ArrayVec::new(),
             normal_sum: Vec3A::ZERO,
             depth_sum: 0.,
             count: 0,

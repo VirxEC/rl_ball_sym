@@ -1,51 +1,32 @@
 use super::geometry::Aabb;
 use std::ops::Add;
 
-/// A leaf in the BVH.
-#[derive(Clone, Copy, Debug)]
-pub struct Leaf {
-    /// The bounding box of this leaf.
-    pub aabb: Aabb,
-    /// The primitive that this leaf represents.
-    pub idx: usize,
-}
-
-impl Leaf {
-    #[must_use]
-    #[inline]
-    /// Create a new leaf.
-    pub const fn new(aabb: Aabb, idx: usize) -> Self {
-        Self { aabb, idx }
-    }
-}
-
 /// A branch in the BVH.
 #[derive(Clone, Debug)]
 pub struct Branch {
-    /// The bounding box of this branch.
-    pub aabb: Aabb,
     /// The left child of this branch.
-    pub left: Box<Node>,
+    pub left: usize,
     /// The right child of this branch.
-    pub right: Box<Node>,
+    pub right: usize,
 }
 
-impl Branch {
-    #[must_use]
-    #[inline]
-    /// Create a new branch.
-    pub const fn new(aabb: Aabb, left: Box<Node>, right: Box<Node>) -> Self {
-        Self { aabb, left, right }
-    }
+#[derive(Clone, Debug)]
+pub enum NodeType {
+    /// A leaf node at the end of a series of branches
+    Leaf {
+        /// The index of the primitive that this leaf represents.
+        idx: usize,
+    },
+    /// A branch node that connects to more nodes
+    Branch(Branch),
 }
 
 /// A node in the BVH.
 #[derive(Clone, Debug)]
-pub enum Node {
-    /// A leaf node at the end of a series of branches
-    Leaf(Leaf),
-    /// A branch node that connects to more nodes
-    Branch(Branch),
+pub struct Node {
+    /// The bounding box of this branch.
+    pub aabb: Aabb,
+    pub node_type: NodeType,
 }
 
 impl Node {
@@ -53,27 +34,19 @@ impl Node {
     #[inline]
     /// Creates a new leaf node for the BVH.
     pub const fn leaf(aabb: Aabb, idx: usize) -> Self {
-        Self::Leaf(Leaf::new(aabb, idx))
+        Self {
+            aabb,
+            node_type: NodeType::Leaf { idx },
+        }
     }
 
     #[must_use]
     #[inline]
     /// Creates a new branch for the BVH given two children.
-    pub fn branch(right: Self, left: Self) -> Self {
-        Self::Branch(Branch::new(
-            right.aabb() + left.aabb(),
-            Box::new(left),
-            Box::new(right),
-        ))
-    }
-
-    #[must_use]
-    #[inline]
-    /// Returns the bounding box of this node.
-    pub const fn aabb(&self) -> Aabb {
-        match self {
-            Self::Leaf(leaf) => leaf.aabb,
-            Self::Branch(branch) => branch.aabb,
+    pub const fn branch(aabb: Aabb, right: usize, left: usize) -> Self {
+        Self {
+            aabb,
+            node_type: NodeType::Branch(Branch { left, right }),
         }
     }
 }
@@ -87,7 +60,6 @@ pub fn global_aabb(boxes: &[Aabb]) -> Aabb {
 #[cfg(test)]
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 mod test {
-
     use super::*;
     use glam::Vec3A;
 
