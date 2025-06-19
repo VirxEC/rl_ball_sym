@@ -1,4 +1,6 @@
-//! Tools for simulation a Rocket League ball.
+//! Tools for simulation of a Rocket League ball.
+
+use std::mem::{MaybeUninit, transmute_copy};
 
 use super::{
     game::{Constraints, Game},
@@ -350,6 +352,23 @@ impl Ball {
                 self
             })
             .collect()
+    }
+
+    /// Simulate the ball for a constant given amount of ticks
+    #[inline]
+    #[must_use]
+    pub fn get_ball_prediction_struct_for_const_slices<const NUM_SLICES: usize>(
+        mut self,
+        game: &Game,
+    ) -> [Ball; NUM_SLICES] {
+        // Could use MaybeUninit, but unsafe isn't allowed according to lints
+        let mut slices: [MaybeUninit<Ball>; NUM_SLICES] =
+            unsafe { MaybeUninit::uninit().assume_init() };
+        for i in 0..NUM_SLICES {
+            self.step(game, Self::SIMULATION_DT);
+            slices[i].write(self);
+        }
+        unsafe { transmute_copy(&slices) }
     }
 
     /// Simulate the ball in Heatseeker mode for at least the given amount of time
